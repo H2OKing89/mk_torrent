@@ -7,6 +7,7 @@ import json
 
 from rich.console import Console
 from rich.table import Table
+from rich.prompt import Prompt, Confirm  # Add these imports
 
 console = Console()
 
@@ -209,7 +210,8 @@ def apply_template(templates: Dict[str, Any]):
     output_path = Path(config.get("output_directory", ".")) / f"{path.name}.torrent"
     
     with console.status("Creating torrent from template...", spinner="dots"):
-        if creator.create_torrent_file(path, output_path):
+        # Fix: Use create_torrent_via_api instead of create_torrent_file
+        if creator.create_torrent_via_api(path, output_path):
             console.print(f"[green]✅ Torrent created: {output_path}[/green]")
         else:
             console.print("[red]❌ Failed to create torrent[/red]")

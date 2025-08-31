@@ -90,6 +90,7 @@ class QBittorrentAPI:
                     if self._verify_login():
                         self.logged_in = True
                         return True
+                    return False  # Add explicit return
             elif response.status_code == 403:
                 console.print("[red]❌ Login failed: Access forbidden (check IP whitelist in qBittorrent settings)[/red]")
                 return False
@@ -209,7 +210,7 @@ class QBittorrentAPI:
     
     def health_check(self) -> Dict[str, Any]:
         """Perform comprehensive health check"""
-        results = {
+        results: Dict[str, Any] = {  # Fix: explicitly type the dict
             "connection": False,
             "api_version": None,
             "authenticated": False,
@@ -226,16 +227,21 @@ class QBittorrentAPI:
         results["api_version"] = self.api_version
         
         if not connected:
-            results["errors"].append(f"Connection failed: {msg}")
+            # Fix: Ensure we're appending to lists, not treating them as bool/None
+            errors_list = results["errors"]
+            if isinstance(errors_list, list):
+                errors_list.append(f"Connection failed: {msg}")
             
             # Provide helpful suggestions
-            if "refused" in msg.lower():
-                results["warnings"].append("Make sure qBittorrent is running and Web UI is enabled")
-                results["warnings"].append(f"Check if port {self.port} is correct")
-            elif "403" in str(msg):
-                results["warnings"].append("Check qBittorrent Web UI settings:")
-                results["warnings"].append("  - Ensure IP address is whitelisted or authentication bypass is configured")
-                results["warnings"].append("  - Try disabling 'Bypass authentication for clients on localhost' if accessing remotely")
+            warnings_list = results["warnings"]
+            if isinstance(warnings_list, list):
+                if "refused" in msg.lower():
+                    warnings_list.append("Make sure qBittorrent is running and Web UI is enabled")
+                    warnings_list.append(f"Check if port {self.port} is correct")
+                elif "403" in str(msg):
+                    warnings_list.append("Check qBittorrent Web UI settings:")
+                    warnings_list.append("  - Ensure IP address is whitelisted or authentication bypass is configured")
+                    warnings_list.append("  - Try disabling 'Bypass authentication for clients on localhost' if accessing remotely")
             
             return results
         
@@ -252,11 +258,17 @@ class QBittorrentAPI:
                 results["default_save_path"] = prefs.get("save_path")
                 
                 # Check some important settings
-                if prefs.get("web_ui_domain_list") and self.host not in prefs.get("web_ui_domain_list", ""):
-                    results["warnings"].append(f"Host {self.host} may not be in qBittorrent's domain whitelist")
+                warnings_list = results["warnings"]
+                if isinstance(warnings_list, list):
+                    if prefs.get("web_ui_domain_list") and self.host not in prefs.get("web_ui_domain_list", ""):
+                        warnings_list.append(f"Host {self.host} may not be in qBittorrent's domain whitelist")
         else:
-            results["errors"].append("Authentication failed - check username and password")
-            results["warnings"].append("Also check IP whitelist settings in qBittorrent")
+            errors_list = results["errors"]
+            warnings_list = results["warnings"]
+            if isinstance(errors_list, list):
+                errors_list.append("Authentication failed - check username and password")
+            if isinstance(warnings_list, list):
+                warnings_list.append("Also check IP whitelist settings in qBittorrent")
         
         return results
     
@@ -323,7 +335,7 @@ class QBittorrentAPI:
         try:
             response = self.session.post(
                 f"{self.base_url}/api/v2/torrents/createTags",
-                data={"tags": ','.join(tags)},
+                data={"tags": ','.join(tags) if tags else ''},  # Fix: handle empty list
                 timeout=5,
                 verify=False if self.use_https else True
             )

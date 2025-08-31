@@ -37,7 +37,8 @@ class TorrentCreator:
         self.container_name = container_name
         self.config = config or {}
         self.trackers = []
-        self.web_seeds = []
+        self.web_seeds = []  # Add this line
+        self.url_seeds = []  # Add this line (alias for web_seeds for API compatibility)
         self.piece_size = None  # Let qBittorrent auto-select
         self.private = self.config.get("default_private", True)  # Changed default to True for private trackers
         self.comment = ""
@@ -96,6 +97,7 @@ class TorrentCreator:
             if self.torrent_format in ['v1', 'v2', 'hybrid']:
                 torrent_format = self.torrent_format  # type: ignore
             
+            # Fix: Use url_seeds instead of web_seeds for consistency
             # Create the torrent via API
             task = self.client.torrentcreator.add_task(
                 source_path=str(source_path),
@@ -104,7 +106,7 @@ class TorrentCreator:
                 is_private=self.private,
                 comment=self.comment,
                 trackers=self.trackers,
-                url_seeds=self.url_seeds,
+                url_seeds=self.url_seeds,  # This was already correct
                 source=self.source
             )
             
@@ -146,8 +148,8 @@ class TorrentCreator:
                 # Wait a moment for qBittorrent to add the torrent
                 time.sleep(1)
                 
-                # Find the torrent by matching the source path
-                torrent_hash = self._find_torrent_by_path(api_source_path)
+                # Fix: Use source_path instead of undefined api_source_path
+                torrent_hash = self._find_torrent_by_path(str(source_path))
                 if torrent_hash:
                     self._configure_torrent(torrent_hash)
                     console.print(f"[green]✓ Torrent configured with category and tags[/green]")
@@ -172,6 +174,10 @@ class TorrentCreator:
     def _find_torrent_by_path(self, source_path: str) -> Optional[str]:
         """Find a torrent by its content path"""
         try:
+            # Fix: Check if client exists
+            if not self.client:
+                return None
+                
             # Get all torrents
             torrents = self.client.torrents_info()
             
@@ -231,6 +237,10 @@ class TorrentCreator:
     def _verify_torrent_settings(self, torrent_hash: str):
         """Verify that torrent settings were properly applied"""
         try:
+            # Fix: Check if client exists
+            if not self.client:
+                return
+                
             # Get the torrent info
             torrents = self.client.torrents_info(torrent_hashes=torrent_hash)
             if torrents:
@@ -593,10 +603,11 @@ class TorrentCreator:
                     console.print(f"  {i}. {template}")
                 console.print("  0. Custom comment")
                 
-                choice = IntPrompt.ask("Select template", min_value=0, max_value=len(comment_templates), default=0)
+                # Fix: Remove invalid parameters from IntPrompt.ask
+                choice = IntPrompt.ask("Select template", default=0)
                 if choice == 0:
                     self.comment = Prompt.ask("Comment")
-                else:
+                elif 0 < choice <= len(comment_templates):
                     self.comment = comment_templates[choice - 1]
             else:
                 self.comment = Prompt.ask("Comment")
@@ -626,8 +637,10 @@ class TorrentCreator:
             for i, size in enumerate(size_names, 1):
                 console.print(f"{i}. {size}")
             
-            idx = IntPrompt.ask("Select", min_value=1, max_value=len(size_names), default=1)
-            self.piece_size = sizes[size_names[idx - 1]]
+            # Fix: Remove invalid parameters from IntPrompt.ask
+            idx = IntPrompt.ask("Select", default=1)
+            if 1 <= idx <= len(size_names):
+                self.piece_size = sizes[size_names[idx - 1]]
     
     def _configure_advanced_options(self):
         """Configure advanced torrent creation options"""
@@ -643,7 +656,8 @@ class TorrentCreator:
         if Confirm.ask("Configure padding?", default=False):
             console.print("[dim]Padding files help with alignment but increase torrent size[/dim]")
             console.print("Enter size limit in MB (0 = no padding, -1 = auto):")
-            mb_limit = IntPrompt.ask("Padding limit (MB)", min_value=-1, default=-1)
+            # Fix: Remove invalid parameters from IntPrompt.ask
+            mb_limit = IntPrompt.ask("Padding limit (MB)", default=-1)
             self.padded_file_size_limit = mb_limit * 1024 * 1024 if mb_limit > 0 else mb_limit
     
     def _add_trackers(self):
@@ -671,6 +685,7 @@ class TorrentCreator:
             if not seed:
                 break
             self.web_seeds.append(seed)
+            self.url_seeds.append(seed)  # Keep both in sync
     
     def _map_to_docker_path(self, host_path: Path) -> str:
         """Map host path to Docker container path"""
