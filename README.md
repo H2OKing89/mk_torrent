@@ -38,7 +38,6 @@ This application implements **enterprise-grade security** for handling sensitive
 - **🔑 Master Password Protection** - PBKDF2 key derivation with 100,000 iterations
 - **📁 Secure File Permissions** - All credential files have 600 permissions (owner-only access)
 - **🖥️ System Keyring Integration** - Uses OS credential storage when available
-- **🔄 Automatic Migration** - Seamlessly migrates from plain text to secure storage
 
 ### How Credentials Are Protected
 
