@@ -302,6 +302,28 @@ class SecureCredentialManager:
                 return base_url.replace('/announce', f'/{passkey}/announce')
         return tracker_url
 
+    def get_tracker_credential(self, tracker_name: str, credential_type: str) -> Optional[str]:
+        """Public method to get tracker-specific credential from secure storage"""
+        if not tracker_name or not tracker_name.strip():
+            raise ValueError("Tracker name cannot be empty")
+        if not credential_type or not credential_type.strip():
+            raise ValueError("Credential type cannot be empty")
+
+        service = f"torrent_creator_tracker_{tracker_name.strip()}"
+        return self._get_encrypted_credential(service, credential_type.strip())
+
+    def store_tracker_credential(self, tracker_name: str, credential_type: str, value: str):
+        """Public method to store tracker-specific credential securely"""
+        if not tracker_name or not tracker_name.strip():
+            raise ValueError("Tracker name cannot be empty")
+        if not credential_type or not credential_type.strip():
+            raise ValueError("Credential type cannot be empty")
+        if not value:
+            raise ValueError("Credential value cannot be empty")
+
+        service = f"torrent_creator_tracker_{tracker_name.strip()}"
+        self._store_encrypted_credential(service, credential_type.strip(), value)
+
 # Global instance
 secure_manager = SecureCredentialManager()
 
@@ -324,3 +346,11 @@ def get_secure_qbittorrent_password(host: str, port: int, username: str) -> Opti
 def get_secure_tracker_url(tracker_url: str) -> str:
     """Get tracker URL with secure passkey"""
     return secure_manager.get_secure_tracker_url(tracker_url)
+
+def get_secure_tracker_credential(tracker_name: str, credential_type: str) -> Optional[str]:
+    """Get tracker-specific credential from secure storage"""
+    return secure_manager.get_tracker_credential(tracker_name, credential_type)
+
+def store_secure_tracker_credential(tracker_name: str, credential_type: str, value: str):
+    """Store tracker-specific credential securely"""
+    secure_manager.store_tracker_credential(tracker_name, credential_type, value)

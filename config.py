@@ -119,10 +119,13 @@ def get_default_config() -> Dict[str, Any]:
         "default_piece_size": "Auto",
         "default_private": True,
         "output_directory": str(Path.home() / "torrents"),
+        "upload_queue_directory": str(Path.home() / "torrent_uploads"),  # NEW: For pending uploads
         "auto_start_seeding": True,
         "auto_torrent_management": True,
         "default_torrent_format": "v1",  # Default to v1 for compatibility
         "default_source": "",  # Source field for cross-seeding
+        "auto_upload_to_trackers": False,  # NEW: Auto-upload feature flag
+        "upload_trackers": [],  # NEW: List of trackers to auto-upload to
         "common_sources": ["RED", "OPS", "GGn", "PTP", "BTN", "MAM", "FL", "AR", "ANT"],  # Common tracker sources
         "optimize_alignment": True,  # File alignment optimization
         "padded_file_size_limit": -1,  # -1 = auto, 0 = no padding, >0 = size limit
