@@ -528,16 +528,40 @@ def wizard_multiple_folders():
     successful = 0
     failed = 0
     
-    for item in selected_items:
-        console.print(f"\n[cyan]Creating torrent for: {item.name}[/cyan]")
-        output_path = output_dir / f"{item.name}.torrent"
+    # Ask about parallel creation for large batches
+    use_parallel = False
+    if len(selected_items) > 5:
+        use_parallel = Confirm.ask(
+            f"\n[cyan]Create {len(selected_items)} torrents in parallel?[/cyan]",
+            default=True
+        )
+    
+    if use_parallel:
+        # Prepare paths for parallel creation
+        from async_utils import run_async_batch
         
-        if creator.create_torrent_via_api(item, output_path):
-            successful += 1
-            console.print(f"[green]✓ Created: {output_path.name}[/green]")
-        else:
-            failed += 1
-            console.print(f"[red]✗ Failed: {item.name}[/red]")
+        paths = []
+        for item in selected_items:
+            output_path = output_dir / f"{item.name}.torrent"
+            paths.append((item, output_path))
+        
+        console.print("\n[cyan]Creating torrents in parallel...[/cyan]")
+        results = run_async_batch(paths, creator)
+        
+        successful = sum(1 for r in results if r)
+        failed = sum(1 for r in results if not r)
+    else:
+        # Original synchronous approach
+        for item in selected_items:
+            console.print(f"\n[cyan]Creating torrent for: {item.name}[/cyan]")
+            output_path = output_dir / f"{item.name}.torrent"
+            
+            if creator.create_torrent_via_api(item, output_path):
+                successful += 1
+                console.print(f"[green]✓ Created: {output_path.name}[/green]")
+            else:
+                failed += 1
+                console.print(f"[red]✗ Failed: {item.name}[/red]")
     
     # Summary
     console.print(f"\n[bold]Summary:[/bold]")

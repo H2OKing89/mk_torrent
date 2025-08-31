@@ -4,14 +4,16 @@
 from pathlib import Path
 from typing import Optional, Dict, Any, List, Tuple
 import logging
-import requests  # Add this import
+import requests
+import urllib3  # Add this import
+import subprocess  # Add this import
 
 from qbittorrentapi import Client
 from qbittorrentapi import exceptions as qbt_exceptions
 
 from rich.console import Console
-from rich.panel import Panel  # Add this import
-from rich.table import Table  # Add this import
+from rich.panel import Panel
+from rich.table import Table
 
 console = Console()
 logger = logging.getLogger(__name__)
@@ -34,7 +36,6 @@ class QBittorrentAPI:
         
         # Disable SSL warnings if needed (for self-signed certs)
         if use_https:
-            import urllib3
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     
     @property
@@ -203,7 +204,6 @@ class QBittorrentAPI:
         
         # Note: qBittorrent Web API doesn't directly support torrent creation
         # This would need to be done via CLI or other means
-        # Returning placeholder for now
         console.print("[yellow]⚠️ Torrent creation via Web API not directly supported[/yellow]")
         console.print("[yellow]Using alternative method...[/yellow]")
         return False, b""
@@ -333,9 +333,13 @@ class QBittorrentAPI:
                 return False
         
         try:
+            # Fix: Handle empty list properly
+            if not tags:
+                return True  # Nothing to create
+                
             response = self.session.post(
                 f"{self.base_url}/api/v2/torrents/createTags",
-                data={"tags": ','.join(tags) if tags else ''},  # Fix: handle empty list
+                data={"tags": ','.join(tags)},
                 timeout=5,
                 verify=False if self.use_https else True
             )

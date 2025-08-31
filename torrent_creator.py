@@ -37,8 +37,8 @@ class TorrentCreator:
         self.container_name = container_name
         self.config = config or {}
         self.trackers = []
-        self.web_seeds = []  # Add this line
-        self.url_seeds = []  # Add this line (alias for web_seeds for API compatibility)
+        self.web_seeds = []
+        self.url_seeds = []  # Add this attribute
         self.piece_size = None  # Let qBittorrent auto-select
         self.private = self.config.get("default_private", True)  # Changed default to True for private trackers
         self.comment = ""
@@ -204,11 +204,11 @@ class TorrentCreator:
         """Configure a torrent with category, tags, and management settings"""
         try:
             # Fix: Check client is not None before accessing methods
-            if self.client is not None:
-                torrents = self.client.torrents_info(torrent_hashes=torrent_hash)
-            
+            if self.client is None:
+                return
+                
             # Apply category if set
-            if self.category and self.client is not None:
+            if self.category:
                 self.client.torrents_set_category(
                     torrent_hashes=torrent_hash,
                     category=self.category
@@ -603,11 +603,19 @@ class TorrentCreator:
                     console.print(f"  {i}. {template}")
                 console.print("  0. Custom comment")
                 
-                # Fix: Remove invalid parameters from IntPrompt.ask
-                choice = IntPrompt.ask("Select template", default=0)
+                # Fix: Use IntPrompt without invalid parameters
+                while True:
+                    try:
+                        choice = IntPrompt.ask("Select template", default=0)
+                        if 0 <= choice <= len(comment_templates):
+                            break
+                        console.print(f"[red]Please select 0-{len(comment_templates)}[/red]")
+                    except ValueError:
+                        console.print("[red]Invalid input[/red]")
+                        
                 if choice == 0:
                     self.comment = Prompt.ask("Comment")
-                elif 0 < choice <= len(comment_templates):
+                else:
                     self.comment = comment_templates[choice - 1]
             else:
                 self.comment = Prompt.ask("Comment")
@@ -637,10 +645,16 @@ class TorrentCreator:
             for i, size in enumerate(size_names, 1):
                 console.print(f"{i}. {size}")
             
-            # Fix: Remove invalid parameters from IntPrompt.ask
-            idx = IntPrompt.ask("Select", default=1)
-            if 1 <= idx <= len(size_names):
-                self.piece_size = sizes[size_names[idx - 1]]
+            # Fix: Use IntPrompt without invalid parameters
+            while True:
+                try:
+                    idx = IntPrompt.ask("Select", default=1)
+                    if 1 <= idx <= len(size_names):
+                        self.piece_size = sizes[size_names[idx - 1]]
+                        break
+                    console.print(f"[red]Please select 1-{len(size_names)}[/red]")
+                except ValueError:
+                    console.print("[red]Invalid input[/red]")
     
     def _configure_advanced_options(self):
         """Configure advanced torrent creation options"""
@@ -656,9 +670,16 @@ class TorrentCreator:
         if Confirm.ask("Configure padding?", default=False):
             console.print("[dim]Padding files help with alignment but increase torrent size[/dim]")
             console.print("Enter size limit in MB (0 = no padding, -1 = auto):")
-            # Fix: Remove invalid parameters from IntPrompt.ask
-            mb_limit = IntPrompt.ask("Padding limit (MB)", default=-1)
-            self.padded_file_size_limit = mb_limit * 1024 * 1024 if mb_limit > 0 else mb_limit
+            # Fix: Use IntPrompt without invalid parameters
+            while True:
+                try:
+                    mb_limit = IntPrompt.ask("Padding limit (MB)", default=-1)
+                    if mb_limit >= -1:
+                        self.padded_file_size_limit = mb_limit * 1024 * 1024 if mb_limit > 0 else mb_limit
+                        break
+                    console.print("[red]Please enter -1 or higher[/red]")
+                except ValueError:
+                    console.print("[red]Invalid input[/red]")
     
     def _add_trackers(self):
         """Add tracker URLs"""

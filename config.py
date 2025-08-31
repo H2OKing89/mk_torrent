@@ -1,15 +1,15 @@
-"""Configuration management for Torrent Creator"""
+#!/usr/bin/env python3
+"""Configuration management for torrent creator"""
 
-import json
 from pathlib import Path
-from typing import Dict, Any, List
-import getpass
+from typing import Dict, Any, List, Optional
+import json
+import os
 
 from rich.console import Console
 from rich.prompt import Prompt, Confirm, IntPrompt
-from rich.panel import Panel
 from rich.table import Table
-from rich.syntax import Syntax
+from rich.panel import Panel
 
 console = Console()
 

@@ -119,7 +119,7 @@ def create_template(templates: Dict[str, Any]):
     template = {
         "name": name,
         "type": Prompt.ask("Type", choices=["general", "movie", "tv", "music", "software"], default="general"),
-        "trackers": [],
+        "trackers": [],  # Initialize as list
         "private": Confirm.ask("Private torrent?", default=False),
         "piece_size": Prompt.ask("Piece size", default="Auto"),
         "comment": Prompt.ask("Default comment", default=""),
@@ -133,7 +133,11 @@ def create_template(templates: Dict[str, Any]):
         tracker = Prompt.ask("Tracker", default="")
         if not tracker:
             break
-        template["trackers"].append(tracker)
+        # Fix: Ensure trackers is a list before appending
+        if isinstance(template["trackers"], list):
+            template["trackers"].append(tracker)
+        else:
+            template["trackers"] = [tracker]
     
     templates[name] = template
     console.print(f"[green]✅ Template '{name}' created[/green]")
