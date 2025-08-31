@@ -13,6 +13,12 @@ from upload_queue import UploadQueue, UploadJob, UploadStatus
 class TestUploadJob(unittest.TestCase):
     """Test cases for UploadJob class"""
 
+    def _assert_job_results_initialized(self, job: UploadJob):
+        """Helper method to assert job results are properly initialized"""
+        self.assertIsNotNone(job.results)
+        if job.results is not None:
+            self.assertEqual(len(job.results), 0)
+
     def test_job_creation(self):
         """Test creating a new upload job"""
         job = UploadJob(
@@ -29,9 +35,7 @@ class TestUploadJob(unittest.TestCase):
         self.assertEqual(job.torrent_path, "/path/to/torrent.torrent")
         self.assertEqual(job.trackers, ["red", "ops"])
         self.assertEqual(job.status, UploadStatus.PENDING)
-        self.assertIsNotNone(job.results)
-        if job.results is not None:
-            self.assertEqual(len(job.results), 0)
+        self._assert_job_results_initialized(job)
 
     def test_job_serialization(self):
         """Test job serialization to/from dict"""
@@ -70,12 +74,16 @@ class TestUploadJob(unittest.TestCase):
 
         # Mark success for one tracker
         job.mark_success("red")
-        self.assertEqual(job.results["red"], True)
+        self.assertIsNotNone(job.results)
+        if job.results is not None:
+            self.assertEqual(job.results["red"], True)
         self.assertEqual(job.status, UploadStatus.PENDING)  # Not complete yet
 
         # Mark success for second tracker
         job.mark_success("ops")
-        self.assertEqual(job.results["ops"], True)
+        self.assertIsNotNone(job.results)
+        if job.results is not None:
+            self.assertEqual(job.results["ops"], True)
         self.assertEqual(job.status, UploadStatus.SUCCESS)  # Now complete
 
     def test_job_mark_failed(self):
@@ -92,7 +100,9 @@ class TestUploadJob(unittest.TestCase):
 
         # Mark failed
         job.mark_failed("red", "Network error")
-        self.assertEqual(job.results["red"], False)
+        self.assertIsNotNone(job.results)
+        if job.results is not None:
+            self.assertEqual(job.results["red"], False)
         self.assertEqual(job.error_message, "Network error")
         self.assertEqual(job.status, UploadStatus.FAILED)
 

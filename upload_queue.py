@@ -71,18 +71,29 @@ class UploadJob:
 
     def mark_success(self, tracker: str):
         """Mark upload as successful for a tracker"""
+        if self.results is None:
+            self.results = {}
         self.results[tracker] = True
         self.updated_at = datetime.now()
         # Check if all trackers have been processed (have results)
-        if len(self.results) == len(self.trackers) and all(self.results.values()):
-            self.status = UploadStatus.SUCCESS
+        # Allow partial success - job succeeds if at least one tracker succeeds
+        if len(self.results) == len(self.trackers):
+            if any(self.results.values()):
+                self.status = UploadStatus.SUCCESS
+            else:
+                # All trackers failed
+                self.status = UploadStatus.FAILED
 
     def mark_failed(self, tracker: str, error: Optional[str] = None):
         """Mark upload as failed for a tracker"""
+        if self.results is None:
+            self.results = {}
         self.results[tracker] = False
         self.error_message = error
         self.updated_at = datetime.now()
-        self.status = UploadStatus.FAILED
+        # Only mark as failed if all trackers have been processed and all failed
+        if len(self.results) == len(self.trackers) and not any(self.results.values()):
+            self.status = UploadStatus.FAILED
 
 class UploadQueue:
     """Thread-safe upload queue management"""
@@ -110,12 +121,16 @@ class UploadQueue:
                     job = UploadJob.from_dict(job_data)
                     self._jobs[job.job_id] = job
         except (json.JSONDecodeError, KeyError) as e:
-            console.print(f"[yellow]Warning: Could not load upload jobs: {e}[/yellow]")
-            # Create backup of corrupted file
+            backup_file = None
             if self.jobs_file.exists():
                 backup_file = self.jobs_file.with_suffix('.bak')
                 self.jobs_file.rename(backup_file)
-                console.print(f"[dim]Created backup: {backup_file}[/dim]")
+            console.print(
+                f"[yellow]Warning: Could not load upload jobs: {e}\n"
+                f"The jobs file appears to be corrupted and has been renamed to: {backup_file}\n"
+                "A new jobs file will be created. "
+                "If you wish to attempt manual recovery, you can try to fix the backup file and restore it as 'upload_jobs.json'.[/yellow]"
+            )
 
     def _save_jobs(self):
         """Save jobs to persistent storage"""
@@ -224,16 +239,19 @@ class UploadQueue:
         """Remove expired jobs"""
         with self.lock:
             expired_jobs = []
+            expired_job_infos = []
             for job_id, job in self._jobs.items():
                 if job.is_expired(max_age_hours):
                     expired_jobs.append(job_id)
+                    expired_job_infos.append((job_id, job.created_at.isoformat()))
 
             for job_id in expired_jobs:
                 del self._jobs[job_id]
 
             if expired_jobs:
                 self._save_jobs()
-                console.print(f"[dim]Cleaned up {len(expired_jobs)} expired jobs[/dim]")
+                job_info_str = ", ".join([f"{jid} (created_at: {ts})" for jid, ts in expired_job_infos])
+                console.print(f"[dim]Cleaned up {len(expired_jobs)} expired jobs: {job_info_str}[/dim]")
 
     def get_queue_stats(self) -> Dict[str, int]:
         """Get queue statistics"""
