@@ -324,3 +324,13 @@ def get_secure_qbittorrent_password(host: str, port: int, username: str) -> Opti
 def get_secure_tracker_url(tracker_url: str) -> str:
     """Get tracker URL with secure passkey"""
     return secure_manager.get_secure_tracker_url(tracker_url)
+
+def get_secure_tracker_credential(tracker_name: str, credential_type: str) -> Optional[str]:
+    """Get tracker-specific credential from secure storage"""
+    service = f"torrent_creator_tracker_{tracker_name}"
+    return secure_manager._get_encrypted_credential(service, credential_type)
+
+def store_secure_tracker_credential(tracker_name: str, credential_type: str, value: str):
+    """Store tracker-specific credential securely"""
+    service = f"torrent_creator_tracker_{tracker_name}"
+    secure_manager._store_encrypted_credential(service, credential_type, value)
