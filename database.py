@@ -1,29 +1,29 @@
-"""Database operations for torrent creation history"""
+#!/usr/bin/env python3
+"""Database operations for torrent history tracking"""
 
 from pathlib import Path
+from typing import List, Dict, Any
+import json
 from datetime import datetime
-from typing import List, Optional
 
-from sqlalchemy import create_engine, Column, String, DateTime, Boolean, Text
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from rich.console import Console
 
-Base = declarative_base()
+console = Console()
 
-class TorrentHistory(Base):
-    __tablename__ = 'torrent_history'
-    
-    id = Column(String, primary_key=True)
-    source_path = Column(String, nullable=False)
-    output_path = Column(String, nullable=False)
-    trackers = Column(Text)  # JSON string
-    private = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    file_size = Column(String)
+def get_history(limit: int = 10) -> List[Dict[str, Any]]:
+    """Get torrent creation history"""
+    # Placeholder - will implement SQLite later
+    return []
 
-def get_db_session():
-    """Get database session"""
-    db_path = Path.home() / ".config" / "torrent_creator" / "history.db"
+def clear_history() -> None:
+    """Clear all history"""
+    # Placeholder
+    console.print("[yellow]History clearing not yet implemented[/yellow]")
+
+def add_history_entry(path: str, size: int, status: str) -> None:
+    """Add entry to history"""
+    # Placeholder
+    pass
     db_path.parent.mkdir(parents=True, exist_ok=True)
     
     engine = create_engine(f'sqlite:///{db_path}')

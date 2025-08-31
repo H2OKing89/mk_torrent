@@ -85,6 +85,19 @@ class TorrentCreator:
         else:
             console.print("[yellow]No default trackers found. Add them manually.[/yellow]")
     
+    def _initial_health_check(self):
+        """Run a quick health check on initialization"""
+        if self.config.get("auto_health_check", True):
+            from health_checks import SystemHealthCheck
+            
+            checker = SystemHealthCheck(self.config)
+            checker.check_disk_space()
+            
+            # Warn if disk space is low
+            for name, info in checker.results.get("disk_space", {}).items():
+                if not info.get("healthy", True):
+                    console.print(f"[yellow]⚠️ Low disk space on {name}: {info.get('free_gb', 0):.1f} GB free[/yellow]")
+    
     def create_torrent_via_api(self, source_path: Path, output_path: Path) -> bool:
         """Create torrent using qBittorrent Web API"""
         if not self.client:
@@ -374,9 +387,18 @@ class TorrentCreator:
                 pass
         return []
     
-    def create_batch(self):
+    def batch_create_interactive(self):
         """Interactive batch torrent creation"""
-        console.print(Panel.fit("📦 Batch Torrent Creation", style="bold blue"))
+        console.print(Panel.fit("[bold cyan]📦 Batch Torrent Creation[/bold cyan]", border_style="cyan"))
+        
+        # Health check before batch operations
+        if self.config.get("batch_health_check", True):
+            from health_checks import run_quick_health_check
+            
+            console.print("[cyan]Running pre-batch health check...[/cyan]")
+            if not run_quick_health_check(self.config):
+                if not Confirm.ask("[yellow]Health check warnings detected. Continue?[/yellow]", default=False):
+                    return
         
         # Get base directory
         base_dir = Prompt.ask("Base directory containing items", default=".")
@@ -438,6 +460,21 @@ class TorrentCreator:
         for item in tqdm(items, desc="Creating torrents", unit="torrent"):
             torrent_name = f"{item.name}.torrent"
             output_path = output_dir / torrent_name
+            
+            # Check disk space before creating large torrents
+            if item.is_dir():
+                size = sum(f.stat().st_size for f in item.rglob('*') if f.is_file())
+                if size > 10 * 1024**3:  # > 10GB
+                    from health_checks import SystemHealthCheck
+                    
+                    checker = SystemHealthCheck(self.config)
+                    checker.check_disk_space()
+                    
+                    output_dir_space = checker.results["disk_space"].get("output_directory", {})
+                    if output_dir_space.get("free_gb", 0) < 1:
+                        console.print("[red]❌ Insufficient disk space for torrent creation[/red]")
+                        failed += 1
+                        continue
             
             if self.create_torrent_via_api(item, output_path):
                 successful += 1

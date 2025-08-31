@@ -14,6 +14,7 @@ A user-friendly, interactive torrent creator for qBittorrent with Docker support
 - 📋 **Templates** - Save and reuse torrent configurations
 - ⚙️ **Config Editor** - Modify settings without re-running setup
 - 🔍 **Path Validation** - Check paths before creating torrents
+- 🏥 **Health Monitoring** - System and qBittorrent health checks
 
 ## Installation
 
@@ -111,6 +112,7 @@ Config files are stored in `~/.config/torrent_creator/`:
 - `wizard` - Guided wizard for common tasks
 - `quick` - Quick torrent with defaults
 - `batch` - Create multiple torrents
+- `health` - System health checks
 
 ### Configuration
 - `setup` - Initial setup wizard
@@ -129,6 +131,12 @@ Config files are stored in `~/.config/torrent_creator/`:
 ```bash
 # Initial setup
 python run.py setup
+
+# Health checks
+python run.py health                    # Quick check
+python run.py health -c                 # Comprehensive
+python run.py health -m                 # Monitor mode
+python run.py health -m -d 3600        # Monitor for 1 hour
 
 # Guided wizard (recommended for beginners)
 python run.py wizard
@@ -194,6 +202,81 @@ Modify:
 - Tracker URLs
 - Default behaviors
 
+## 🏥 Health Checks
+
+The application includes comprehensive health monitoring to ensure everything is working properly:
+
+### Quick Health Check
+```bash
+# Quick essential checks (disk, qBittorrent, performance)
+python run.py health
+```
+
+### Comprehensive Health Check
+```bash
+# Full system validation
+python run.py health --comprehensive
+# or
+python run.py health -c
+```
+
+### Continuous Monitoring
+```bash
+# Monitor system for 5 minutes (default)
+python run.py health --monitor
+
+# Monitor for custom duration (seconds)
+python run.py health --monitor --duration 600
+```
+
+### What Gets Checked
+
+#### Quick Check (Default)
+- **Disk Space** - Ensures sufficient space for torrent creation
+- **qBittorrent** - API connectivity and basic status
+- **Performance** - CPU and memory usage
+
+#### Comprehensive Check
+- **Disk Space** - All configured paths
+- **Permissions** - Read/write access to critical directories
+- **Dependencies** - Python packages and external tools
+- **Network** - Connectivity to qBittorrent and trackers
+- **Docker** - Container status (if using Docker mode)
+- **qBittorrent** - Detailed API health and statistics
+- **Performance** - System resource usage
+
+#### Continuous Monitoring
+- Real-time tracking of:
+  - CPU and memory usage
+  - Active torrents count
+  - Transfer rates
+  - Disk space changes
+
+### Health Check Examples
+
+```bash
+# Run before batch operations
+python run.py health
+python run.py create --batch
+
+# Diagnose connection issues
+python run.py health -c
+
+# Monitor during heavy operations
+python run.py health --monitor --duration 1800  # 30 minutes
+
+# Check specific components via Python
+python -c "
+from config import load_config
+from health_checks import SystemHealthCheck
+config = load_config()
+checker = SystemHealthCheck(config)
+checker.check_qbittorrent_health()
+checker.check_disk_space()
+checker.display_results()
+"
+```
+
 ## Tips for Best User Experience
 
 1. **First Time?** Run `python run.py wizard` for guided setup
@@ -201,12 +284,8 @@ Modify:
 3. **Multiple Torrents?** Use the wizard's TV/Music modes
 4. **Quick Check?** Validate paths before creating large torrents
 5. **Settings Changed?** Use `config` instead of re-running setup
-
-## Requirements
-
-- Python 3.8+
-- qBittorrent with CLI tools (or API access)
-- Docker (optional, for containerized qBittorrent)
+6. **Before Big Jobs?** Run `health` to ensure system readiness
+7. **Issues?** Use `health -c` for comprehensive diagnostics
 
 ## Troubleshooting
 
@@ -225,6 +304,32 @@ Make sure your user has Docker permissions: `sudo usermod -aG docker $USER`
 
 ### Path mapping issues
 Run `python run.py setup` to reconfigure Docker path mappings
+
+### System Issues
+If torrent creation fails or is slow:
+```bash
+# Run comprehensive health check
+python run.py health -c
+
+# Check specific issues
+python run.py health | grep -E "(Disk|qBittorrent|Performance)"
+```
+
+### Low Disk Space
+The health check will warn about low disk space. Free up space in:
+- Output directory (where .torrent files are saved)
+- qBittorrent download directory
+- `/tmp` (for temporary operations)
+
+### High Resource Usage
+If the system is slow:
+```bash
+# Monitor resource usage
+python run.py health --monitor
+
+# Consider reducing parallel operations
+python run.py create --batch  # Will prompt for parallel vs sequential
+```
 
 ## Alternative: Using qBittorrent Web API
 

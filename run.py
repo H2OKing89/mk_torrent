@@ -1,13 +1,20 @@
 #!/usr/bin/env python3
-"""Simple runner for the torrent creator"""
+"""Entry point for the torrent creator application"""
 
 import sys
-import os
+from pathlib import Path
 
-# Add current directory to path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Add the script directory to path to ensure imports work
+sys.path.insert(0, str(Path(__file__).parent))
 
-from cli import main
-
-if __name__ == "__main__":
-    main()
+try:
+    from cli import main
+    
+    if __name__ == "__main__":
+        main()
+except ImportError as e:
+    print(f"Error: {e}")
+    print("\nPlease ensure you're in the correct directory:")
+    print("  cd /mnt/cache/scripts/mk_torrent")
+    print("  python run.py [command]")
+    sys.exit(1)

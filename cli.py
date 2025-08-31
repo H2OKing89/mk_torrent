@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """Main CLI interface for Torrent Creator"""
-
-import typer
 from pathlib import Path
 from typing import Optional, List, Dict, Any
+import typer
 import sys
 
 from rich.console import Console
@@ -15,253 +14,233 @@ from rich.table import Table
 from config import (
     load_config, 
     save_config, 
-    setup_wizard
+    setup_wizard,
+    show_config,
+    edit_config
 )
 from torrent_creator import TorrentCreator, QBitMode
-from qbit_api import (
-    run_health_check, 
-    QBittorrentAPI,
-    validate_qbittorrent_config,  # Move these imports here
-    sync_qbittorrent_metadata      # Move these imports here
+from health_checks import (
+    run_comprehensive_health_check, 
+    run_quick_health_check, 
+    ContinuousMonitor
 )
-from validator import validate_torrent
-from templates import list_templates, apply_template_cli
+from wizard import run_wizard
+from templates import (
+    load_templates,
+    save_template,
+    list_templates
+)
+from validator import validate_path
+from qbit_api import validate_qbittorrent_config, sync_qbittorrent_metadata
 
-# Handle both module and direct execution - simplified approach
-try:
-    from torrent_creator import TorrentCreator, QBitMode
-    from database import get_recent_torrents, save_torrent_history
-    from config import load_config, save_config, setup_wizard, verify_config
-    from qbit_api import run_health_check, QBittorrentAPI
-except ImportError as e:
-    console = Console()
-    console.print(f"[red]Import error: {e}[/red]")
-    console.print("[yellow]Make sure all dependencies are installed:[/yellow]")
-    console.print("pip install -r requirements.txt")
-    sys.exit(1)
-
+console = Console()
 app = typer.Typer(
-    help="🎯 Interactive Torrent Creator - Easy & Powerful",
+    help="Interactive Torrent Creator for qBittorrent",
     add_completion=False
 )
-console = Console()
 
-def ensure_setup():
-    """Ensure the application is properly configured"""
-    config_file = Path.home() / ".config" / "torrent_creator" / "config.json"
-    if not config_file.exists():
-        console.print("[yellow]⚠️ First time setup required![/yellow]")
-        setup_wizard()
-        return True
-    return verify_config()
+@app.command()
+def setup():
+    """Run initial setup wizard"""
+    setup_wizard()
 
 @app.command()
 def create(
-    batch: bool = typer.Option(False, "--batch", "-b", help="Create multiple torrents"),
+    path: Optional[str] = typer.Argument(None, help="Path to create torrent for"),
+    batch: bool = typer.Option(False, "--batch", "-b", help="Batch mode for multiple torrents"),
     docker: Optional[str] = typer.Option(None, "--docker", "-d", help="Docker container name"),
-    interactive: bool = typer.Option(True, "--interactive", "-i", help="Interactive mode"),
-    skip_checks: bool = typer.Option(False, "--skip-checks", help="Skip health checks")
+    quick: bool = typer.Option(False, "--quick", "-q", help="Quick mode with minimal prompts")
 ):
     """Create torrent(s) interactively"""
-    
-    # Show welcome banner
-    console.print(Panel.fit(
-        "[bold cyan]🎯 Torrent Creator[/bold cyan]\n"
-        "[dim]Easy interactive torrent creation for qBittorrent[/dim]",
-        border_style="cyan"
-    ))
-    
-    # Ensure setup and run health checks
-    if not skip_checks:
-        if not ensure_setup():
-            if not Confirm.ask("[yellow]Health checks failed. Continue anyway?[/yellow]", default=False):
-                console.print("[red]Aborted.[/red]")
-                return
-    
-    # Load config
     config = load_config()
     
-    # Determine mode
+    # Check health before creating
+    if batch and not run_quick_health_check(config):
+        if not Confirm.ask("[yellow]System health check warnings detected. Continue anyway?[/yellow]", default=False):
+            raise typer.Exit(1)
+    
     if docker:
         mode = QBitMode.DOCKER
         container_name = docker
-    elif config.get("docker_mode"):
-        mode = QBitMode.DOCKER
-        container_name = config.get("docker_container", "qbittorrent")
     else:
         mode = QBitMode.LOCAL
         container_name = None
     
-    creator = TorrentCreator(
-        mode=mode, 
-        container_name=container_name,  # Now properly Optional[str]
-        config=config
-    )
+    creator = TorrentCreator(mode=mode, container_name=container_name, config=config)
     
-    if mode == QBitMode.DOCKER:
-        console.print(f"[cyan]Using Docker container: {container_name}[/cyan]")
-    
-    # Create torrents
     if batch:
-        creator.create_batch()
+        creator.batch_create_interactive()
+    elif quick:
+        if not path:
+            path = Prompt.ask("Path to create torrent for")
+        # Quick creation using API directly
+        output_dir = Path(config.get("output_directory", Path.home() / "torrents"))
+        output_dir.mkdir(parents=True, exist_ok=True)
+        output_path = output_dir / f"{Path(path).name}.torrent"
+        creator.load_default_trackers()
+        success = creator.create_torrent_via_api(Path(path), output_path)
+        if success:
+            console.print(f"[green]✅ Torrent created: {output_path}[/green]")
+        else:
+            console.print("[red]❌ Failed to create torrent[/red]")
     else:
-        creator.create_single()
-        
-        # Ask if user wants to create another
-        while Confirm.ask("\nCreate another torrent?", default=False):
+        if path:
+            # Set up creator for single file and run interactive
+            console.print(f"[cyan]Creating torrent for: {path}[/cyan]")
+            creator.create_single()
+        else:
             creator.create_single()
 
 @app.command()
-def history(
-    limit: int = typer.Option(10, "--limit", "-l", help="Number of entries to show")
-):
-    """Show torrent creation history"""
-    
-    torrents = get_recent_torrents(limit)
-    
-    if not torrents:
-        console.print("[yellow]No torrent history found[/yellow]")
-        return
-    
-    # Create table
-    table = Table(title="Recent Torrent Creations", show_lines=True)
-    table.add_column("Created", style="cyan", no_wrap=True)
-    table.add_column("Source", style="green")
-    table.add_column("Size", style="yellow")
-    table.add_column("Private", style="magenta")
-    
-    for t in torrents:
-        table.add_row(
-            t.created_at.strftime("%Y-%m-%d %H:%M"),
-            Path(t.source_path).name,
-            t.file_size,
-            "✓" if t.private else "✗"
-        )
-    
-    console.print(table)
-
-@app.command()
-def health():
-    """Run health checks for qBittorrent connectivity"""
-    config = load_config()
-    
-    if not Path.home().joinpath(".config/torrent_creator/config.json").exists():
-        console.print("[yellow]No configuration found. Run setup first.[/yellow]")
-        if Confirm.ask("Run setup now?", default=True):
-            setup_wizard()
-    else:
-        run_health_check(config)
-        
-        # Offer to reconfigure if needed
-        if Confirm.ask("\n[cyan]Reconfigure settings?[/cyan]", default=False):
-            setup_wizard()
-
-@app.command()
-def setup():
-    """Run the setup wizard"""
-    setup_wizard()  # Update the function call
-
-@app.command()
-def quick(path: Optional[str] = typer.Argument(None, help="Path to file or folder")):
-    """Quick torrent creation with minimal prompts"""
-    from torrent_creator import TorrentCreator, QBitMode
-    
-    config = load_config()
-    
-    # Quick validation
-    if not validate_qbittorrent_config(config):
-        console.print("[red]✗ qBittorrent connection failed. Run 'setup' first.[/red]")
-        raise typer.Exit(1)
-    
-    # Get path
-    if not path:
-        path = Prompt.ask("Path to create torrent for", default=".")
-    
-    source_path = Path(path).expanduser().resolve()
-    if not source_path.exists():
-        console.print(f"[red]Path does not exist: {source_path}[/red]")
-        raise typer.Exit(1)
-    
-    # Determine mode
-    mode = QBitMode.DOCKER if config.get("docker_mode") else QBitMode.LOCAL
-    container_name = config.get("docker_container") if mode == QBitMode.DOCKER else None
-    
-    # Create torrent creator with defaults
-    creator = TorrentCreator(mode=mode, container_name=container_name, config=config)
-    
-    if not creator.client:
-        console.print("[red]❌ qBittorrent API not connected[/red]")
-        raise typer.Exit(1)
-    
-    # Use all defaults from config
-    creator.load_default_trackers()
-    creator.private = config.get("default_private", True)
-    creator.torrent_format = config.get("default_torrent_format", "v1")
-    creator.source = config.get("default_source", "")
-    creator.category = config.get("default_category", "")
-    creator.tags = config.get("default_tags", [])
-    creator.start_seeding = config.get("auto_start_seeding", True)
-    creator.auto_management = config.get("auto_torrent_management", True)
-    
-    # Output location
-    output_dir = Path(config.get("output_directory", Path.home() / "torrents"))
-    output_dir.mkdir(parents=True, exist_ok=True)
-    output_path = output_dir / f"{source_path.name}.torrent"
-    
-    # Create torrent
-    console.print(f"[cyan]Creating torrent for: {source_path.name}[/cyan]")
-    console.print(f"[dim]Format: {creator.torrent_format}[/dim]")
-    console.print(f"[dim]Private: {'Yes' if creator.private else 'No'}[/dim]")
-    if creator.source:
-        console.print(f"[dim]Source: {creator.source}[/dim]")
-    
-    if creator.create_torrent_via_api(source_path, output_path):
-        console.print(f"[green]✅ Torrent created successfully![/green]")
-        console.print(f"[green]   Location: {output_path}[/green]")
-        if creator.start_seeding:
-            console.print(f"[green]   Status: Seeding in qBittorrent[/green]")
-    else:
-        console.print("[red]✗ Failed to create torrent[/red]")
-        raise typer.Exit(1)
-
-@app.command()
-def config(
-    edit: bool = typer.Option(False, "--edit", "-e", help="Edit specific setting"),
-    show: bool = typer.Option(False, "--show", "-s", help="Show current configuration"),
-    reset: bool = typer.Option(False, "--reset", "-r", help="Reset to defaults")
-):
-    """Manage configuration settings"""
-    from config import edit_config, show_config, reset_config
-    
-    if reset:
-        if Confirm.ask("[yellow]⚠️ Reset all settings to defaults?[/yellow]", default=False):
-            reset_config()
-            console.print("[green]✅ Configuration reset to defaults[/green]")
-    elif show:
-        show_config()
-    else:
-        # Default to edit mode
-        edit_config()
-
-@app.command()
 def wizard():
-    """Interactive wizard for common tasks"""
-    from wizard import run_wizard
+    """Run guided wizard for common tasks"""
     run_wizard()
 
 @app.command()
-def validate(
-    path: str = typer.Argument(..., help="Path to validate for torrent creation")
-):
-    """Validate a path before creating torrent"""
-    from validator import validate_path
-    validate_path(path)
+def quick(path: Optional[str] = typer.Argument(None)):
+    """Quick torrent creation with defaults"""
+    config = load_config()
+    creator = TorrentCreator(config=config)
+    
+    if not path:
+        path = Prompt.ask("Path to create torrent for")
+    
+    # Quick creation using API directly
+    output_dir = Path(config.get("output_directory", Path.home() / "torrents"))
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_path = output_dir / f"{Path(path).name}.torrent"
+    creator.load_default_trackers()
+    success = creator.create_torrent_via_api(Path(path), output_path)
+    if success:
+        console.print(f"[green]✅ Torrent created: {output_path}[/green]")
+    else:
+        console.print("[red]❌ Failed to create torrent[/red]")
 
 @app.command()
-def templates():
-    """Manage torrent templates for quick reuse"""
-    from templates import manage_templates
-    manage_templates()
+def config(
+    show: bool = typer.Option(False, "--show", "-s", help="Show current configuration"),
+    edit: bool = typer.Option(False, "--edit", "-e", help="Edit configuration interactively"),
+    reset: bool = typer.Option(False, "--reset", "-r", help="Reset to defaults")
+):
+    """Manage configuration"""
+    if reset:
+        if Confirm.ask("Reset configuration to defaults?", default=False):
+            setup_wizard()
+    elif show:
+        config = load_config()
+        show_config()
+    elif edit:
+        # Import here to avoid circular dependency
+        config = load_config()
+        edit_config()
+    else:
+        # Default to interactive editor
+        config = load_config()
+        edit_config()
+
+@app.command()
+def health(
+    comprehensive: bool = typer.Option(False, "--comprehensive", "-c", help="Run comprehensive health checks"),
+    monitor: bool = typer.Option(False, "--monitor", "-m", help="Monitor continuously"),
+    duration: int = typer.Option(300, "--duration", "-d", help="Monitor duration in seconds")
+):
+    """Run system health checks"""
+    config = load_config()
+    
+    if monitor:
+        monitor_obj = ContinuousMonitor(config)
+        try:
+            monitor_obj.monitor(duration)
+        except KeyboardInterrupt:
+            console.print("\n[yellow]Monitoring stopped by user[/yellow]")
+    elif comprehensive:
+        success = run_comprehensive_health_check(config)
+        raise typer.Exit(0 if success else 1)
+    else:
+        success = run_quick_health_check(config)
+        raise typer.Exit(0 if success else 1)
+
+@app.command()
+def validate(path: str = typer.Argument(..., help="Path to validate")):
+    """Validate a path for torrent creation"""
+    from validator import validate_path
+    
+    is_valid, errors = validate_path(path)
+    
+    if is_valid:
+        console.print(f"[green]✅ Path is valid for torrent creation: {path}[/green]")
+    else:
+        console.print(f"[red]❌ Path validation failed:[/red]")
+        for error in errors:
+            console.print(f"  • {error}")
+    
+    raise typer.Exit(0 if is_valid else 1)
+
+@app.command()
+def templates(
+    list_only: bool = typer.Option(False, "--list", "-l", help="List templates only"),
+    apply: Optional[str] = typer.Option(None, "--apply", "-a", help="Apply template by name"),
+    path: Optional[str] = typer.Option(None, "--path", "-p", help="Path for template application")
+):
+    """Manage torrent templates"""
+    if list_only:
+        templates = list_templates()
+        if templates:
+            table = Table(title="Available Templates")
+            table.add_column("Name", style="cyan")
+            table.add_column("Type", style="green")
+            table.add_column("Private", style="yellow")
+            
+            for template in templates:
+                table.add_row(
+                    template.get('name', 'unnamed'),
+                    template.get('type', 'general'),
+                    "Yes" if template.get('private', False) else "No"
+                )
+            console.print(table)
+        else:
+            console.print("[yellow]No templates found[/yellow]")
+    elif apply and path:
+        # Import here to avoid issues
+        from templates import apply_template_cli
+        success = apply_template_cli(apply, Path(path))
+        raise typer.Exit(0 if success else 1)
+    else:
+        # Interactive template management
+        from templates import create_template, edit_template, delete_template, view_templates
+        
+        templates_dict = {t['name']: t for t in list_templates()}
+        
+        action = Prompt.ask(
+            "Template action",
+            choices=["view", "create", "edit", "delete", "apply"],
+            default="view"
+        )
+        
+        if action == "view":
+            view_templates(templates_dict)
+        elif action == "create":
+            create_template(templates_dict)
+            save_template(templates_dict)
+        elif action == "edit":
+            edit_template(templates_dict)
+            save_template(templates_dict)
+        elif action == "delete":
+            delete_template(templates_dict)
+            save_template(templates_dict)
+        elif action == "apply":
+            from templates import apply_template
+            apply_template(templates_dict)
+
+@app.command()
+def history(
+    limit: int = typer.Option(10, "--limit", "-l", help="Number of entries to show"),
+    clear: bool = typer.Option(False, "--clear", help="Clear history")
+):
+    """View torrent creation history"""
+    # For now, just show a placeholder
+    console.print("[yellow]History tracking not yet implemented[/yellow]")
+    console.print("[dim]This will show recent torrent creations[/dim]")
 
 @app.command()
 def verify(
@@ -360,7 +339,11 @@ def info():
         console.print(f"  Default Category: {config.get('default_category')}")
     
     if config.get("default_tags"):
-        console.print(f"  Default Tags: {', '.join(config.get('default_tags'))}")
+        tags = config.get("default_tags", [])
+        if isinstance(tags, list):
+            console.print(f"  Default Tags: {', '.join(tags)}")
+        else:
+            console.print(f"  Default Tags: {tags}")
     
     # Show tracker count
     trackers_file = Path.home() / ".config" / "torrent_creator" / "trackers.txt"
@@ -527,24 +510,27 @@ def calculate_item_size(path: Path) -> int:
                 total += file.stat().st_size
         return total
 
-def format_size(bytes: int) -> str:
+def format_size(size_bytes: int) -> str:
     """Format bytes to human readable"""
+    size = float(size_bytes)
     for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
-        if bytes < 1024.0:
-            return f"{bytes:.2f} {unit}"
-        bytes /= 1024.0
-    return f"{bytes:.2f} PB"
+        if size < 1024.0:
+            return f"{size:.2f} {unit}"
+        size /= 1024.0
+    return f"{size:.2f} PB"
 
 def main():
     """Main entry point"""
+    # Run health check on first run if no config exists
+    config_path = Path.home() / ".config" / "torrent_creator" / "config.json"
+    if not config_path.exists():
+        console.print("[yellow]No configuration found. Running setup...[/yellow]")
+        setup_wizard()
+        console.print("\n[cyan]Running initial health check...[/cyan]")
+        config = load_config()
+        run_quick_health_check(config)
+    
     app()
 
 if __name__ == "__main__":
-    main()
-    main()
-    """Main entry point"""
-    app()
-
-if __name__ == "__main__":
-    main()
     main()
