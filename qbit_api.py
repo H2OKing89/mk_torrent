@@ -194,7 +194,7 @@ class QBittorrentAPI:
             return prefs.get("save_path", None)
         return None
     
-    def create_torrent(self, source_path: str, trackers: list = None, 
+    def create_torrent(self, source_path: str, trackers: Optional[list] = None, 
                       comment: str = "", is_private: bool = False,
                       piece_size: int = 0) -> Tuple[bool, bytes]:
         """Create torrent via API (if supported)"""

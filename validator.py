@@ -77,13 +77,14 @@ def validate_path(path_str: str) -> Tuple[bool, List[str]]:
                 console.print(f"  • {warning}")
         return True, warnings
 
-def format_size(bytes: int) -> str:
+def format_size(size_bytes: int) -> str:
     """Format bytes to human readable"""
+    size = float(size_bytes)
     for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
-        if bytes < 1024.0:
-            return f"{bytes:.2f} {unit}"
-        bytes /= 1024.0
-    return f"{bytes:.2f} PB"
+        if size < 1024.0:
+            return f"{size:.2f} {unit}"
+        size /= 1024.0
+    return f"{size:.2f} PB"
 
 def validate_torrent(torrent_path: Path, data_path: Optional[Path] = None) -> bool:
     """

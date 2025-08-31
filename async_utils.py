@@ -90,7 +90,12 @@ async def parallel_health_checks(configs: Dict[str, dict]) -> List[Tuple[str, bo
     
     # Fix: configs is a Dict, iterate over items() not configs.items
     tasks = [check_one(name, cfg) for name, cfg in configs.items()]
-    return await asyncio.gather(*tasks)
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    
+    # Filter out exceptions and return only successful results
+    return [(name, success) for result in results 
+            if isinstance(result, tuple) 
+            for name, success in [result]]
 
 def run_async_batch(paths: List[Tuple[Path, Path]], creator) -> List[bool]:
     """Convenience function to run async batch from sync code"""

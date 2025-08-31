@@ -5,11 +5,13 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional
 import json
 import os
+import getpass
 
 from rich.console import Console
 from rich.prompt import Prompt, Confirm, IntPrompt
 from rich.table import Table
 from rich.panel import Panel
+from rich.syntax import Syntax
 
 console = Console()
 
@@ -523,8 +525,11 @@ def edit_trackers():
             # Show numbered list
             for i, t in enumerate(trackers, 1):
                 console.print(f"{i}. {t}")
-            idx = IntPrompt.ask("Remove number", min_value=1, max_value=len(trackers))
-            trackers.pop(idx - 1)
+            idx = IntPrompt.ask("Remove number", default=1)
+            if 1 <= idx <= len(trackers):
+                trackers.pop(idx - 1)
+            else:
+                console.print("[red]Invalid number[/red]")
         elif action == "clear":
             if Confirm.ask("Clear all trackers?", default=False):
                 trackers.clear()
@@ -584,8 +589,12 @@ def edit_behavior(config: Dict[str, Any]):
         for i, size in enumerate(sizes, 1):
             console.print(f"{i}. {size}")
         
-        idx = IntPrompt.ask("Select", min_value=1, max_value=len(sizes), default=1)
-        config["default_piece_size"] = sizes[idx - 1]
+        idx = IntPrompt.ask("Select", default=1)
+        if 1 <= idx <= len(sizes):
+            config["default_piece_size"] = sizes[idx - 1]
+        else:
+            console.print("[red]Invalid selection[/red]")
+            config["default_piece_size"] = "Auto"
     
     # Source field configuration
     console.print("\n[cyan]Cross-Seeding Configuration:[/cyan]")
