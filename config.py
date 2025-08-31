@@ -13,6 +13,20 @@ from rich.table import Table
 from rich.panel import Panel
 from rich.syntax import Syntax
 
+# Import secure credential management
+try:
+    from secure_credentials import (
+        secure_manager,
+        get_secure_qbittorrent_password,
+        get_secure_tracker_url
+    )
+    SECURE_STORAGE_AVAILABLE = True
+except ImportError:
+    console = Console()
+    console.print("[yellow]⚠️ Secure credential storage not available[/yellow]")
+    console.print("[dim]Install with: pip install cryptography keyring bcrypt[/dim]")
+    SECURE_STORAGE_AVAILABLE = False
+
 console = Console()
 
 CONFIG_DIR = Path.home() / ".config" / "torrent_creator"
@@ -31,6 +45,62 @@ def save_config(config: Dict[str, Any]):
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
     with open(CONFIG_FILE, 'w') as f:
         json.dump(config, f, indent=2)
+    # Ensure config file has proper permissions
+    CONFIG_FILE.chmod(0o600)
+
+def load_trackers() -> List[str]:
+    """Load trackers from file with secure passkeys"""
+    if not TRACKERS_FILE.exists():
+        return []
+
+    trackers = []
+    try:
+        with open(TRACKERS_FILE, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#'):
+                    if SECURE_STORAGE_AVAILABLE:
+                        # Replace secure passkey placeholders with actual passkeys
+                        line = get_secure_tracker_url(line)
+                    trackers.append(line)
+    except Exception as e:
+        console.print(f"[red]Error loading trackers: {e}[/red]")
+
+    return trackers
+
+def save_trackers(trackers: List[str]):
+    """Save trackers to file"""
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    with open(TRACKERS_FILE, 'w') as f:
+        for tracker in trackers:
+            f.write(f"{tracker}\n")
+    TRACKERS_FILE.chmod(0o600)
+
+def get_qbittorrent_password(config: Dict[str, Any]) -> Optional[str]:
+    """Get qBittorrent password from secure storage"""
+    if not SECURE_STORAGE_AVAILABLE:
+        # Fallback to plain text if secure storage not available
+        return config.get("qbit_password")
+
+    host = config.get("qbit_host", "localhost")
+    port = config.get("qbit_port", 8080)
+    username = config.get("qbit_username", "admin")
+
+    return get_secure_qbittorrent_password(host, port, username)
+
+def store_qbittorrent_password(config: Dict[str, Any], password: str):
+    """Store qBittorrent password securely"""
+    if not SECURE_STORAGE_AVAILABLE:
+        # Fallback to plain text storage
+        config["qbit_password"] = password
+        console.print("[yellow]⚠️ Storing password in plain text (secure storage not available)[/yellow]")
+        return
+
+    host = config.get("qbit_host", "localhost")
+    port = config.get("qbit_port", 8080)
+    username = config.get("qbit_username", "admin")
+
+    secure_manager.store_qbittorrent_credentials(host, port, username, password)
 
 def get_default_config() -> Dict[str, Any]:
     """Get default configuration"""
@@ -38,7 +108,7 @@ def get_default_config() -> Dict[str, Any]:
         "qbit_host": "localhost",
         "qbit_port": 8080,
         "qbit_username": "admin",
-        "qbit_password": "adminadmin",
+        # Password stored securely, not in config
         "qbit_https": False,
         "docker_mode": False,
         "docker_container": "qbittorrent",
@@ -142,16 +212,26 @@ def setup_wizard():
         "Username",
         default=config.get("qbit_username", "admin")
     )
-    
-    # Password (hidden input)
-    password = getpass.getpass("Password (hidden): ")
-    if password:  # Only update if provided
-        config["qbit_password"] = password
-    
+
+    # Password (secure storage)
+    if SECURE_STORAGE_AVAILABLE:
+        console.print("\n[cyan]qBittorrent Password[/cyan]")
+        console.print("[dim]Password will be stored securely using system keyring[/dim]")
+        password = getpass.getpass("Password (hidden): ")
+        if password:
+            store_qbittorrent_password(config, password)
+            console.print("[green]✅ Password stored securely[/green]")
+    else:
+        console.print("\n[yellow]⚠️ Secure storage not available[/yellow]")
+        password = getpass.getpass("Password (will be stored in plain text): ")
+        if password:
+            config["qbit_password"] = password
+            console.print("[yellow]⚠️ Password stored in plain text[/yellow]")
+
     # Test connection
     console.print("\n[cyan]Testing qBittorrent connection...[/cyan]")
     from qbit_api import run_health_check
-    
+
     if run_health_check(config):
         console.print("[green]✅ Connection successful![/green]")
     else:

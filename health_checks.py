@@ -241,7 +241,7 @@ class SystemHealthCheck:
     def check_qbittorrent_health(self) -> Dict[str, Any]:
         """Detailed qBittorrent health checks"""
         from qbit_api import QBittorrentAPI
-        
+
         results: Dict[str, Any] = {
             "api_accessible": False,
             "version": None,
@@ -251,31 +251,42 @@ class SystemHealthCheck:
             "upload_rate": None,
             "download_rate": None
         }
-        
+
+        # Get password securely
+        try:
+            from config import get_qbittorrent_password
+            password = get_qbittorrent_password(self.config)
+            if not password:
+                results["error"] = "No password found in secure storage"
+                return results
+        except ImportError:
+            # Fallback to plain text if secure storage not available
+            password = self.config.get("qbit_password", "adminadmin")
+
         try:
             api = QBittorrentAPI(
                 self.config.get("qbit_host", "localhost"),
                 self.config.get("qbit_port", 8080),
                 self.config.get("qbit_username", "admin"),
-                self.config.get("qbit_password", "adminadmin"),
+                password,
                 self.config.get("qbit_https", False)
             )
-            
+
             if api.login():
                 results["api_accessible"] = True
-                
+
                 # Get preferences for more info
                 prefs = api.get_preferences()
                 if prefs:
                     results["version"] = prefs.get("version", "unknown")
                     results["free_space"] = prefs.get("free_space_on_disk", None)
-                
+
                 # Get transfer info via qbittorrent-api client
                 from qbittorrentapi import Client
                 client = Client(
                     host=f"{self.config['qbit_host']}:{self.config['qbit_port']}",
                     username=self.config.get("qbit_username"),
-                    password=self.config.get("qbit_password"),
+                    password=password,
                     VERIFY_WEBUI_CERTIFICATE=not self.config.get("qbit_https", False)
                 )
                 

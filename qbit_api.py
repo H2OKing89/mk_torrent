@@ -15,6 +15,13 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
+# Import secure credential management
+try:
+    from config import get_qbittorrent_password
+    SECURE_STORAGE_AVAILABLE = True
+except ImportError:
+    SECURE_STORAGE_AVAILABLE = False
+
 console = Console()
 logger = logging.getLogger(__name__)
 
@@ -369,14 +376,24 @@ class QBittorrentAPI:
 def run_health_check(config: Dict[str, Any]) -> bool:
     """Run health check with config"""
     console.print(Panel.fit("[bold cyan]🏥 qBittorrent Health Check[/bold cyan]", border_style="cyan"))
-    
+
     # Get connection settings from config
     host = config.get("qbit_host", "localhost")
     port = config.get("qbit_port", 8080)
     username = config.get("qbit_username", "admin")
-    password = config.get("qbit_password", "adminadmin")
+
+    # Get password securely
+    if SECURE_STORAGE_AVAILABLE:
+        password = get_qbittorrent_password(config)
+        if not password:
+            console.print("[red]❌ No password found in secure storage[/red]")
+            console.print("[dim]Run setup again to store password securely[/dim]")
+            return False
+    else:
+        password = config.get("qbit_password", "adminadmin")
+
     use_https = config.get("qbit_https", False)
-    
+
     # Create API instance
     api = QBittorrentAPI(host, port, username, password, use_https)
     
@@ -507,15 +524,24 @@ def validate_qbittorrent_config(config: Dict[str, Any]) -> bool:
     """Validate qBittorrent connection configuration"""
     if not config.get('qbit_host'):
         return False
-    
+
+    # Get password securely
+    if SECURE_STORAGE_AVAILABLE:
+        password = get_qbittorrent_password(config)
+        if not password:
+            console.print("[red]❌ No password found in secure storage[/red]")
+            return False
+    else:
+        password = config.get('qbit_password')
+
     try:
         client = Client(
             host=f"{config['qbit_host']}:{config.get('qbit_port', 8080)}",
             username=config.get('qbit_username'),
-            password=config.get('qbit_password'),
+            password=password,
             VERIFY_WEBUI_CERTIFICATE=False
         )
-        
+
         # Try to get version to verify connection
         version = client.app_version()
         console.print(f"[green]✓ Connected to qBittorrent {version}[/green]")

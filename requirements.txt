@@ -11,6 +11,11 @@ requests>=2.31.0
 python-dateutil>=2.8.2
 psutil>=5.9.0  # For system health monitoring
 
+# Security and encryption
+cryptography>=42.0.0  # For encryption/decryption
+keyring>=24.0.0  # For secure credential storage
+bcrypt>=4.1.0  # For password hashing
+
 # Optional but recommended
 watchdog>=3.0.0  # For file monitoring
 appdirs>=1.4.4  # For cross-platform paths
