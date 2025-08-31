@@ -2,6 +2,16 @@
 
 A user-friendly, interactive torrent creator for qBittorrent with Docker support.
 
+## 🛡️ Security Status
+
+[![Security: Enterprise](https://img.shields.io/badge/Security-Enterprise-green.svg)](https://github.com/your-repo/security)
+[![Encryption: AES-256](https://img.shields.io/badge/Encryption-AES--256-blue.svg)](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard)
+[![Credentials: Protected](https://img.shields.io/badge/Credentials-Protected-red.svg)](https://github.com/your-repo/security)
+
+**🔐 Enterprise-grade security with AES-256 encryption for all sensitive credentials**
+
+---
+
 ## Features
 
 - ✨ **Interactive CLI** - Beautiful terminal UI with colors and progress bars
@@ -15,6 +25,103 @@ A user-friendly, interactive torrent creator for qBittorrent with Docker support
 - ⚙️ **Config Editor** - Modify settings without re-running setup
 - 🔍 **Path Validation** - Check paths before creating torrents
 - 🏥 **Health Monitoring** - System and qBittorrent health checks
+- 🔐 **Enterprise Security** - AES-256 encrypted credential storage
+
+## 🔒 Security
+
+This application implements **enterprise-grade security** for handling sensitive credentials and private tracker information.
+
+### Security Features
+
+- **🔐 Encrypted Password Storage** - qBittorrent passwords are encrypted using AES-256
+- **🛡️ Private Tracker Protection** - Passkeys stored securely, not in plain text
+- **🔑 Master Password Protection** - PBKDF2 key derivation with 100,000 iterations
+- **📁 Secure File Permissions** - All credential files have 600 permissions (owner-only access)
+- **🖥️ System Keyring Integration** - Uses OS credential storage when available
+- **🔄 Automatic Migration** - Seamlessly migrates from plain text to secure storage
+
+### How Credentials Are Protected
+
+**Before Security Implementation:**
+```json
+{
+  "qbit_password": "your_password_here",
+  "qbit_username": "admin"
+}
+```
+*❌ Password visible to anyone with file access*
+
+**After Security Implementation:**
+```json
+{
+  "qbit_username": "admin"
+}
+```
+*✅ Password stored in encrypted AES-256 file*
+
+**Tracker URLs:**
+```
+# Before: https://tracker.example.com/abc123def456/announce
+# After:  https://tracker.example.com/announce  # SECURE_PASSKEY_STORED
+```
+
+### Secure Storage Architecture
+
+```
+~/.config/torrent_creator/
+├── config.json          # ⚙️ Configuration (no sensitive data)
+├── trackers.txt         # 📋 Tracker URLs with secure placeholders
+├── master_key           # 🔑 Encrypted master key (600 perms)
+├── salt                 # 🧂 PBKDF2 salt (600 perms)
+└── secure_config.enc    # 🔒 AES-256 encrypted credentials (600 perms)
+```
+
+### Security Best Practices
+
+1. **Strong Master Password** - Use 12+ characters with mixed case, numbers, and symbols
+2. **File System Security** - Enable full disk encryption on your system
+3. **Regular Backups** - Backup your secure credential files regularly
+4. **Environment Variables** - Consider using environment variables for production deployments
+5. **Access Control** - Limit file system access to trusted users only
+
+### First-Time Setup Security
+
+When you first run the application, you'll be prompted to set up secure storage:
+
+```bash
+python run.py setup
+```
+
+This will:
+1. Create a master password for encryption
+2. Set up secure credential storage
+3. Migrate any existing plain text credentials
+4. Configure proper file permissions
+
+### Security Verification
+
+Verify your security setup:
+
+```bash
+# Check file permissions
+ls -la ~/.config/torrent_creator/
+
+# Verify health checks work with secure credentials
+python run.py health
+
+# Check that no plain text passwords exist
+grep -r "password\|passkey" ~/.config/torrent_creator/*.json
+```
+
+### Migration from Plain Text
+
+If you have existing plain text credentials, they will be automatically migrated to secure storage on first run. The migration:
+
+- ✅ Encrypts existing passwords
+- ✅ Secures tracker passkeys
+- ✅ Removes plain text from config files
+- ✅ Sets proper file permissions
+- ✅ Maintains full functionality
 
 ## Installation
 
@@ -32,6 +139,15 @@ pip install -r requirements.txt
 # Install setuptools if needed
 pip install setuptools wheel
 ```
+
+### Security Dependencies
+
+The application uses enterprise-grade security libraries:
+- **cryptography** - AES-256 encryption and PBKDF2 key derivation
+- **keyring** - OS-level secure credential storage
+- **bcrypt** - Additional password hashing security
+
+These are automatically installed with `pip install -r requirements.txt`
 
 ## Quick Start
 
@@ -100,10 +216,33 @@ Configure custom mappings during setup or edit `~/.config/torrent_creator/config
 
 ## Configuration
 
-Config files are stored in `~/.config/torrent_creator/`:
-- `config.json` - Main configuration
-- `trackers.txt` - Default tracker URLs
-- `history.db` - Torrent creation history
+Config files are stored in `~/.config/torrent_creator/` with **enterprise-grade security**:
+
+### Secure Configuration Files
+- `config.json` - Main configuration (no sensitive data)
+- `trackers.txt` - Default tracker URLs with secure passkey placeholders
+- `secure_config.enc` - **AES-256 encrypted** credentials (600 permissions)
+- `master_key` - Encrypted master key for credential access
+- `salt` - PBKDF2 salt for key derivation
+
+### Security Features
+- 🔒 **Zero Plain Text** - No passwords stored in readable format
+- 🛡️ **AES-256 Encryption** - Military-grade encryption for credentials
+- 🔑 **PBKDF2 Protection** - 100,000 iteration key derivation
+- 📁 **Secure Permissions** - 600 permissions on all credential files
+- 🖥️ **Keyring Integration** - OS credential storage when available
+
+### Configuration Commands
+```bash
+# View current settings (safe - no sensitive data shown)
+python run.py config --show
+
+# Edit configuration securely
+python run.py config
+
+# Reset to defaults (preserves secure credentials)
+python run.py config --reset
+```
 
 ## Commands
 
@@ -285,9 +424,59 @@ checker.display_results()
 4. **Quick Check?** Validate paths before creating large torrents
 5. **Settings Changed?** Use `config` instead of re-running setup
 6. **Before Big Jobs?** Run `health` to ensure system readiness
-7. **Issues?** Use `health -c` for comprehensive diagnostics
+7. **Security Conscious?** Your credentials are AES-256 encrypted and secure
+8. **Issues?** Use `health -c` for comprehensive diagnostics
+
+### Security Tips
+- **Strong Master Password**: Use 12+ characters for credential encryption
+- **Regular Backups**: Backup your `~/.config/torrent_creator/` directory
+- **File Permissions**: Keep credential files with 600 permissions
+- **Access Control**: Limit system access to trusted users only
 
 ## Troubleshooting
+
+### Security Issues
+
+#### "No password found in secure storage"
+```bash
+# Re-run setup to configure secure credentials
+python run.py setup
+
+# Or manually configure qBittorrent connection
+python run.py config
+```
+
+#### "Master password required"
+The application needs your master password to access encrypted credentials:
+```bash
+# Run any command that needs credentials
+python run.py health
+# Enter master password when prompted
+```
+
+#### Verify Security Setup
+```bash
+# Check file permissions are secure
+ls -la ~/.config/torrent_creator/
+
+# Verify no plain text passwords
+grep -r "password\|passkey" ~/.config/torrent_creator/*.json
+
+# Test secure credential access
+python run.py health
+```
+
+#### Reset Secure Storage
+If you forget your master password:
+```bash
+# Remove secure storage files
+rm ~/.config/torrent_creator/secure_config.enc
+rm ~/.config/torrent_creator/master_key
+rm ~/.config/torrent_creator/salt
+
+# Re-run setup
+python run.py setup
+```
 
 ### Import Errors
 If you get import errors, make sure you're in the correct directory:
