@@ -130,6 +130,9 @@ class HTMLCleaner:
                 # Clean up whitespace
                 clean_text = re.sub(r'\s+', ' ', clean_text)
                 
+                # Decode any remaining HTML entities that nh3 might have re-encoded
+                clean_text = html.unescape(clean_text)
+                
                 return clean_text.strip()
             else:
                 # Fallback to BeautifulSoup if nh3 is not available
@@ -146,18 +149,10 @@ class HTMLCleaner:
                 clean_text = re.sub(r'\s+', ' ', clean_text)
                 
                 return clean_text.strip()
-                
-                # Clean up whitespace
-                clean_text = re.sub(r'\s+', ' ', clean_text)
-                
-                return clean_text.strip()
         
         except Exception as e:
             logger.warning(f"Error cleaning HTML from text: {e}")
             return text
-        
-        # Decode HTML entities
-        clean_text = html.unescape(clean_text)
         
         # Additional entity cleanup
         for entity, replacement in self.html_entities.items():
@@ -275,17 +270,20 @@ class FormatDetector:
         if not bitrate:
             return "MP3"
         
+        # Convert bitrate from bits per second to kbps
+        bitrate_kbps = bitrate // 1000
+        
         if bitrate_mode and bitrate_mode != 0:  # VBR
-            if bitrate >= 220:
+            if bitrate >= 220000:
                 return "MP3 V0"
-            elif bitrate >= 190:
+            elif bitrate >= 190000:
                 return "MP3 V1"
-            elif bitrate >= 170:
+            elif bitrate >= 170000:
                 return "MP3 V2"
             else:
-                return f"MP3 VBR ~{bitrate}k"
+                return f"MP3 VBR ~{bitrate_kbps}k"
         else:  # CBR
-            return f"MP3 {bitrate}k"
+            return f"MP3 {bitrate_kbps}k"
     
     def _validate_consistency(self, audio_files: List[Path]) -> Dict[str, Any]:
         """Validate format consistency across multiple files"""
@@ -325,7 +323,7 @@ class FormatDetector:
                     formats.add(self.supported_formats[ext])
         
         return {
-            'format': ', '.join(formats) if formats else 'Unknown',
+            'format': ', '.join(sorted(formats)) if formats else 'Unknown',
             'encoding': 'Unknown',
             'lossless': 'FLAC' in formats,
             'basic_detection': True
@@ -343,7 +341,7 @@ class AudnexusAPI:
     
     def extract_asin(self, path_or_filename: str) -> Optional[str]:
         """Extract ASIN from filename or path pattern {ASIN.B0C8ZW5N6Y}"""
-        asin_pattern = r'\{ASIN\.([A-Z0-9]{10})\}'
+        asin_pattern = r'\{ASIN\.([A-Z0-9]{10,12})\}'
         match = re.search(asin_pattern, str(path_or_filename))
         return match.group(1) if match else None
     
@@ -1229,6 +1227,9 @@ class MetadataEngine:
             
             logger.info(f"Found ASIN: {asin}, fetching metadata from audnexus API")
             
+            # Add the ASIN to enriched metadata
+            enriched_metadata['asin'] = asin
+            
             # Fetch metadata from audnexus API
             api_metadata = self.audnexus_api.get_book_metadata(asin)
             
@@ -1276,6 +1277,16 @@ class MetadataEngine:
         """Build an enhanced description for RED upload using audnexus data"""
         description_parts = []
         
+        # Add title and subtitle
+        title_parts = []
+        if api_metadata.get('title'):
+            title_parts.append(api_metadata['title'])
+        if api_metadata.get('subtitle'):
+            title_parts.append(api_metadata['subtitle'])
+        
+        if title_parts:
+            description_parts.append("**" + " - ".join(title_parts) + "**")
+        
         # Add the full summary (detailed description) if available - this is the main content
         if api_metadata.get('summary'):
             description_parts.append(api_metadata['summary'])
@@ -1285,6 +1296,18 @@ class MetadataEngine:
         
         # Add metadata information
         metadata_info = []
+        
+        # Authors
+        if api_metadata.get('authors'):
+            author_names = []
+            for author in api_metadata['authors']:
+                if isinstance(author, dict) and author.get('name'):
+                    author_names.append(author['name'])
+                elif isinstance(author, str):
+                    author_names.append(author)
+            
+            if author_names:
+                metadata_info.append(f"**Author(s):** {', '.join(author_names)}")
         
         # Series information
         if api_metadata.get('series'):
@@ -1313,7 +1336,13 @@ class MetadataEngine:
         
         # Narrators
         if api_metadata.get('narrators'):
-            narrator_names = [n for n in api_metadata['narrators'] if n]
+            narrator_names = []
+            for narrator in api_metadata['narrators']:
+                if isinstance(narrator, dict) and narrator.get('name'):
+                    narrator_names.append(narrator['name'])
+                elif isinstance(narrator, str):
+                    narrator_names.append(narrator)
+            
             if narrator_names:
                 metadata_info.append(f"**Narrated by:** {', '.join(narrator_names)}")
         

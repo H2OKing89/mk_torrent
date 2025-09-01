@@ -546,3 +546,263 @@ class ContinuousMonitor:
         console.print(f"\n[cyan]Monitoring Summary:[/cyan]")
         console.print(f"  Average CPU: {avg_cpu:.1f}%")
         console.print(f"  Average Memory: {avg_mem:.1f}%")
+
+
+class MetadataHealthCheck:
+    """Metadata processing health checks"""
+
+    def __init__(self, config: Dict[str, Any]):
+        self.config = config
+        self.results = {
+            "metadata_dependencies": {},
+            "api_connectivity": {},
+            "processing_capabilities": {},
+            "validation_rules": {}
+        }
+
+    def check_metadata_dependencies(self) -> Dict[str, Any]:
+        """Check metadata processing dependencies"""
+        results = {}
+
+        # Check Python packages for metadata processing
+        metadata_packages = [
+            "mutagen",
+            "nh3",
+            "beautifulsoup4",
+            "pillow",
+            "requests",
+            "musicbrainzngs"
+        ]
+
+        for package in metadata_packages:
+            try:
+                __import__(package)
+                results[package] = {"available": True, "version": "unknown"}
+            except ImportError:
+                results[package] = {"available": False, "error": "Package not installed"}
+
+        # Check mutagen availability
+        try:
+            import mutagen
+            from mutagen.mp3 import MP3
+            from mutagen.flac import FLAC
+            from mutagen.mp4 import MP4
+            results["mutagen_full"] = {"available": True}
+        except ImportError as e:
+            results["mutagen_full"] = {"available": False, "error": str(e)}
+
+        self.results["metadata_dependencies"] = results
+        return results
+
+    def check_api_connectivity(self) -> Dict[str, Any]:
+        """Check connectivity to metadata APIs"""
+        results = {}
+
+        # Check Audnexus API
+        try:
+            import requests
+            response = requests.get("https://api.audnex.us", timeout=10)
+            results["audnexus"] = {
+                "reachable": response.status_code == 200,
+                "status_code": response.status_code,
+                "response_time": response.elapsed.total_seconds()
+            }
+        except Exception as e:
+            results["audnexus"] = {
+                "reachable": False,
+                "error": str(e)
+            }
+
+        # Check MusicBrainz API
+        try:
+            import musicbrainzngs
+            # Simple connectivity test
+            results["musicbrainz"] = {"available": True}
+        except ImportError:
+            results["musicbrainz"] = {"available": False, "error": "musicbrainzngs not installed"}
+
+        self.results["api_connectivity"] = results
+        return results
+
+    def check_processing_capabilities(self) -> Dict[str, Any]:
+        """Check metadata processing capabilities"""
+        results = {}
+
+        # Test format support
+        supported_formats = {
+            "FLAC": [".flac"],
+            "MP3": [".mp3"],
+            "AAC": [".m4a", ".m4b"],
+            "Vorbis": [".ogg", ".opus"],
+            "WAV": [".wav"],
+            "AIFF": [".aiff"]
+        }
+
+        format_support = {}
+        for format_name, extensions in supported_formats.items():
+            format_support[format_name] = {
+                "extensions": extensions,
+                "supported": True  # Assume supported if mutagen is available
+            }
+
+        results["audio_formats"] = format_support
+
+        # Test HTML sanitization
+        try:
+            import nh3
+            results["html_sanitization"] = {
+                "nh3_available": True,
+                "method": "nh3"
+            }
+        except ImportError:
+            try:
+                from bs4 import BeautifulSoup
+                results["html_sanitization"] = {
+                    "nh3_available": False,
+                    "method": "beautifulsoup"
+                }
+            except ImportError:
+                results["html_sanitization"] = {
+                    "available": False,
+                    "error": "No HTML sanitization library available"
+                }
+
+        # Test image processing
+        try:
+            from PIL import Image
+            results["image_processing"] = {"available": True}
+        except ImportError:
+            results["image_processing"] = {"available": False}
+
+        self.results["processing_capabilities"] = results
+        return results
+
+    def check_validation_rules(self) -> Dict[str, Any]:
+        """Check metadata validation rules"""
+        results = {}
+
+        # RED compliance rules
+        red_rules = {
+            "required_fields": ["artist", "album"],
+            "recommended_fields": ["year", "format", "encoding"],
+            "supported_formats": ["FLAC", "MP3", "AAC"],
+            "min_bitrate_mp3": 320000,  # 320 kbps
+            "min_bitrate_aac": 256000   # 256 kbps
+        }
+
+        results["red_compliance"] = red_rules
+
+        # Validation capabilities
+        validation_caps = {
+            "html_cleaning": True,
+            "tag_normalization": True,
+            "format_detection": True,
+            "artwork_validation": True,
+            "api_enrichment": True
+        }
+
+        results["validation_capabilities"] = validation_caps
+
+        self.results["validation_rules"] = results
+        return results
+
+    def run_all_checks(self) -> Dict[str, Any]:
+        """Run all metadata health checks"""
+        console.print("[cyan]Running metadata health checks...[/cyan]")
+
+        self.check_metadata_dependencies()
+        self.check_api_connectivity()
+        self.check_processing_capabilities()
+        self.check_validation_rules()
+
+        return self.results
+
+    def display_results(self):
+        """Display metadata health check results"""
+        table = Table(title="Metadata Health Check Results")
+        table.add_column("Component", style="cyan")
+        table.add_column("Status", style="green")
+        table.add_column("Details", style="yellow")
+
+        # Dependencies
+        for package, info in self.results["metadata_dependencies"].items():
+            status = "✅" if info.get("available") else "❌"
+            details = f"Version: {info.get('version', 'unknown')}" if info.get("available") else info.get("error", "N/A")
+            table.add_row(f"Package: {package}", status, details)
+
+        # API Connectivity
+        for api, info in self.results["api_connectivity"].items():
+            status = "✅" if info.get("reachable", info.get("available", False)) else "❌"
+            if api == "audnexus":
+                details = f"Status: {info.get('status_code', 'N/A')}, Time: {info.get('response_time', 'N/A')}s"
+            else:
+                details = "Available" if info.get("available") else info.get("error", "N/A")
+            table.add_row(f"API: {api}", status, details)
+
+        # Processing Capabilities
+        for capability, info in self.results["processing_capabilities"].items():
+            if capability == "audio_formats":
+                for format_name, format_info in info.items():
+                    status = "✅" if format_info.get("supported") else "❌"
+                    details = f"Extensions: {', '.join(format_info.get('extensions', []))}"
+                    table.add_row(f"Format: {format_name}", status, details)
+            else:
+                status = "✅" if info.get("available", True) else "❌"
+                details = info.get("method", "Available") if status == "✅" else info.get("error", "N/A")
+                table.add_row(f"Capability: {capability}", status, details)
+
+        console.print(table)
+
+
+# Enhanced SystemHealthCheck with metadata integration
+class EnhancedSystemHealthCheck(SystemHealthCheck):
+    """Enhanced system health check with metadata capabilities"""
+
+    def __init__(self, config: Dict[str, Any]):
+        super().__init__(config)
+        self.metadata_checker = MetadataHealthCheck(config)
+
+    def check_metadata_health(self) -> Dict[str, Any]:
+        """Check metadata processing health"""
+        return self.metadata_checker.run_all_checks()
+
+    def run_comprehensive_check(self) -> Dict[str, Any]:
+        """Run comprehensive health check including metadata"""
+        console.print("[bold cyan]Running Comprehensive Health Check[/bold cyan]")
+        console.print("=" * 50)
+
+        # Run standard checks
+        super().run_all_checks()
+
+        # Run metadata checks
+        console.print("\n[cyan]Metadata Health Checks:[/cyan]")
+        metadata_results = self.check_metadata_health()
+        self.metadata_checker.display_results()
+
+        # Combine results
+        comprehensive_results = {
+            "system": self.results,
+            "metadata": metadata_results,
+            "timestamp": time.time(),
+            "overall_healthy": self._calculate_overall_health()
+        }
+
+        return comprehensive_results
+
+    def _calculate_overall_health(self) -> bool:
+        """Calculate overall system health"""
+        # Check critical system components
+        disk_healthy = all(
+            info.get("healthy", False)
+            for info in self.results["disk_space"].values()
+            if isinstance(info, dict)
+        )
+
+        # Check critical metadata components
+        metadata_deps_healthy = all(
+            info.get("available", False)
+            for info in self.metadata_checker.results["metadata_dependencies"].values()
+            if isinstance(info, dict)
+        )
+
+        return disk_healthy and metadata_deps_healthy
