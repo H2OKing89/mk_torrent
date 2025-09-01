@@ -30,7 +30,7 @@ except ImportError:
 # Audio metadata libraries
 try:
     import mutagen
-    from mutagen._file import FileType
+    from mutagen._file import File
     from mutagen.mp3 import MP3
     from mutagen.flac import FLAC
     from mutagen.mp4 import MP4
@@ -38,7 +38,7 @@ try:
     MUTAGEN_AVAILABLE = True
 except ImportError:
     MUTAGEN_AVAILABLE = False
-    FileType = object  # Fallback for type hints
+    File = object  # Fallback
 
 # MusicBrainz integration (optional)
 try:
@@ -199,7 +199,7 @@ class FormatDetector:
         # Analyze the first audio file as representative
         primary_file = audio_files[0]
         try:
-            audio = mutagen.File(str(primary_file))
+            audio = mutagen.File(str(primary_file))  # type: ignore
             if not audio:
                 return self._basic_format_detection([primary_file])
             
@@ -229,7 +229,7 @@ class FormatDetector:
         
         return sorted(audio_files)
     
-    def _extract_format_info(self, audio: FileType, file_path: Path) -> Dict[str, Any]:
+    def _extract_format_info(self, audio: Any, file_path: Path) -> Dict[str, Any]:
         """Extract detailed format information"""
         info = audio.info
         file_ext = file_path.suffix.lower()
@@ -295,7 +295,7 @@ class FormatDetector:
         
         for file_path in audio_files[:10]:  # Sample first 10 files
             try:
-                audio = mutagen.File(file_path)
+                audio = mutagen.File(file_path)  # type: ignore
                 if audio and audio.info:
                     formats.add(file_path.suffix.lower())
                     if hasattr(audio.info, 'bitrate') and audio.info.bitrate:
@@ -803,7 +803,7 @@ class MetadataEngine:
         # Extract from first audio file as representative
         try:
             primary_file = audio_files[0]
-            audio = mutagen.File(primary_file)
+            audio = mutagen.File(primary_file)  # type: ignore
             
             if audio:
                 # Common tags across formats
@@ -1194,7 +1194,7 @@ class MetadataEngine:
         pattern = r'^(.+?)\s*-\s*(.+?)(?:\s*\((\d{4})\))?(?:\s*\[.*\])?$'
         match = re.match(pattern, folder_name)
         
-        metadata = {'files': source_files, 'directory': primary_path}
+        metadata: Dict[str, Any] = {'files': source_files, 'directory': primary_path}
         
         if match:
             metadata.update({
@@ -1378,7 +1378,7 @@ class MetadataEngine:
         Returns:
             Dictionary with validation results
         """
-        validation = {
+        validation: Dict[str, Any] = {
             'is_valid': True,
             'warnings': [],
             'errors': []
