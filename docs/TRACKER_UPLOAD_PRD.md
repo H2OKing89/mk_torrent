@@ -175,6 +175,19 @@ This enhancement will add automatic torrent upload capabilities to private track
 - Error categorization
 - Historical reporting
 
+### **FR-007: Metadata Extraction & Sanitization**
+**Priority:** Critical  
+**Description:** Intelligent metadata handling for RED compliance  
+**Acceptance Criteria:**
+- HTML tag removal from artist names, album titles, descriptions
+- Automatic image URL discovery from common sources (MusicBrainz, Discogs, etc.)
+- Format detection from file analysis (MP3, FLAC, bitrate, etc.)
+- Tag normalization for RED genre/style requirements
+- Release type classification (Album, EP, Single, Soundtrack, Compilation, etc.)
+- Year validation and extraction from multiple sources
+- Special character handling for international releases
+- Duplicate metadata detection and consolidation
+
 ---
 
 ## 🏗️ **Technical Architecture**
@@ -192,20 +205,73 @@ This enhancement will add automatic torrent upload capabilities to private track
          ▲                       ▲                       ▲
          │                       │                       │
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│ Secure Storage  │    │   Config System  │    │   File System   │
+│ Metadata Engine │    │   Config System  │    │   File System   │
 │                 │    │                  │    │                 │
-│ • AES-256       │    │ • JSON Config    │    │ • Upload Queue  │
-│ • Keyring       │    │ • Feature Flags  │    │ • Local Storage │
-│ • PBKDF2        │    │ • Tracker List   │    │ • Metadata      │
+│ • HTML Cleaner  │    │ • JSON Config    │    │ • Upload Queue  │
+│ • Format Detect │    │ • Feature Flags  │    │ • Local Storage │
+│ • Image URLs    │    │ • Tracker List   │    │ • Metadata      │
+│ • Tag Normalize │    │ • API Keys       │    │ • Cache         │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
+         ▲
+         │
+┌─────────────────┐
+│ Secure Storage  │
+│                 │
+│ • AES-256       │
+│ • Keyring       │
+│ • PBKDF2        │
+└─────────────────┘
+```
+
+### **NEW: Metadata Processing Pipeline**
+
+```python
+class MetadataEngine:
+    def __init__(self):
+        self.html_cleaner = HTMLCleaner()
+        self.format_detector = FormatDetector()
+        self.image_finder = ImageURLFinder()
+        self.tag_normalizer = TagNormalizer()
+    
+    def process_metadata(self, source_files, external_sources=None):
+        """Extract and clean metadata for RED compliance"""
+        metadata = {}
+        
+        # 1. Extract from file tags
+        metadata.update(self._extract_file_metadata(source_files))
+        
+        # 2. Clean HTML entities and tags
+        metadata = self.html_cleaner.sanitize(metadata)
+        
+        # 3. Detect format/quality from audio analysis
+        metadata.update(self.format_detector.analyze(source_files))
+        
+        # 4. Find album artwork URLs
+        metadata['image_urls'] = self.image_finder.discover(metadata)
+        
+        # 5. Normalize tags for RED requirements
+        metadata['tags'] = self.tag_normalizer.normalize(metadata.get('tags', []))
+        
+        return self._validate_red_compliance(metadata)
 ```
 
 ### **Data Flow**
 
-1. **Torrent Creation** → Local save + Queue for upload
-2. **Upload Trigger** → Load credentials + Upload to trackers
-3. **Status Tracking** → Update queue status + Log results
-4. **Error Handling** → Retry logic + User notification
+1. **Metadata Processing** → Extract file tags + Clean HTML + Detect format + Find images
+2. **Torrent Creation** → Embed proper tracker URLs + Local save + Queue for upload
+3. **Upload Trigger** → Load credentials + Process metadata + Upload to trackers  
+4. **Status Tracking** → Update queue status + Log results + Validate upload success
+5. **Error Handling** → Retry logic + User notification + Metadata validation errors
+
+### **Metadata Processing Detail**
+
+```
+Source Files → [Extract Tags] → [HTML Sanitize] → [Format Detect] → [Image Discovery] → [Tag Normalize] → [RED Validate] → Upload Ready
+     ↓              ↓              ↓               ↓                ↓                ↓               ↓
+• MP3/FLAC    • ID3/Vorbis   • Strip <tags>   • Bitrate        • MusicBrainz    • Genre        • Required
+• Directory   • File names   • HTML entities  • Sample rate    • Discogs        • Style        • Fields  
+• Cover art   • Folder meta  • Unicode clean  • Channel count  • Last.fm        • Language     • Format
+```
 
 ### **Security Architecture**
 
@@ -213,6 +279,51 @@ This enhancement will add automatic torrent upload capabilities to private track
 - **Key Management**: PBKDF2-derived keys with salt
 - **Access Control**: File permissions (600) on credential files
 - **Audit Trail**: Upload logs with timestamps and results
+
+---
+
+## 🎵 **Metadata Handling Strategy**
+
+### **Common Metadata Sources & Issues**
+
+#### **🌐 Web API Sources (HTML Contamination Risk)**
+- **MusicBrainz**: Artist names may contain HTML entities (`&amp;`, `&lt;`, etc.)
+- **Discogs**: Album descriptions often have HTML tags (`<i>`, `<b>`, `<br>`)  
+- **Last.fm**: User-generated content with potential HTML injection
+- **AllMusic**: Professional reviews with formatted text and links
+
+#### **📁 File Tag Sources (Format Variations)**
+- **ID3v2**: MP3 tags with TXXX frames containing URLs
+- **Vorbis Comments**: FLAC/OGG with COVERART or METADATA_BLOCK_PICTURE
+- **APEv2**: Legacy format with custom fields
+- **Directory Names**: Folder structure like "Artist - Album (Year) [Format]"
+
+#### **🖼️ Image URL Discovery Strategy**
+```python
+class ImageURLFinder:
+    def discover(self, metadata):
+        sources = [
+            self._check_embedded_artwork(metadata['files']),
+            self._search_musicbrainz(metadata['mbid']),  
+            self._search_discogs(metadata['artist'], metadata['album']),
+            self._search_lastfm(metadata['artist'], metadata['album']),
+            self._check_folder_images(metadata['directory']),
+            self._search_google_images(f"{metadata['artist']} {metadata['album']} cover")
+        ]
+        return self._validate_and_rank_images(sources)
+```
+
+#### **🧹 HTML Sanitization Requirements**
+- **Strip HTML Tags**: Remove `<tag>content</tag>` patterns
+- **Decode Entities**: Convert `&amp;` → `&`, `&quot;` → `"`, etc.
+- **Unicode Normalization**: Handle international characters properly
+- **Whitespace Cleanup**: Remove extra spaces, line breaks, tabs
+
+#### **🎯 RED-Specific Validation**
+- **Required Fields**: Artist, Album, Year, Format, Bitrate, Media, Tags
+- **Format Standards**: MP3 (192/320/V0/V2), FLAC (Lossless), AAC, etc.
+- **Genre/Style**: Must match RED's approved tag list
+- **Release Types**: Album=1, Soundtrack=3, EP=5, Compilation=7, etc.
 
 ---
 
@@ -242,6 +353,10 @@ This enhancement will add automatic torrent upload capabilities to private track
 - ✅ Torrent creation with proper RED tracker embedding
 - ✅ qBittorrent integration with Docker path mapping
 - ✅ Comprehensive error handling and logging systems
+- 🔄 RED metadata extraction and sanitization system
+- 🔄 HTML cleaning for artist/album names from external sources
+- 🔄 Image URL discovery for album artwork
+- 🔄 Format detection and validation (MP3/FLAC/bitrate)
 - 🔄 Final upload testing with real RED API (pending API key validation)
 
 **Major Breakthroughs Achieved:**
@@ -250,10 +365,21 @@ This enhancement will add automatic torrent upload capabilities to private track
 - ✅ **Architecture**: Clean, organized codebase with systematic file structure
 - ✅ **Integration**: Torrent creation pipeline fully operational with encrypted tracker URLs
 
+**Metadata Challenges Identified:**
+- **HTML Sanitization**: Strip HTML tags from artist names and descriptions sourced from web APIs
+- **Image URL Sources**: Discover and validate album artwork from MusicBrainz, Discogs, Last.fm
+- **Format Detection**: Automatically detect audio format, bitrate, sample rate from files
+- **Tag Normalization**: Convert genre/style tags to RED-compliant format
+- **Special Characters**: Handle international characters and encoding issues
+- **Release Type**: Classify as Album, EP, Single, Soundtrack, Compilation, etc.
+
 **Success Criteria:**
 - ✅ Encrypted tracker URLs properly embedded in torrents
 - ✅ Secure credential storage and retrieval working
 - ✅ Core infrastructure stable and organized
+- 🔄 Clean metadata extraction with HTML sanitization
+- 🔄 Image URL discovery from multiple sources working
+- 🔄 Format detection and RED compliance validation
 - 🔄 Final API upload testing (95% complete - API key validation pending)
 
 ### **🎯 Immediate Next Steps (Days 1-3)**
@@ -264,17 +390,27 @@ This enhancement will add automatic torrent upload capabilities to private track
    - Test API authentication with RED tracker
    - Validate upload permissions and rate limits
 
-2. **Final RED Upload Testing**
-   - Test actual torrent upload to RED (using dryrun=1 first)
-   - Verify uploaded torrent appears correctly in RED
-   - Confirm download functionality works properly
+2. **RED Metadata Handling & Validation**
+   - Implement metadata extraction and cleaning from source files
+   - HTML sanitization for artist names, album titles, and descriptions
+   - Image URL discovery and validation for album artwork
+   - Format detection and standardization (MP3, FLAC, etc.)
+   - Tag normalization and RED compliance checking
+   - Release type detection (Album, EP, Single, Soundtrack, etc.)
 
-3. **Documentation & Cleanup**
+3. **Final RED Upload Testing**
+   - Test actual torrent upload to RED (using dryrun=1 first)
+   - Verify uploaded torrent appears correctly in RED with proper metadata
+   - Confirm download functionality works properly
+   - Validate all metadata fields are properly populated and formatted
+
+4. **Documentation & Cleanup**
    - Update README with RED integration status
    - Document RED setup process for users
+   - Document metadata handling and requirements
    - Clean up any remaining test files
 
-**Estimated Time:** 2-3 days  
+**Estimated Time:** 4-5 days (extended for metadata work)  
 **Blockers:** Requires valid RED API key for final testing  
 
 ### **Phase 3: Multi-Tracker Support (Week 5-6)**
