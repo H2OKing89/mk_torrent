@@ -37,6 +37,10 @@ MANIFEST
 pip-log.txt
 pip-delete-this-directory.txt
 
+# Testing samples
+test_torrents/
+test_audiobooks/
+
 # Unit test / coverage reports
 htmlcov/
 .tox/
@@ -154,3 +158,6 @@ Thumbs.db
 *.backup
 *.bak
 *~
+
+# docs
+RED_API_REFERENCE.md

@@ -55,11 +55,28 @@ class TorrentCreator:
         self.client = None
         if config:
             try:
+                # Get password from secure storage if available
+                password = config.get("qbit_password", "adminadmin")
+                try:
+                    from config import get_qbittorrent_password
+                    secure_password = get_qbittorrent_password(config)
+                    if secure_password:
+                        password = secure_password
+                        console.print("[green]✓ Using secure password storage[/green]")
+                except ImportError:
+                    console.print("[dim]Using config password (secure storage not available)[/dim]")
+                
+                # Build the correct URL format
+                host = config.get('qbit_host', 'localhost')
+                port = config.get('qbit_port', 8080)
+                is_https = config.get('qbit_https', False)
+                protocol = 'https' if is_https else 'http'
+                
                 self.client = qbittorrentapi.Client(
-                    host=f"{config.get('qbit_host', 'localhost')}:{config.get('qbit_port', 8080)}",
+                    host=f"{protocol}://{host}:{port}",
                     username=config.get("qbit_username", "admin"),
-                    password=config.get("qbit_password", "adminadmin"),
-                    VERIFY_WEBUI_CERTIFICATE=False if config.get("qbit_https", False) else True
+                    password=password,
+                    VERIFY_WEBUI_CERTIFICATE=False  # Disable SSL verification for self-signed certs
                 )
                 # Test connection
                 self.client.auth_log_in()
@@ -77,18 +94,27 @@ class TorrentCreator:
                 self.client = None
     
     def load_default_trackers(self):
-        """Load default trackers from config or prompt user"""
-        config_file = Path.home() / ".config" / "torrent_creator" / "trackers.txt"
-        if config_file.exists():
-            with open(config_file) as f:
-                self.trackers = [line.strip() for line in f if line.strip()]
-        else:
-            console.print("[yellow]No default trackers found. Add them manually.[/yellow]")
+        """Load default trackers from config with secure passkey support"""
+        try:
+            from config import load_trackers
+            self.trackers = load_trackers()
+            if self.trackers:
+                console.print(f"[green]✓ Loaded {len(self.trackers)} tracker(s) with secure passkeys[/green]")
+            else:
+                console.print("[yellow]No default trackers found. Add them manually.[/yellow]")
+        except ImportError:
+            # Fallback to direct file reading
+            config_file = Path.home() / ".config" / "torrent_creator" / "trackers.txt"
+            if config_file.exists():
+                with open(config_file) as f:
+                    self.trackers = [line.strip() for line in f if line.strip() and not line.startswith('#')]
+            else:
+                console.print("[yellow]No default trackers found. Add them manually.[/yellow]")
     
     def _initial_health_check(self):
         """Run a quick health check on initialization"""
         if self.config.get("auto_health_check", True):
-            from health_checks import SystemHealthCheck
+            from core_health_checks import SystemHealthCheck
             
             checker = SystemHealthCheck(self.config)
             checker.check_disk_space()
@@ -98,6 +124,26 @@ class TorrentCreator:
                 if not info.get("healthy", True):
                     console.print(f"[yellow]⚠️ Low disk space on {name}: {info.get('free_gb', 0):.1f} GB free[/yellow]")
     
+    def _convert_path_for_docker(self, path: Path) -> str:
+        """Convert host path to Docker container path if needed"""
+        if not self.config.get("docker_mode", False):
+            return str(path)
+        
+        docker_mappings = self.config.get("docker_mappings", {})
+        path_str = str(path.resolve())
+        
+        for host_path, container_path in docker_mappings.items():
+            if path_str.startswith(host_path):
+                # Replace the host path with container path
+                docker_path = path_str.replace(host_path, container_path, 1)
+                console.print(f"[dim]Docker path mapping: {path_str} -> {docker_path}[/dim]")
+                return docker_path
+        
+        # If no mapping found, return original path and warn
+        console.print(f"[yellow]⚠️ No Docker mapping found for path: {path_str}[/yellow]")
+        console.print(f"[dim]Available mappings: {docker_mappings}[/dim]")
+        return path_str
+    
     def create_torrent_via_api(self, source_path: Path, output_path: Path) -> bool:
         """Create torrent using qBittorrent Web API"""
         if not self.client:
@@ -105,21 +151,44 @@ class TorrentCreator:
             return False
         
         try:
+            # Fix: Ensure we have the announce URL for private torrents
+            if self.private and not self.trackers:
+                # Try to load default trackers if not already loaded
+                self.load_default_trackers()
+                if not self.trackers:
+                    console.print("[red]✗ Private torrent requires at least one tracker[/red]")
+                    return False
+            
+            # Convert path for Docker if needed
+            docker_source_path = self._convert_path_for_docker(source_path)
+            
+            # Log what we're creating
+            console.print(f"[cyan]Creating torrent for: {source_path}[/cyan]")
+            if str(source_path) != docker_source_path:
+                console.print(f"[dim]  Docker path: {docker_source_path}[/dim]")
+            console.print(f"[dim]  Output: {output_path}[/dim]")
+            console.print(f"[dim]  Private: {self.private}[/dim]")
+            console.print(f"[dim]  Source: {self.source}[/dim]")
+            console.print(f"[dim]  Format: {self.torrent_format}[/dim]")
+            if self.trackers:
+                # Show tracker without full passkey for security
+                tracker_display = self.trackers[0][:50] + "..." if len(self.trackers[0]) > 50 else self.trackers[0]
+                console.print(f"[dim]  Tracker: {tracker_display}[/dim]")
+
             # Fix: Ensure format is properly typed
             torrent_format: Literal['v1', 'v2', 'hybrid'] = 'v1'  # Default
             if self.torrent_format in ['v1', 'v2', 'hybrid']:
                 torrent_format = self.torrent_format  # type: ignore
             
-            # Fix: Use url_seeds instead of web_seeds for consistency
             # Create the torrent via API
             task = self.client.torrentcreator.add_task(
-                source_path=str(source_path),
+                source_path=docker_source_path,  # Use Docker path
                 format=torrent_format,
-                start_seeding=self.start_seeding,
+                start_seeding=False,  # Don't auto-start, we'll add it manually with proper settings
                 is_private=self.private,
                 comment=self.comment,
                 trackers=self.trackers,
-                url_seeds=self.url_seeds,  # This was already correct
+                url_seeds=self.url_seeds,
                 source=self.source
             )
             
@@ -144,30 +213,33 @@ class TorrentCreator:
                         break
                     elif state == TaskStatus.FAILED:
                         progress.update(task_progress, description="Failed!")
-                        console.print(f"[red]Torrent creation failed: {getattr(status, 'message', 'Unknown error')}[/red]")
+                        status_dict = status.__dict__ if hasattr(status, '__dict__') else {}
+                        console.print(f"[red]Torrent creation failed![/red]")
+                        console.print(f"[dim]Status: {status_dict}[/dim]")
+                        console.print(f"[dim]Error: {getattr(status, 'message', 'Unknown error')}[/dim]")
                         task.delete()
                         return False
                     
                     time.sleep(0.5)
             
-            # Download the torrent file if not saved on server
-            if self.mode == QBitMode.LOCAL and output_path:
-                torrent_bytes = task.torrent_file()
-                output_path.write_bytes(torrent_bytes)
-                console.print(f"[green]✓ Torrent saved to: {output_path}[/green]")
+            # CRITICAL: Download and save the torrent file
+            console.print("[cyan]Downloading torrent file...[/cyan]")
+            torrent_bytes = task.torrent_file()
+            if not torrent_bytes:
+                console.print("[red]✗ Failed to get torrent file from API[/red]")
+                task.delete()
+                return False
             
-            # If start_seeding is True, we need to find and configure the torrent
+            # Save the torrent file locally
+            output_path.write_bytes(torrent_bytes)
+            console.print(f"[green]✓ Torrent saved to: {output_path}[/green]")
+            
+            # Now add the torrent to qBittorrent if requested
             if self.start_seeding:
-                # Wait a moment for qBittorrent to add the torrent
-                time.sleep(1)
-                
-                # Fix: Use source_path instead of undefined api_source_path
-                torrent_hash = self._find_torrent_by_path(str(source_path))
-                if torrent_hash:
-                    self._configure_torrent(torrent_hash)
-                    console.print(f"[green]✓ Torrent configured with category and tags[/green]")
-                else:
-                    console.print(f"[yellow]⚠️ Could not find torrent to apply settings[/yellow]")
+                console.print("[cyan]Adding torrent to qBittorrent...[/cyan]")
+                success = self._add_torrent_to_client(output_path, source_path)
+                if not success:
+                    console.print("[yellow]⚠️ Torrent created but not added to client[/yellow]")
             
             # Clean up the task
             task.delete()
@@ -182,10 +254,188 @@ class TorrentCreator:
             return False
         except Exception as e:
             console.print(f"[red]Error creating torrent: {e}[/red]")
+            import traceback
+            console.print(f"[dim]{traceback.format_exc()}[/dim]")
             return False
     
+    def _add_torrent_to_client(self, torrent_path: Path, content_path: Path) -> bool:
+        """Add created torrent to qBittorrent client with proper settings"""
+        try:
+            if not self.client:
+                return False
+            
+            console.print(f"[cyan]Adding torrent to qBittorrent with settings:[/cyan]")
+            console.print(f"  Content: {content_path}")
+            console.print(f"  Category: {self.category}")
+            console.print(f"  Tags: {', '.join(self.tags) if self.tags else 'none'}")
+            console.print(f"  Auto Management: {self.auto_management}")
+            console.print(f"  Start Seeding: {self.start_seeding}")
+            
+            # Read torrent file
+            with open(torrent_path, 'rb') as f:
+                torrent_data = f.read()
+            
+            # Determine save path
+            if content_path.is_file():
+                save_path = str(content_path.parent)
+            else:
+                save_path = str(content_path.parent)
+            
+            # Step 1: Add torrent WITHOUT auto management first
+            # This prevents qBittorrent from trying to move files before category is set
+            response = self.client.torrents_add(
+                torrent_files=torrent_data,
+                save_path=save_path,
+                category=None,  # Don't set category yet
+                tags=None,      # Don't set tags yet
+                skip_checking=True,  # Skip hash check since we just created it
+                paused=False if self.start_seeding else True,
+                use_auto_torrent_management=False,  # Don't enable auto management yet
+                content_layout="Original",  # Preserve original layout
+                rename=None,  # Don't rename
+                sequential_download=False,
+                first_last_piece_prio=False
+            )
+            
+            if response == "Ok.":
+                console.print("[green]✓ Torrent added to qBittorrent[/green]")
+                
+                # Wait a moment for torrent to be added
+                time.sleep(2)
+                
+                # Step 2: Find the torrent and apply settings in correct order
+                torrent_hash = self._find_torrent_by_path(str(content_path))
+                if torrent_hash:
+                    console.print(f"[cyan]Found torrent hash: {torrent_hash[:16]}...[/cyan]")
+                    
+                    # Step 3: Set category first (this determines the target path)
+                    if self.category:
+                        console.print(f"[cyan]Setting category: {self.category}[/cyan]")
+                        self.client.torrents_set_category(torrent_hashes=torrent_hash, category=self.category)
+                        time.sleep(1)
+                    
+                    # Step 4: Set tags
+                    if self.tags:
+                        console.print(f"[cyan]Setting tags: {', '.join(self.tags)}[/cyan]")
+                        self.client.torrents_add_tags(torrent_hashes=torrent_hash, tags=self.tags)
+                        time.sleep(1)
+                    
+                    # Step 5: Enable auto management last (now it knows where to move files)
+                    if self.auto_management:
+                        console.print("[cyan]Enabling automatic torrent management[/cyan]")
+                        self.client.torrents_set_auto_management(torrent_hashes=torrent_hash, enable=True)
+                        time.sleep(1)
+                    
+                    # Step 6: Verify final settings
+                    self._verify_torrent_settings(torrent_hash)
+                    console.print("[green]✓ All torrent settings applied successfully[/green]")
+                    return True
+                else:
+                    console.print("[yellow]⚠️ Torrent added but couldn't find hash for settings[/yellow]")
+                    return True
+            else:
+                console.print(f"[red]✗ Failed to add torrent: {response}[/red]")
+                return False
+                
+        except Exception as e:
+            console.print(f"[red]Error adding torrent to client: {e}[/red]")
+            import traceback
+            console.print(f"[dim]{traceback.format_exc()}[/dim]")
+            return False
+
+    def create_torrent_for_upload(self, source_path: Path, tracker_config: dict) -> Optional[Path]:
+        """Create a torrent specifically for uploading to a tracker
+        
+        This method is called by the uploader to create a properly formatted torrent
+        """
+        console.print(f"[cyan]Creating torrent for upload to {tracker_config.get('name', 'tracker')}[/cyan]")
+        
+        # Apply ALL settings from config automatically for RED uploads
+        if tracker_config.get('name') == 'RED' or tracker_config.get('source_tag') == 'RED':
+            # Load trackers with secure passkey
+            self.load_default_trackers()  # This loads from trackers.txt with passkey
+            
+            # Apply all RED-specific settings from config
+            self.private = True  # Always private for RED
+            self.source = self.config.get('default_source', 'RED')
+            self.piece_size = None  # Auto piece size
+            self.torrent_format = "v1"  # RED only supports v1
+            
+            # These will be applied AFTER adding to qBittorrent
+            self.category = self.config.get('default_category', 'upload.audiobooks')
+            self.tags = self.config.get('default_tags', ['redacted', 'Uploaded:H2OKing'])
+            self.start_seeding = self.config.get('auto_start_seeding', True)
+            self.auto_management = self.config.get('auto_torrent_management', True)
+            
+            console.print("[cyan]Applied RED tracker settings:[/cyan]")
+            console.print(f"  Private: {self.private}")
+            console.print(f"  Source: {self.source}")
+            console.print(f"  Format: {self.torrent_format}")
+            console.print(f"  Trackers: {len(self.trackers)} loaded")
+        else:
+            # Generic tracker settings
+            self.trackers = [tracker_config.get('announce_url', '')]
+            self.private = True
+            self.source = tracker_config.get('source_tag', '')
+        
+        # Determine output path
+        output_dir = Path(self.config.get("output_directory", "/root/torrents"))
+        output_dir.mkdir(parents=True, exist_ok=True)
+        output_path = output_dir / f"{source_path.name}.torrent"
+        
+        # Create the torrent with all settings
+        success = self.create_torrent_via_api(source_path, output_path)
+        
+        if success and output_path.exists():
+            # Verify the torrent file
+            try:
+                import bencode  # Use bencode.py library
+                with open(output_path, 'rb') as f:
+                    torrent_data = bencode.decode(f.read())
+                
+                console.print(f"[green]✓ Torrent verified:[/green]")
+                console.print(f"  Name: {torrent_data[b'info'][b'name'].decode('utf-8', errors='ignore')}")
+                console.print(f"  Private: {torrent_data[b'info'].get(b'private', 0) == 1}")
+                console.print(f"  Source: {torrent_data[b'info'].get(b'source', b'').decode('utf-8', errors='ignore')}")
+                console.print(f"  Announce: {torrent_data.get(b'announce', b'').decode('utf-8', errors='ignore')[:50]}...")
+                
+                # Verify category and tags were applied in qBittorrent
+                if self.start_seeding:
+                    torrent_hash = self._find_torrent_by_path(str(source_path))
+                    if torrent_hash:
+                        self._verify_torrent_settings(torrent_hash)
+                
+                return output_path
+            except Exception as e:
+                console.print(f"[yellow]Warning: Could not verify torrent: {e}[/yellow]")
+                return output_path
+        
+        return None
+
+    def _convert_to_docker_path(self, host_path: str) -> Optional[str]:
+        """Convert host path to Docker container path using configured mappings"""
+        if not self.config.get("docker_mode", False):
+            return None
+            
+        docker_mappings = self.config.get("docker_mappings", {})
+        host_path_obj = Path(host_path)
+        
+        for host_mount, container_mount in docker_mappings.items():
+            host_mount_path = Path(host_mount)
+            try:
+                # Check if the host path is under this mount point
+                relative_path = host_path_obj.relative_to(host_mount_path)
+                # Convert to container path
+                container_path = Path(container_mount) / relative_path
+                return str(container_path)
+            except ValueError:
+                # Path is not under this mount point, try next one
+                continue
+        
+        return None
+
     def _find_torrent_by_path(self, source_path: str) -> Optional[str]:
-        """Find a torrent by its content path"""
+        """Find a torrent by its content path, handling Docker path mapping"""
         try:
             # Fix: Check if client exists
             if not self.client:
@@ -196,18 +446,45 @@ class TorrentCreator:
             
             # Normalize paths for comparison
             source_normalized = Path(source_path).resolve()
+            source_name = source_normalized.name
+            
+            console.print(f"[dim]Searching through {len(torrents)} torrents for: {source_name}[/dim]")
             
             for torrent in torrents:
-                # Check if the content path matches
-                torrent_path = Path(torrent.content_path)
-                if torrent_path == source_normalized:
+                
+                # Method 1: Check by torrent name (most reliable)
+                if torrent.name == source_name:
+                    console.print(f"[green]Found torrent by name match: {torrent.name}[/green]")
                     return torrent.hash
                 
-                # Also check save_path + name for single file torrents
+                # Method 2: Check if the content path matches (considering Docker mapping)
+                torrent_path = Path(torrent.content_path)
+                if torrent_path == source_normalized:
+                    console.print(f"[green]Found torrent by exact path match[/green]")
+                    return torrent.hash
+                
+                # Method 3: Check save_path + name for torrents
                 save_path = Path(torrent.save_path) / torrent.name
                 if save_path == source_normalized:
+                    console.print(f"[green]Found torrent by save_path + name match[/green]")
                     return torrent.hash
+                
+                # Method 4: Check if Docker path mapping applies
+                if self.config.get("docker_mode", False):
+                    docker_path = self._convert_to_docker_path(str(source_normalized))
+                    if docker_path and Path(docker_path) == torrent_path:
+                        console.print(f"[green]Found torrent by Docker path mapping[/green]")
+                        return torrent.hash
+                
+                # Method 5: Partial name match for recently added torrents
+                if source_name in torrent.name or torrent.name in source_name:
+                    # Check if this torrent was added recently (within last 5 minutes)
+                    import time
+                    if hasattr(torrent, 'added_on') and time.time() - torrent.added_on < 300:
+                        console.print(f"[green]Found torrent by recent name similarity: {torrent.name}[/green]")
+                        return torrent.hash
             
+            console.print(f"[yellow]Could not find torrent for path: {source_normalized}[/yellow]")
             return None
         except Exception as e:
             console.print(f"[yellow]Error finding torrent: {e}[/yellow]")
@@ -393,7 +670,7 @@ class TorrentCreator:
         
         # Health check before batch operations
         if self.config.get("batch_health_check", True):
-            from health_checks import run_quick_health_check
+            from core_health_checks import run_quick_health_check
             
             console.print("[cyan]Running pre-batch health check...[/cyan]")
             if not run_quick_health_check(self.config):
@@ -465,7 +742,7 @@ class TorrentCreator:
             if item.is_dir():
                 size = sum(f.stat().st_size for f in item.rglob('*') if f.is_file())
                 if size > 10 * 1024**3:  # > 10GB
-                    from health_checks import SystemHealthCheck
+                    from core_health_checks import SystemHealthCheck
                     
                     checker = SystemHealthCheck(self.config)
                     checker.check_disk_space()
@@ -763,7 +1040,7 @@ class TorrentCreator:
     def _save_to_history(self, source: Path, output: Path):
         """Save torrent creation to history database"""
         try:
-            from database import save_torrent_history
+            from feature_database import save_torrent_history
             save_torrent_history(source, output, self.trackers, self.private)
         except ImportError:
             # If database module not available, skip history

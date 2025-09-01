@@ -15,7 +15,7 @@ from rich.syntax import Syntax
 
 # Import secure credential management
 try:
-    from secure_credentials import (
+    from core_secure_credentials import (
         secure_manager,
         get_secure_qbittorrent_password,
         get_secure_tracker_url
@@ -58,11 +58,26 @@ def load_trackers() -> List[str]:
         with open(TRACKERS_FILE, 'r') as f:
             for line in f:
                 line = line.strip()
-                if line and not line.startswith('#'):
+                if not line or line.startswith('#'):
+                    continue
+                    
+                # Check if this has a secure passkey marker
+                if '# SECURE_PASSKEY_STORED' in line:
+                    # Pass the full line to get_secure_tracker_url so it can detect the marker
                     if SECURE_STORAGE_AVAILABLE:
-                        # Replace secure passkey placeholders with actual passkeys
-                        line = get_secure_tracker_url(line)
+                        from core_secure_credentials import get_secure_tracker_url
+                        full_url = get_secure_tracker_url(line)  # Pass full line, not just base URL
+                        if full_url and full_url != line.split('#')[0].strip():  # Check if passkey was actually added
+                            trackers.append(full_url)
+                            console.print(f"[green]✓ Loaded tracker with secure passkey[/green]")
+                        else:
+                            console.print(f"[yellow]⚠️ No secure passkey found for tracker[/yellow]")
+                    else:
+                        console.print(f"[yellow]⚠️ Secure storage not available for tracker[/yellow]")
+                else:
+                    # Regular tracker URL
                     trackers.append(line)
+                    
     except Exception as e:
         console.print(f"[red]Error loading trackers: {e}[/red]")
 
@@ -163,7 +178,7 @@ def setup_wizard():
         )
         
         # Test Docker connectivity
-        from qbit_api import test_docker_connectivity
+        from api_qbittorrent import test_docker_connectivity
         if not test_docker_connectivity(config["docker_container"]):
             if not Confirm.ask("[yellow]Continue anyway?[/yellow]", default=False):
                 console.print("[red]Setup cancelled[/red]")
@@ -233,7 +248,7 @@ def setup_wizard():
 
     # Test connection
     console.print("\n[cyan]Testing qBittorrent connection...[/cyan]")
-    from qbit_api import run_health_check
+    from api_qbittorrent import run_health_check
 
     if run_health_check(config):
         console.print("[green]✅ Connection successful![/green]")
@@ -395,7 +410,7 @@ def verify_config() -> bool:
         return True
     
     # Quick health check
-    from qbit_api import run_health_check
+    from api_qbittorrent import run_health_check
     return run_health_check(config)
 
 def edit_config():
@@ -444,7 +459,7 @@ def edit_config():
         elif choice == "8":
             show_config()
         elif choice == "9":
-            from qbit_api import run_health_check
+            from api_qbittorrent import run_health_check
             run_health_check(config)
         
         # Save after each change
@@ -479,7 +494,7 @@ def edit_docker_settings(config: Dict[str, Any]):
         )
         
         # Test Docker connectivity
-        from qbit_api import test_docker_connectivity
+        from api_qbittorrent import test_docker_connectivity
         test_docker_connectivity(config["docker_container"])
 
 def edit_path_mappings(config: Dict[str, Any]):

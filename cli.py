@@ -19,19 +19,19 @@ from config import (
     edit_config
 )
 from torrent_creator import TorrentCreator, QBitMode
-from health_checks import (
+from core_health_checks import (
     run_comprehensive_health_check, 
     run_quick_health_check, 
     ContinuousMonitor
 )
 from wizard import run_wizard
-from templates import (
+from feature_templates import (
     load_templates,
     save_template,
     list_templates
 )
-from validator import validate_path
-from qbit_api import validate_qbittorrent_config, sync_qbittorrent_metadata
+from feature_validator import validate_path
+from api_qbittorrent import validate_qbittorrent_config, sync_qbittorrent_metadata
 
 console = Console()
 app = typer.Typer(
@@ -163,7 +163,7 @@ def health(
 @app.command()
 def validate(path: str = typer.Argument(..., help="Path to validate")):
     """Validate a path for torrent creation"""
-    from validator import validate_path
+    from feature_validator import validate_path
     
     is_valid, errors = validate_path(path)
     
@@ -202,12 +202,12 @@ def templates(
             console.print("[yellow]No templates found[/yellow]")
     elif apply and path:
         # Import here to avoid issues
-        from templates import apply_template_cli
+        from feature_templates import apply_template_cli
         success = apply_template_cli(apply, Path(path))
         raise typer.Exit(0 if success else 1)
     else:
         # Interactive template management
-        from templates import create_template, edit_template, delete_template, view_templates
+        from feature_templates import create_template, edit_template, delete_template, view_templates
         
         templates_dict = {t['name']: t for t in list_templates()}
         
@@ -229,7 +229,7 @@ def templates(
             delete_template(templates_dict)
             save_template(templates_dict)
         elif action == "apply":
-            from templates import apply_template
+            from feature_templates import apply_template
             apply_template(templates_dict)
 
 @app.command()
@@ -366,7 +366,7 @@ def info():
 @app.command()
 def crossseed():
     """Manage torrents for cross-seeding"""
-    from cross_seed import cross_seed_wizard
+    from feature_cross_seed import cross_seed_wizard
     cross_seed_wizard()
 
 @app.command()

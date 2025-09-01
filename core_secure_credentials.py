@@ -295,11 +295,21 @@ class SecureCredentialManager:
         """Get tracker URL with passkey inserted from secure storage"""
         if 'SECURE_PASSKEY_STORED' in tracker_url:
             # Extract base URL
-            base_url = tracker_url.split('  #')[0]
-            passkey = self.get_tracker_passkey(base_url)
-            if passkey:
-                # Insert passkey back into URL
-                return base_url.replace('/announce', f'/{passkey}/announce')
+            base_url = tracker_url.split('  #')[0].strip()
+            
+            # Determine which tracker this is and get the appropriate passkey
+            if 'flacsfor.me' in base_url:
+                # RED tracker - use encrypted URL format with passkey in path
+                passkey = self.get_tracker_credential('RED', 'passkey')
+                if passkey:
+                    # Construct proper RED encrypted URL: https://flacsfor.me/{passkey}/announce
+                    return f"https://flacsfor.me/{passkey}/announce"
+            else:
+                # Other trackers - try generic passkey lookup
+                passkey = self.get_tracker_passkey(base_url)
+                if passkey:
+                    # Insert passkey back into URL (old format for compatibility)
+                    return base_url.replace('/announce', f'/{passkey}/announce')
         return tracker_url
 
     def get_tracker_credential(self, tracker_name: str, credential_type: str) -> Optional[str]:

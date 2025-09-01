@@ -72,7 +72,7 @@ class AsyncTorrentCreator:
 
 async def parallel_health_checks(configs: Dict[str, dict]) -> List[Tuple[str, bool]]:
     """Check multiple qBittorrent instances in parallel"""
-    from qbit_api import QBittorrentAPI
+    from api_qbittorrent import QBittorrentAPI
     
     async def check_one(name: str, config: dict) -> Tuple[str, bool]:
         loop = asyncio.get_event_loop()

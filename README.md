@@ -35,6 +35,7 @@ This application implements **enterprise-grade security** for handling sensitive
 
 - **🔐 Encrypted Password Storage** - qBittorrent passwords are encrypted using AES-256
 - **🛡️ Private Tracker Protection** - Passkeys stored securely, not in plain text
+- **🔑 API Key Security** - RED and other tracker API keys encrypted with AES-256
 - **🔑 Master Password Protection** - PBKDF2 key derivation with 100,000 iterations
 - **📁 Secure File Permissions** - All credential files have 600 permissions (owner-only access)
 - **🖥️ System Keyring Integration** - Uses OS credential storage when available
@@ -61,7 +62,14 @@ This application implements **enterprise-grade security** for handling sensitive
 **Tracker URLs:**
 ```
 # Before: https://tracker.example.com/abc123def456/announce
-# After:  https://tracker.example.com/announce  # SECURE_PASSKEY_STORED
+# After:  https://tracker.example.com/announce.php  # SECURE_PASSKEY_STORED
+```
+
+**API Keys:**
+```json
+# Before: {"red_api_key": "your_api_key_here"}
+# After:  API keys stored in encrypted AES-256 file, accessed via:
+#         secure_manager.get_tracker_credential('RED', 'api_key')
 ```
 
 ### Secure Storage Architecture
@@ -112,15 +120,6 @@ python run.py health
 grep -r "password\|passkey" ~/.config/torrent_creator/*.json
 ```
 
-### Migration from Plain Text
-
-If you have existing plain text credentials, they will be automatically migrated to secure storage on first run. The migration:
-
-- ✅ Encrypts existing passwords
-- ✅ Secures tracker passkeys
-- ✅ Removes plain text from config files
-- ✅ Sets proper file permissions
-- ✅ Maintains full functionality
 
 ## Installation
 

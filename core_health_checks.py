@@ -240,7 +240,7 @@ class SystemHealthCheck:
     
     def check_qbittorrent_health(self) -> Dict[str, Any]:
         """Detailed qBittorrent health checks"""
-        from qbit_api import QBittorrentAPI
+        from api_qbittorrent import QBittorrentAPI
 
         results: Dict[str, Any] = {
             "api_accessible": False,
