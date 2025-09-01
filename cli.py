@@ -370,6 +370,192 @@ def crossseed():
     cross_seed_wizard()
 
 @app.command()
+def metadata(
+    path: str = typer.Argument(..., help="Path to extract metadata from"),
+    format: str = typer.Option("json", "--format", "-f", help="Output format (json, table)"),
+    save: Optional[str] = typer.Option(None, "--save", "-s", help="Save metadata to file"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed metadata")
+):
+    """Extract and display metadata for RED compliance"""
+    from feature_metadata_engine import process_album_metadata
+    from pathlib import Path
+    import json
+    
+    source_path = Path(path)
+    if not source_path.exists():
+        console.print(f"[red]✗ Path does not exist: {path}[/red]")
+        raise typer.Exit(1)
+    
+    console.print(f"[cyan]Extracting metadata from: {source_path.name}[/cyan]")
+    
+    try:
+        metadata = process_album_metadata(source_path)
+        
+        if format == "table":
+            # Display in table format
+            table = Table(title="Metadata Summary", show_header=True)
+            table.add_column("Field", style="cyan", min_width=15)
+            table.add_column("Value", style="white")
+            
+            # Basic fields
+            if metadata.get('artist'):
+                table.add_row("Artist", str(metadata['artist']))
+            if metadata.get('album'):
+                table.add_row("Album", str(metadata['album']))
+            if metadata.get('year'):
+                table.add_row("Year", str(metadata['year']))
+            if metadata.get('format'):
+                table.add_row("Format", str(metadata['format']))
+            if metadata.get('encoding'):
+                table.add_row("Encoding", str(metadata['encoding']))
+                
+            # Audio quality information
+            if metadata.get('bitrate'):
+                bitrate_kbps = metadata['bitrate'] // 1000
+                vbr_status = "VBR" if metadata.get('vbr') else "CBR"
+                table.add_row("Bitrate", f"{bitrate_kbps} kbps ({vbr_status})")
+            
+            if metadata.get('sample_rate'):
+                table.add_row("Sample Rate", f"{metadata['sample_rate']} Hz")
+            
+            if metadata.get('channels'):
+                channel_desc = "Stereo" if metadata['channels'] == 2 else f"{metadata['channels']} channels"
+                table.add_row("Channels", channel_desc)
+            
+            if metadata.get('duration'):
+                duration_mins = int(metadata['duration'] // 60)
+                duration_secs = int(metadata['duration'] % 60)
+                table.add_row("Duration", f"{duration_mins}:{duration_secs:02d}")
+            
+            # Validation status
+            validation = metadata.get('validation', {})
+            score = validation.get('score', 0)
+            status = "✓ Valid" if validation.get('valid') else "⚠ Issues"
+            table.add_row("Validation", f"{status} ({score}/100)")
+            
+            console.print(table)
+            
+            if verbose and validation.get('warnings'):
+                console.print("\n[yellow]Warnings:[/yellow]")
+                for warning in validation['warnings']:
+                    console.print(f"  • {warning}")
+                    
+            if validation.get('errors'):
+                console.print("\n[red]Errors:[/red]")
+                for error in validation['errors']:
+                    console.print(f"  • {error}")
+                    
+        else:
+            # JSON format
+            if verbose:
+                console.print(json.dumps(metadata, indent=2, default=str))
+            else:
+                # Simplified output
+                summary = {
+                    'artist': metadata.get('artist'),
+                    'album': metadata.get('album'), 
+                    'year': metadata.get('year'),
+                    'format': metadata.get('format'),
+                    'encoding': metadata.get('encoding'),
+                    'validation_score': metadata.get('validation', {}).get('score', 0),
+                    'ready_for_upload': metadata.get('validation', {}).get('valid', False)
+                }
+                console.print(json.dumps(summary, indent=2, default=str))
+        
+        # Save to file if requested
+        if save:
+            save_path = Path(save)
+            with open(save_path, 'w') as f:
+                json.dump(metadata, f, indent=2, default=str)
+            console.print(f"[green]✓ Metadata saved to: {save_path}[/green]")
+            
+    except Exception as e:
+        console.print(f"[red]✗ Error extracting metadata: {e}[/red]")
+        raise typer.Exit(1)
+
+@app.command()
+def upload(
+    path: str = typer.Argument(..., help="Path to upload (directory or torrent file)"),
+    tracker: str = typer.Option("red", "--tracker", "-t", help="Tracker to upload to (red, ops)"),
+    dry_run: bool = typer.Option(True, "--dry-run/--no-dry-run", help="Perform dry run only"),
+    check_existing: bool = typer.Option(True, "--check-existing/--no-check", help="Check for existing torrents"),
+    force: bool = typer.Option(False, "--force", "-f", help="Skip confirmation prompts")
+):
+    """Upload torrent to private tracker with metadata processing"""
+    from pathlib import Path
+    from tracker_red_integration import integrate_upload_workflow
+    
+    source_path = Path(path)
+    if not source_path.exists():
+        console.print(f"[red]✗ Path does not exist: {path}[/red]")
+        raise typer.Exit(1)
+    
+    # Load configuration
+    config = load_config()
+    
+    # Check if API key is configured
+    api_key_field = f"{tracker}_api_key"
+    if not config.get(api_key_field):
+        console.print(f"[red]✗ {tracker.upper()} API key not configured[/red]")
+        console.print(f"[dim]Run 'python run.py config' to set up API credentials[/dim]")
+        raise typer.Exit(1)
+    
+    # Show dry run warning
+    if dry_run:
+        console.print("[yellow]🔍 DRY RUN MODE - No actual upload will be performed[/yellow]")
+    elif not force:
+        if not Confirm.ask(f"Perform actual upload to {tracker.upper()}?", default=False):
+            console.print("[yellow]Upload cancelled by user[/yellow]")
+            raise typer.Exit(0)
+    
+    # Check for existing torrents if requested
+    if check_existing and tracker == "red":
+        try:
+            from feature_red_uploader import REDUploader
+            uploader = REDUploader(config[api_key_field])
+            
+            # Extract basic metadata for search
+            from feature_metadata_engine import process_album_metadata
+            metadata = process_album_metadata(source_path)
+            
+            artist = metadata.get('artist', '')
+            album = metadata.get('album', '')
+            
+            if artist and album:
+                console.print(f"[cyan]Checking for existing torrents on {tracker.upper()}...[/cyan]")
+                existing = uploader.search_existing_torrent(artist, album)
+                
+                if existing:
+                    console.print(f"[yellow]⚠️ Found {len(existing)} existing torrent(s) for this album[/yellow]")
+                    if not force and not Confirm.ask("Continue with upload anyway?", default=False):
+                        console.print("[yellow]Upload cancelled - existing torrents found[/yellow]")
+                        raise typer.Exit(0)
+                else:
+                    console.print("[green]✓ No existing torrents found[/green]")
+        except Exception as e:
+            console.print(f"[yellow]⚠️ Could not check for existing torrents: {e}[/yellow]")
+    
+    # Perform the upload workflow
+    try:
+        success = integrate_upload_workflow(source_path, tracker, config)
+        
+        if success:
+            if dry_run:
+                console.print("[green]✓ Dry run completed successfully[/green]")
+                console.print("[dim]Add --no-dry-run to perform actual upload[/dim]")
+            else:
+                console.print("[green]🎉 Upload completed successfully![/green]")
+        else:
+            console.print("[red]✗ Upload workflow failed[/red]")
+            raise typer.Exit(1)
+            
+    except Exception as e:
+        console.print(f"[red]✗ Upload error: {e}[/red]")
+        if not dry_run:
+            console.print("[dim]You may want to try --dry-run first to test the workflow[/dim]")
+        raise typer.Exit(1)
+
+@app.command()
 def batch(
     path: Optional[str] = typer.Argument(None, help="Base directory containing items"),
     max_items: int = typer.Option(0, "--max", "-m", help="Maximum number of items to select"),

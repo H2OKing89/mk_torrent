@@ -85,7 +85,7 @@ class TrackerIntegration:
         creator.tags = self._generate_tags(metadata)
         
         # Create the torrent
-        torrent_path = creator.create_for_upload(source_path, tracker_config)
+        torrent_path = creator.create_torrent_for_upload(source_path, tracker_config)
         
         if torrent_path and torrent_path.exists():
             result['torrent_path'] = torrent_path
@@ -184,51 +184,128 @@ class TrackerIntegration:
         return tags
 
 def integrate_upload_workflow(source_path: Path, tracker: str, config: Dict[str, Any]) -> bool:
-    """Main integration function for upload workflow"""
+    """Main integration function for upload workflow with enhanced metadata processing"""
     
-    console.print("\n[bold cyan]═══ Integrated Upload Workflow ═══[/bold cyan]\n")
+    console.print("\n[bold cyan]═══ Enhanced Upload Workflow with Metadata Processing ═══[/bold cyan]\n")
     
     # Initialize integration
     integration = TrackerIntegration(config)
     
-    # Gather metadata (this would come from the uploader's metadata collection)
-    from red_uploader import REDUploader
-    uploader = REDUploader(api_key=config.get('red_api_key'))
+    # Initialize the RED uploader for metadata processing
+    from feature_red_uploader import REDUploader
     
-    # Use uploader to gather metadata
-    metadata = {}
-    if source_path.is_dir():
-        # Scan for audio files and extract metadata
-        import mutagen
-        for audio_file in source_path.glob("**/*.flac"):
-            try:
-                audio = mutagen.File(audio_file)
-                if audio:
-                    metadata['artists'] = [{'name': str(audio.get('artist', ['Unknown'])[0])}]
-                    metadata['title'] = str(audio.get('album', ['Unknown'])[0])
-                    metadata['year'] = str(audio.get('date', [''])[0])[:4]
-                    break
-            except:
-                pass
+    # Check API key
+    api_key = config.get('red_api_key')
+    if not api_key:
+        console.print("[red]✗ RED API key not configured[/red]")
+        console.print("[dim]Use 'python run.py config' to set up API credentials[/dim]")
+        return False
+    
+    uploader = REDUploader(api_key=api_key)
+    
+    # Test connection first
+    console.print("[cyan]Testing RED API connection...[/cyan]")
+    if not uploader.test_connection():
+        console.print("[red]✗ Failed to connect to RED API[/red]")
+        console.print("[dim]Check your API key and network connection[/dim]")
+        return False
+    
+    # Extract comprehensive metadata using the metadata engine
+    console.print(f"[cyan]Processing metadata for: {source_path.name}[/cyan]")
+    try:
+        metadata = uploader.extract_and_prepare_metadata(source_path)
+        
+        # Display metadata summary
+        validation = metadata.get('validation', {})
+        console.print(f"\n[cyan]Metadata Summary:[/cyan]")
+        
+        # Basic info
+        artists = metadata.get('artists', [])
+        if artists:
+            artist_names = [artist['name'] for artist in artists]
+            console.print(f"  Artist(s): {', '.join(artist_names)}")
+        
+        if metadata.get('groupname'):
+            console.print(f"  Album: {metadata['groupname']}")
+        
+        if metadata.get('year'):
+            console.print(f"  Year: {metadata['year']}")
+        
+        if metadata.get('format') and metadata.get('encoding'):
+            console.print(f"  Format: {metadata['format']} ({metadata['encoding']})")
+        
+        # Validation status
+        if validation.get('ready_for_upload'):
+            console.print(f"[green]✓ Metadata validation passed (Score: {validation.get('score', 0)}/100)[/green]")
+        else:
+            console.print(f"[yellow]⚠️ Metadata validation issues (Score: {validation.get('score', 0)}/100)[/yellow]")
+            
+            if validation.get('errors'):
+                console.print("[red]Errors:[/red]")
+                for error in validation['errors']:
+                    console.print(f"  • {error}")
+            
+            if validation.get('warnings'):
+                console.print("[yellow]Warnings:[/yellow]")
+                for warning in validation['warnings']:
+                    console.print(f"  • {warning}")
+            
+            # Ask user if they want to continue despite validation issues
+            from rich.prompt import Confirm
+            if not Confirm.ask("\nContinue with upload preparation despite validation issues?", default=False):
+                return False
+        
+    except Exception as e:
+        console.print(f"[red]✗ Error processing metadata: {e}[/red]")
+        return False
     
     # Prepare the upload (creates torrent with proper settings)
+    console.print(f"\n[cyan]Preparing torrent for {tracker.upper()}...[/cyan]")
     result = integration.prepare_upload(source_path, tracker, metadata)
     
     if not result['success']:
-        console.print(f"[red]✗ Upload preparation failed: {result['errors']}[/red]")
+        console.print(f"[red]✗ Upload preparation failed:[/red]")
+        for error in result.get('errors', []):
+            console.print(f"  • {error}")
         return False
     
-    # Now perform the actual upload
+    # Show what's ready for upload
     if result['torrent_path']:
-        console.print(f"\n[cyan]Uploading to {result['tracker_config']['name']}...[/cyan]")
-        
-        # This is where the actual upload would happen
-        # For now, just show what would be uploaded
-        console.print(f"[green]✓ Ready to upload:[/green]")
+        console.print(f"\n[green]✓ Upload preparation complete![/green]")
         console.print(f"  Torrent: {result['torrent_path']}")
         console.print(f"  Source: {source_path}")
         console.print(f"  Tracker: {result['tracker_config']['name']}")
         
-        return True
+        # Offer to perform actual upload
+        from rich.prompt import Confirm
+        if Confirm.ask(f"\nPerform actual upload to {result['tracker_config']['name']}?", default=False):
+            try:
+                upload_result = uploader.upload_torrent(
+                    result['torrent_path'], 
+                    metadata, 
+                    dry_run=False
+                )
+                
+                if upload_result.get('success'):
+                    torrent_id = upload_result.get('torrent_id')
+                    console.print(f"[green]🎉 Upload successful! Torrent ID: {torrent_id}[/green]")
+                    
+                    # Show direct link
+                    if torrent_id:
+                        console.print(f"[cyan]View at: https://redacted.ch/torrents.php?torrentid={torrent_id}[/cyan]")
+                    
+                    return True
+                else:
+                    error = upload_result.get('error', 'Unknown error')
+                    console.print(f"[red]✗ Upload failed: {error}[/red]")
+                    return False
+                    
+            except Exception as e:
+                console.print(f"[red]✗ Upload error: {e}[/red]")
+                return False
+        else:
+            console.print("[yellow]Upload skipped by user[/yellow]")
+            console.print("[dim]Torrent file is ready for manual upload[/dim]")
+            return True
     
     return False
