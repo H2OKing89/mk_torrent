@@ -26,6 +26,7 @@ mutagen>=1.47.0  # Audio metadata extraction (FLAC, MP3, etc.)
 beautifulsoup4>=4.12.0  # HTML parsing and cleaning
 pillow>=10.0.0  # Image processing for artwork validation
 musicbrainzngs>=0.7.1  # MusicBrainz API for metadata enrichment
+nh3>=0.3.0  # Modern HTML sanitization (replacement for deprecated bleach)
 
 # Development tools (optional)
 pytest>=7.4.4

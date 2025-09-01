@@ -9,6 +9,7 @@ import html
 import json
 import logging
 import mimetypes
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Union
 from urllib.parse import urlparse
@@ -18,6 +19,13 @@ import requests
 from bs4 import BeautifulSoup, Comment
 from PIL import Image
 from rich.console import Console
+
+# Modern HTML sanitization
+try:
+    import nh3
+    NH3_AVAILABLE = True
+except ImportError:
+    NH3_AVAILABLE = False
 
 # Audio metadata libraries
 try:
@@ -106,20 +114,47 @@ class HTMLCleaner:
         return sanitized
     
     def clean_html_string(self, text: str) -> str:
-        """Clean HTML from a single string"""
+        """Clean HTML from a single string using modern nh3 sanitizer"""
         if not text:
             return text
         
-        # Parse with BeautifulSoup for robust HTML handling
-        soup = BeautifulSoup(text, 'html.parser')
+        try:
+            # First, unescape any HTML entities that might be in the JSON
+            unescaped_text = html.unescape(text)
+            
+            if NH3_AVAILABLE:
+                # Use nh3 for modern, fast HTML sanitization
+                # Strip all HTML tags for plain text output
+                clean_text = nh3.clean(unescaped_text, tags=set(), attributes={})
+                
+                # Clean up whitespace
+                clean_text = re.sub(r'\s+', ' ', clean_text)
+                
+                return clean_text.strip()
+            else:
+                # Fallback to BeautifulSoup if nh3 is not available
+                soup = BeautifulSoup(unescaped_text, 'html.parser')
+                
+                # Remove comments
+                for comment in soup.find_all(text=lambda text: isinstance(text, Comment)):
+                    comment.extract()
+                
+                # Get text content
+                clean_text = soup.get_text()
+                
+                # Clean up whitespace
+                clean_text = re.sub(r'\s+', ' ', clean_text)
+                
+                return clean_text.strip()
+                
+                # Clean up whitespace
+                clean_text = re.sub(r'\s+', ' ', clean_text)
+                
+                return clean_text.strip()
         
-        # Remove comments
-        comments = soup.findAll(text=lambda text: isinstance(text, Comment))
-        for comment in comments:
-            comment.extract()
-        
-        # Get text content
-        clean_text = soup.get_text()
+        except Exception as e:
+            logger.warning(f"Error cleaning HTML from text: {e}")
+            return text
         
         # Decode HTML entities
         clean_text = html.unescape(clean_text)
@@ -295,6 +330,190 @@ class FormatDetector:
             'lossless': 'FLAC' in formats,
             'basic_detection': True
         }
+
+class AudnexusAPI:
+    """Audible metadata API integration for comprehensive book information"""
+    
+    def __init__(self):
+        self.base_url = "https://api.audnex.us"
+        self.session = requests.Session()
+        self.session.headers.update({
+            'User-Agent': 'RED-Metadata-Engine/1.0'
+        })
+    
+    def extract_asin(self, path_or_filename: str) -> Optional[str]:
+        """Extract ASIN from filename or path pattern {ASIN.B0C8ZW5N6Y}"""
+        asin_pattern = r'\{ASIN\.([A-Z0-9]{10})\}'
+        match = re.search(asin_pattern, str(path_or_filename))
+        return match.group(1) if match else None
+    
+    def get_book_metadata(self, asin: str) -> Optional[Dict[str, Any]]:
+        """Fetch comprehensive book metadata from audnex.us API"""
+        try:
+            url = f"{self.base_url}/books/{asin}?update=1"
+            logger.info(f"Fetching book metadata from: {url}")
+            
+            response = self.session.get(url, timeout=10)
+            response.raise_for_status()
+            
+            data = response.json()
+            return self._normalize_audnexus_data(data)
+            
+        except requests.RequestException as e:
+            logger.warning(f"Failed to fetch audnexus metadata for {asin}: {e}")
+            return None
+        except (ValueError, KeyError) as e:
+            logger.warning(f"Failed to parse audnexus response for {asin}: {e}")
+            return None
+    
+    def _normalize_audnexus_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Normalize audnexus API response to metadata format - capture ALL available data"""
+        try:
+            # Start with ALL raw API data to preserve everything
+            metadata = dict(data)  # Copy all fields from API response
+            
+            # Clean the HTML summary while preserving the original
+            if data.get('summary'):
+                metadata['summary_cleaned'] = self._clean_html_summary(data.get('summary', ''))
+                metadata['summary'] = metadata['summary_cleaned']  # Use cleaned version as primary
+            
+            # Extract and enhance specific fields
+            
+            # Extract authors with enhanced information
+            authors = data.get('authors', [])
+            if authors:
+                metadata['authors'] = [author.get('name') for author in authors if author.get('name')]
+                metadata['authors_detailed'] = authors  # Keep full author objects with ASINs
+                metadata['artist'] = metadata['authors'][0] if metadata['authors'] else None
+            
+            # Extract narrators with enhanced information
+            narrators = data.get('narrators', [])
+            if narrators:
+                metadata['narrators'] = [narrator.get('name') for narrator in narrators if narrator.get('name')]
+                metadata['narrators_detailed'] = narrators  # Keep full narrator objects
+            
+            # Extract series information with all details
+            series = data.get('seriesPrimary')
+            if series:
+                metadata['series'] = {
+                    'name': series.get('name'),
+                    'position': series.get('position'),
+                    'asin': series.get('asin')
+                }
+                metadata['series_detailed'] = series  # Keep full series object
+            
+            # Extract and format genres with enhanced structure
+            genres = data.get('genres', [])
+            if genres:
+                genre_names = []
+                tags = []
+                genre_details = []
+                
+                for genre in genres:
+                    genre_type = genre.get('type', '').lower()
+                    genre_name = genre.get('name')
+                    
+                    # Keep full genre object for detailed info
+                    genre_details.append(genre)
+                    
+                    if genre_name:
+                        if genre_type == 'genre':
+                            genre_names.append(genre_name)
+                        elif genre_type == 'tag':
+                            tags.append(genre_name)
+                
+                if genre_names:
+                    metadata['genre'] = '; '.join(genre_names)
+                    metadata['genres'] = genre_names
+                
+                if tags:
+                    metadata['tags'] = tags
+                
+                # Store detailed genre information with ASINs
+                metadata['genres_detailed'] = genre_details
+            
+            # Format full album name for RED compliance
+            if metadata.get('title') and metadata.get('subtitle'):
+                metadata['album'] = f"{metadata['title']}: {metadata['subtitle']}"
+            elif metadata.get('title'):
+                metadata['album'] = metadata['title']
+            
+            # Extract year from release date
+            if metadata.get('releaseDate'):
+                try:
+                    release_date = datetime.fromisoformat(metadata['releaseDate'].replace('Z', '+00:00'))
+                    metadata['year'] = str(release_date.year)
+                    metadata['date'] = metadata['year']
+                    metadata['release_date_formatted'] = release_date.strftime('%B %d, %Y')
+                except:
+                    pass
+            elif metadata.get('copyright'):
+                metadata['year'] = str(metadata['copyright'])
+                metadata['date'] = metadata['year']
+            
+            # Additional useful derived fields
+            if metadata.get('runtimeLengthMin'):
+                hours = metadata['runtimeLengthMin'] // 60
+                minutes = metadata['runtimeLengthMin'] % 60
+                metadata['runtime_formatted'] = f"{hours}h {minutes}m"
+            
+            # Store API source information
+            metadata['audnexus_source'] = True
+            metadata['audnexus_fetched_at'] = datetime.now().isoformat()
+            
+            return metadata
+            
+        except Exception as e:
+            logger.error(f"Error normalizing audnexus data: {e}")
+            return dict(data) if data else {}  # Return raw data if normalization fails
+    
+    def _clean_html_summary(self, summary: str) -> str:
+        """Clean HTML from summary while preserving structure using modern nh3 sanitizer"""
+        if not summary:
+            return ""
+        
+        try:
+            # First, unescape any HTML entities that might be in the JSON
+            unescaped_summary = html.unescape(summary)
+            
+            if NH3_AVAILABLE:
+                # Use nh3 for modern, fast HTML sanitization
+                # Allow basic formatting tags but strip everything else
+                clean_text = nh3.clean(
+                    unescaped_summary,
+                    tags={"p", "strong", "em", "b", "i", "br", "ul", "ol", "li"},
+                    attributes={}  # no attributes allowed
+                )
+                
+                # Convert to plain text if desired, or keep basic HTML formatting
+                # For RED descriptions, we want plain text
+                plain_text = nh3.clean(unescaped_summary, tags=set(), attributes={})
+                
+                # Clean up whitespace and normalize line breaks
+                plain_text = re.sub(r'\s+', ' ', plain_text)
+                plain_text = re.sub(r'(\. )', r'\1\n\n', plain_text)  # Add paragraph breaks after sentences
+                plain_text = re.sub(r'\n\s*\n\s*', '\n\n', plain_text)
+                
+                return plain_text.strip()
+            
+            else:
+                # Fallback to BeautifulSoup if nh3 is not available
+                soup = BeautifulSoup(unescaped_summary, 'html.parser')
+                
+                # Convert paragraphs to line breaks
+                for p in soup.find_all('p'):
+                    p.replace_with(p.get_text() + '\n\n')
+                
+                # Get clean text and normalize whitespace
+                clean_text = soup.get_text()
+                clean_text = re.sub(r'\n\s*\n\s*', '\n\n', clean_text)
+                clean_text = re.sub(r'[ \t]+', ' ', clean_text)
+                
+                return clean_text.strip()
+            
+        except Exception as e:
+            logger.warning(f"Failed to clean HTML summary: {e}")
+            return summary
 
 class ImageURLFinder:
     """Discovers and validates album artwork URLs"""
@@ -511,6 +730,7 @@ class MetadataEngine:
         self.format_detector = FormatDetector()
         self.image_finder = ImageURLFinder()
         self.tag_normalizer = TagNormalizer()
+        self.audnexus_api = AudnexusAPI()
     
     def process_metadata(self, source_files: Union[Path, List[Path]], external_sources: Optional[Dict] = None) -> Dict[str, Any]:
         """Extract and clean metadata for RED compliance"""
@@ -527,6 +747,10 @@ class MetadataEngine:
         # 1. Extract from file tags
         console.print("  [dim]Extracting metadata from files...[/dim]")
         metadata.update(self._extract_file_metadata(source_files))
+        
+        # 1.5. Enrich with audnexus API data if ASIN found
+        console.print("  [dim]Enriching with audnexus API data...[/dim]")
+        metadata.update(self._enrich_with_audnexus(source_files, metadata))
         
         # 2. Clean HTML entities and tags
         console.print("  [dim]Sanitizing HTML content...[/dim]")
@@ -617,6 +841,14 @@ class MetadataEngine:
                     # VBR detection (format-specific)
                     metadata['vbr'] = self._detect_vbr(audio, info)
                 
+                # Extract chapter information for audiobooks (M4B files)
+                if primary_file.suffix.lower() == '.m4b':
+                    chapters = self._extract_chapters(audio, primary_file)
+                    if chapters:
+                        metadata['chapters'] = chapters
+                        metadata['track_count'] = len(chapters)
+                        console.print(f"[green]📚 Extracted {len(chapters)} chapters from M4B file[/green]")
+                
                 # Extract year from date
                 if metadata.get('date'):
                     year_match = re.search(r'\d{4}', str(metadata['date']))
@@ -635,6 +867,183 @@ class MetadataEngine:
         
         return metadata
     
+    def _extract_chapters(self, audio: Any, file_path: Path) -> List[Dict[str, Any]]:
+        """Extract chapter information from M4B audiobook files using Mutagen"""
+        chapters = []
+        
+        try:
+            from mutagen.mp4 import MP4
+            
+            if not isinstance(audio, MP4):
+                return chapters
+            
+            # Use Mutagen's built-in chapter extraction (same as test script)
+            chap_list = getattr(audio, "chapters", None)
+            if not chap_list:
+                logger.debug("No chapters found in M4B file")
+                return chapters
+            
+            for idx, ch in enumerate(chap_list, 1):
+                # Extract timestamp
+                t = None
+                for attr in ("start_time", "time", "start", "timestamp"):
+                    if hasattr(ch, attr):
+                        t = getattr(ch, attr)
+                        break
+                
+                # Extract title
+                title = getattr(ch, "title", f"Chapter {idx}")
+                
+                # Convert timestamp to float seconds
+                try:
+                    start_seconds = float(t) if t is not None else None
+                except Exception:
+                    start_seconds = None
+                
+                # Format timestamp as HH:MM:SS.mmm
+                start_formatted = None
+                if start_seconds is not None:
+                    ms = int(round((start_seconds - int(start_seconds)) * 1000))
+                    s = int(start_seconds) % 60
+                    m = (int(start_seconds) // 60) % 60
+                    h = int(start_seconds) // 3600
+                    start_formatted = f"{h:02d}:{m:02d}:{s:02d}.{ms:03d}"
+                
+                chapters.append({
+                    'index': idx,
+                    'title': title,
+                    'start_seconds': start_seconds,
+                    'start': start_formatted,
+                    'duration': None  # Could calculate from next chapter start
+                })
+            
+            if chapters:
+                console.print(f"[green]📚 Extracted {len(chapters)} chapters from M4B file[/green]")
+            else:
+                console.print(f"[yellow]📖 No chapters found in M4B file[/yellow]")
+                        
+        except Exception as e:
+            logger.error(f"Error extracting chapters from {file_path}: {e}")
+        
+        return chapters
+    
+    def _parse_mp4_chapters(self, file_path: Path) -> List[Dict[str, Any]]:
+        """Parse actual chapter information from MP4/M4B file structure"""
+        chapters = []
+        
+        try:
+            # Use ffprobe or similar to extract chapter information
+            # This is a more advanced approach that can extract the actual Menu data
+            
+            import subprocess
+            import json
+            
+            # Use ffprobe to extract chapter information
+            cmd = [
+                'ffprobe',
+                '-v', 'quiet',
+                '-print_format', 'json',
+                '-show_chapters',
+                str(file_path)
+            ]
+            
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            
+            if result.returncode == 0:
+                probe_data = json.loads(result.stdout)
+                
+                if 'chapters' in probe_data and probe_data['chapters']:
+                    for i, chapter in enumerate(probe_data['chapters']):
+                        start_time = float(chapter.get('start_time', 0))
+                        end_time = float(chapter.get('end_time', 0))
+                        duration = end_time - start_time
+                        
+                        # Try to get chapter title from tags
+                        title = chapter.get('tags', {}).get('title', f'Chapter {i+1}')
+                        
+                        chapters.append({
+                            'title': title,
+                            'start_time': start_time,
+                            'end_time': end_time,
+                            'duration': duration,
+                            'chapter_number': i + 1
+                        })
+                    
+                    return chapters
+            
+            # Alternative: Try to parse using mediainfo if ffprobe fails
+            try:
+                cmd = ['mediainfo', '--Output=JSON', str(file_path)]
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+                
+                if result.returncode == 0:
+                    media_info = json.loads(result.stdout)
+                    
+                    # Look for menu/chapter information in mediainfo output
+                    if 'media' in media_info and 'track' in media_info['media']:
+                        for track in media_info['media']['track']:
+                            if track.get('@type') == 'Menu':
+                                # Parse menu entries
+                                menu_entries = self._parse_menu_entries(track)
+                                if menu_entries:
+                                    chapters.extend(menu_entries)
+                                    return chapters
+            
+            except (subprocess.SubprocessError, json.JSONDecodeError, FileNotFoundError):
+                pass  # ffprobe/mediainfo not available or failed
+                
+        except (subprocess.SubprocessError, json.JSONDecodeError, FileNotFoundError, subprocess.TimeoutExpired):
+            logger.debug(f"Could not parse chapters from {file_path} using external tools")
+        
+        return chapters
+    
+    def _parse_menu_entries(self, menu_track: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Parse menu entries from mediainfo output"""
+        chapters = []
+        
+        try:
+            # Look for menu entries in the track
+            if 'extra' in menu_track:
+                extra = menu_track['extra']
+                
+                # Try to find timestamped entries
+                chapter_pattern = r'(\d{2}:\d{2}:\d{2}\.\d{3})\s*:\s*(.+)'
+                
+                for key, value in extra.items():
+                    if isinstance(value, str):
+                        match = re.search(chapter_pattern, value)
+                        if match:
+                            time_str, title = match.groups()
+                            
+                            # Convert time string to seconds
+                            time_parts = time_str.split(':')
+                            if len(time_parts) == 3:
+                                hours, minutes, seconds = time_parts
+                                seconds = seconds.split('.')[0]  # Remove milliseconds
+                                start_time = int(hours) * 3600 + int(minutes) * 60 + int(seconds)
+                                
+                                chapters.append({
+                                    'title': title.strip(),
+                                    'start_time': float(start_time),
+                                    'chapter_number': len(chapters) + 1
+                                })
+                
+                # If we found chapters, calculate durations
+                if chapters:
+                    for i in range(len(chapters) - 1):
+                        chapters[i]['end_time'] = chapters[i + 1]['start_time']
+                        chapters[i]['duration'] = chapters[i]['end_time'] - chapters[i]['start_time']
+                    
+                    # Last chapter duration unknown, set to 0
+                    if chapters:
+                        chapters[-1]['end_time'] = chapters[-1]['start_time']
+                        chapters[-1]['duration'] = 0
+        
+        except Exception as e:
+            logger.debug(f"Error parsing menu entries: {e}")
+        
+        return chapters
+
     def _detect_vbr(self, audio: Any, info: Any) -> bool:
         """Detect if audio file uses Variable Bitrate (VBR)"""
         try:
@@ -798,6 +1207,130 @@ class MetadataEngine:
         
         return metadata
     
+    def _enrich_with_audnexus(self, source_files: List[Path], existing_metadata: Dict[str, Any]) -> Dict[str, Any]:
+        """Enrich metadata using audnexus API if ASIN is found"""
+        enriched_metadata = {}
+        
+        try:
+            # Try to extract ASIN from file paths
+            asin = None
+            
+            # Check all source file paths and parent directories
+            search_paths = source_files + [f.parent for f in source_files]
+            
+            for path in search_paths:
+                asin = self.audnexus_api.extract_asin(str(path))
+                if asin:
+                    break
+            
+            if not asin:
+                logger.info("No ASIN found in file paths, skipping audnexus enrichment")
+                return enriched_metadata
+            
+            logger.info(f"Found ASIN: {asin}, fetching metadata from audnexus API")
+            
+            # Fetch metadata from audnexus API
+            api_metadata = self.audnexus_api.get_book_metadata(asin)
+            
+            if api_metadata:
+                # Prioritize API metadata but don't overwrite existing good data
+                for key, value in api_metadata.items():
+                    if value is not None and value != "":
+                        # Only use API data if we don't have this field or it's better
+                        if (key not in existing_metadata or 
+                            not existing_metadata.get(key) or 
+                            key in ['summary', 'description', 'image', 'series', 'narrators']):
+                            enriched_metadata[key] = value
+                
+                # Special handling for artwork from API
+                if api_metadata.get('image'):
+                    artwork_from_api = AlbumArtwork(
+                        url=api_metadata['image'],
+                        source='audnexus_api',
+                        confidence=0.9  # High confidence for official API source
+                    )
+                    
+                    # Add to existing artwork list or create new one
+                    existing_artwork = existing_metadata.get('artwork', [])
+                    if isinstance(existing_artwork, list):
+                        enriched_metadata['artwork'] = [artwork_from_api] + existing_artwork
+                    else:
+                        enriched_metadata['artwork'] = [artwork_from_api]
+                
+                logger.info(f"Successfully enriched metadata with audnexus API data for ASIN: {asin}")
+                
+                # Build enhanced description for RED upload
+                enhanced_description = self._build_enhanced_description(api_metadata)
+                if enhanced_description:
+                    enriched_metadata['red_description'] = enhanced_description
+            
+            else:
+                logger.warning(f"No metadata returned from audnexus API for ASIN: {asin}")
+        
+        except Exception as e:
+            logger.error(f"Error during audnexus enrichment: {e}")
+        
+        return enriched_metadata
+    
+    def _build_enhanced_description(self, api_metadata: Dict[str, Any]) -> str:
+        """Build an enhanced description for RED upload using audnexus data"""
+        description_parts = []
+        
+        # Add the full summary (detailed description) if available - this is the main content
+        if api_metadata.get('summary'):
+            description_parts.append(api_metadata['summary'])
+        elif api_metadata.get('description'):
+            # Fallback to shorter description if full summary not available
+            description_parts.append(api_metadata['description'])
+        
+        # Add metadata information
+        metadata_info = []
+        
+        # Series information
+        if api_metadata.get('series'):
+            series = api_metadata['series']
+            series_text = f"**Series:** {series.get('name')}"
+            if series.get('position'):
+                series_text += f" - Book {series.get('position')}"
+            metadata_info.append(series_text)
+        
+        # Publisher and release info
+        if api_metadata.get('publisherName'):
+            metadata_info.append(f"**Publisher:** {api_metadata['publisherName']}")
+        
+        if api_metadata.get('releaseDate'):
+            try:
+                release_date = datetime.fromisoformat(api_metadata['releaseDate'].replace('Z', '+00:00'))
+                metadata_info.append(f"**Release Date:** {release_date.strftime('%B %d, %Y')}")
+            except:
+                pass
+        
+        # Runtime
+        if api_metadata.get('runtimeLengthMin'):
+            hours = api_metadata['runtimeLengthMin'] // 60
+            minutes = api_metadata['runtimeLengthMin'] % 60
+            metadata_info.append(f"**Runtime:** {hours}h {minutes}m")
+        
+        # Narrators
+        if api_metadata.get('narrators'):
+            narrator_names = [n for n in api_metadata['narrators'] if n]
+            if narrator_names:
+                metadata_info.append(f"**Narrated by:** {', '.join(narrator_names)}")
+        
+        # Rating
+        if api_metadata.get('rating'):
+            metadata_info.append(f"**Rating:** {api_metadata['rating']}/5.0")
+        
+        # ISBN
+        if api_metadata.get('isbn'):
+            metadata_info.append(f"**ISBN:** {api_metadata['isbn']}")
+        
+        # Add metadata section if we have info
+        if metadata_info:
+            description_parts.append("\n---\n**Book Information:**\n" + "\n".join(metadata_info))
+        
+        return "\n\n".join(description_parts)
+
     def _validate_red_compliance(self, metadata: Dict[str, Any]) -> Dict[str, Any]:
         """Validate metadata for RED compliance"""
         errors = []

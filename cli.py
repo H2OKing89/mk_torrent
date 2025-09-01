@@ -374,7 +374,8 @@ def metadata(
     path: str = typer.Argument(..., help="Path to extract metadata from"),
     format: str = typer.Option("json", "--format", "-f", help="Output format (json, table)"),
     save: Optional[str] = typer.Option(None, "--save", "-s", help="Save metadata to file"),
-    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed metadata")
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed metadata"),
+    show_description: bool = typer.Option(False, "--show-description", "-d", help="Show full RED description")
 ):
     """Extract and display metadata for RED compliance"""
     from feature_metadata_engine import process_album_metadata
@@ -409,6 +410,57 @@ def metadata(
             if metadata.get('encoding'):
                 table.add_row("Encoding", str(metadata['encoding']))
                 
+            # Series information from audnexus API
+            if metadata.get('series'):
+                series = metadata['series']
+                series_text = series.get('name', '')
+                if series.get('position'):
+                    series_text += f" - Book {series['position']}"
+                table.add_row("Series", series_text)
+            
+            # Narrator information
+            if metadata.get('narrators'):
+                narrators = metadata['narrators']
+                if isinstance(narrators, list) and narrators:
+                    table.add_row("Narrator", ', '.join(narrators))
+            
+            # Publisher and rating
+            if metadata.get('publisherName'):
+                table.add_row("Publisher", str(metadata['publisherName']))
+            
+            if metadata.get('rating'):
+                table.add_row("Rating", f"{metadata['rating']}/5.0")
+            
+            # Additional audnexus API fields
+            if metadata.get('asin'):
+                table.add_row("ASIN", str(metadata['asin']))
+            
+            if metadata.get('isbn'):
+                table.add_row("ISBN", str(metadata['isbn']))
+            
+            if metadata.get('language'):
+                table.add_row("Language", str(metadata['language']).title())
+            
+            if metadata.get('formatType'):
+                table.add_row("Format Type", str(metadata['formatType']).title())
+            
+            if metadata.get('literatureType'):
+                table.add_row("Literature Type", str(metadata['literatureType']).title())
+            
+            if metadata.get('region'):
+                table.add_row("Region", str(metadata['region']).upper())
+            
+            if metadata.get('copyright'):
+                table.add_row("Copyright", str(metadata['copyright']))
+            
+            if metadata.get('isAdult') is not None:
+                adult_status = "Yes" if metadata['isAdult'] else "No"
+                table.add_row("Adult Content", adult_status)
+            
+            # Cover image URL from audnexus API
+            if metadata.get('image'):
+                table.add_row("Cover Image", str(metadata['image']))
+                
             # Audio quality information
             if metadata.get('bitrate'):
                 bitrate_kbps = metadata['bitrate'] // 1000
@@ -427,13 +479,71 @@ def metadata(
                 duration_secs = int(metadata['duration'] % 60)
                 table.add_row("Duration", f"{duration_mins}:{duration_secs:02d}")
             
+            # Chapter information for audiobooks
+            if metadata.get('chapters'):
+                chapters = metadata['chapters']
+                if isinstance(chapters, list) and chapters:
+                    chapter_count = len(chapters)
+                    table.add_row("Chapters", f"{chapter_count} chapters")
+                    
+                    # Show first and last chapter as examples if available
+                    if chapters[0].get('title'):
+                        table.add_row("First Chapter", chapters[0]['title'])
+                    
+                    if len(chapters) > 1 and chapters[-1].get('title'):
+                        table.add_row("Last Chapter", chapters[-1]['title'])
+                    
+                    # Show chapter timing details if available
+                    if chapters[0].get('start_seconds') is not None:
+                        # Show first chapter start time
+                        start_time = chapters[0]['start_seconds']
+                        if isinstance(start_time, (int, float)):
+                            hours = int(start_time // 3600)
+                            minutes = int((start_time % 3600) // 60)
+                            seconds = int(start_time % 60)
+                            if hours > 0:
+                                time_str = f"{hours}:{minutes:02d}:{seconds:02d}"
+                            else:
+                                time_str = f"{minutes}:{seconds:02d}"
+                            table.add_row("Chapter Start", f"First at {time_str}")
+                    
+                    # Show total audiobook duration from chapters if available
+                    if len(chapters) > 1 and chapters[-1].get('start_seconds') is not None:
+                        last_chapter_start = chapters[-1]['start_seconds']
+                        if isinstance(last_chapter_start, (int, float)):
+                            total_hours = int(last_chapter_start // 3600)
+                            total_minutes = int((last_chapter_start % 3600) // 60)
+                            if total_hours > 0:
+                                table.add_row("Chapter Span", f"~{total_hours}h {total_minutes}m")
+                            else:
+                                table.add_row("Chapter Span", f"~{total_minutes}m")
+            
+            # Track count (for audiobooks)
+            if metadata.get('track_count'):
+                table.add_row("Track Count", str(metadata['track_count']))
+            
             # Validation status
             validation = metadata.get('validation', {})
             score = validation.get('score', 0)
             status = "✓ Valid" if validation.get('valid') else "⚠ Issues"
             table.add_row("Validation", f"{status} ({score}/100)")
             
+            # Description from audnexus API (truncated for table view)
+            if metadata.get('summary'):
+                summary = str(metadata['summary'])
+                # Truncate long summaries for table display
+                if len(summary) > 150:
+                    summary = summary[:147] + "..."
+                table.add_row("Summary", summary)
+            
             console.print(table)
+            
+            # Show full RED description if requested
+            if show_description and metadata.get('red_description'):
+                console.print("\n[cyan]RED Upload Description:[/cyan]")
+                console.print("─" * 80)
+                console.print(metadata['red_description'])
+                console.print("─" * 80)
             
             if verbose and validation.get('warnings'):
                 console.print("\n[yellow]Warnings:[/yellow]")
