@@ -30,7 +30,14 @@ addopts = [
     "--verbose",
     "--tb=short",
     "--strict-markers",
-    "--disable-warnings"
+    "--disable-warnings",
+    "--html=test_results/report.html",
+    "--self-contained-html",
+    "--junitxml=test_results/junit.xml",
+    "--cov=.",
+    "--cov-report=html:test_results/coverage_html",
+    "--cov-report=xml:test_results/coverage.xml",
+    "--cov-report=term-missing"
 ]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
