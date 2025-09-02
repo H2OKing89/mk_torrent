@@ -42,17 +42,17 @@ Examples:
         help='RED API key (can also be set via RED_API_KEY environment variable)'
     )
     
-    parser.add_argument(
+    # Use mutually exclusive group for upload mode
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument(
         '--dry-run',
         action='store_true',
-        default=True,
-        help='Perform a dry run without actually uploading (default)'
+        help='Do not upload (default)'
     )
-    
-    parser.add_argument(
+    mode.add_argument(
         '--upload',
         action='store_true',
-        help='Actually upload to RED (overrides --dry-run)'
+        help='Actually upload to RED'
     )
     
     parser.add_argument(
@@ -102,7 +102,12 @@ def extract_audiobook_metadata(audiobook_path):
             if not m4b_files:
                 console.print("[red]❌ No M4B file found in directory[/red]")
                 return None
-            m4b_file = m4b_files[0]
+            elif len(m4b_files) == 1:
+                m4b_file = m4b_files[0]
+            else:
+                # Multiple M4B files - choose the largest one (main audiobook)
+                m4b_file = max(m4b_files, key=lambda f: f.stat().st_size)
+                console.print(f"[yellow]⚠️  Multiple M4B files found, using largest: {m4b_file.name}[/yellow]")
             folder_path = audiobook_path
         else:
             console.print("[red]❌ Invalid audiobook path[/red]")
@@ -134,12 +139,37 @@ def extract_audiobook_metadata(audiobook_path):
         
         # Try to extract narrator from M4B tags
         if audio.tags:
-            if '©wrt' in audio.tags:
-                enhanced_metadata['narrator'] = audio.tags['©wrt'][0]
+            # Try multiple possible narrator tag fields
+            narrator_fields = ['©wrt', 'NARRATOR', 'narrator', '©cmt']
+            for field in narrator_fields:
+                if field in audio.tags:
+                    enhanced_metadata['narrator'] = audio.tags[field][0]
+                    break
+            
+            # Extract other metadata
             if 'cprt' in audio.tags:
                 enhanced_metadata['publisher'] = audio.tags['cprt'][0]
             if '©gen' in audio.tags:
                 enhanced_metadata['genre'] = audio.tags['©gen'][0]
+        
+        # If no narrator found in tags, try to extract from folder name
+        if 'narrator' not in enhanced_metadata:
+            folder_name = folder_path.name.lower()
+            # Look for common narrator patterns in folder name
+            import re
+            narrator_patterns = [
+                r'narr?ated?\s+by\s+([^-\[\(]+)',
+                r'read\s+by\s+([^-\[\(]+)',
+                r'-\s*([^-\[\(]+)\s*$'  # Last part after dash
+            ]
+            for pattern in narrator_patterns:
+                match = re.search(pattern, folder_name, re.IGNORECASE)
+                if match:
+                    narrator = match.group(1).strip().title()
+                    if len(narrator) > 2:  # Reasonable narrator name
+                        enhanced_metadata['narrator'] = narrator
+                        console.print(f"[blue]ℹ️  Extracted narrator from folder name: {narrator}[/blue]")
+                        break
         
         # Display extracted metadata
         table = Table(title="Extracted Metadata")
@@ -186,13 +216,13 @@ def validate_with_red(metadata, api_key):
                 console.print(f"  • [yellow]{warning}[/yellow]")
         
         # Check path compliance
-        folder_path = str(metadata.get('path', ''))
+        folder_path = metadata.get('path')
         if folder_path:
             folder_name = Path(folder_path).name
             is_compliant = red_api.check_path_compliance(folder_name)  # Check folder name, not full path
             console.print(f"📏 Path compliance: {'✅ PASS' if is_compliant else '❌ FAIL'}")
             console.print(f"   Folder name: {len(folder_name)}/{red_api.config.max_path_length} chars")
-            console.print(f"   Full path: {len(folder_path)} chars (not validated by RED)")
+            console.print(f"   Full path: {len(str(folder_path))} chars (not validated by RED)")
         
         return validation['valid'], red_api
         
@@ -231,10 +261,22 @@ def create_torrent(metadata):
         console.print(f"📂 Source: {source_path.name}")
         console.print(f"📁 Output: {output_path.name}")
         
-        # Create torrent (this would use the actual TorrentCreator)
-        # For now, simulate successful creation
-        console.print("✅ Torrent created successfully")
+        # Initialize torrent creator
+        creator = TorrentCreator()
         
+        # Create torrent with RED announce URL
+        torrent_data = creator.create_torrent(
+            source_path=source_path,
+            announce_url="https://flacsfor.me/announce.php",  # RED announce URL
+            private=True,
+            comment="Created with mk_torrent for RED"
+        )
+        
+        # Write torrent file
+        with open(output_path, 'wb') as f:
+            f.write(torrent_data)
+        
+        console.print("✅ Torrent created successfully")
         return output_path
         
     except Exception as e:
@@ -289,8 +331,8 @@ def main():
         return 1
     
     # Determine if this is a real upload or dry run
-    is_upload = args.upload
-    is_dry_run = not is_upload
+    is_dry_run = args.dry_run
+    is_upload = not is_dry_run
     
     if is_upload:
         console.print("[bold yellow]⚠️  REAL UPLOAD MODE - This will actually upload to RED![/bold yellow]")
@@ -328,7 +370,7 @@ def main():
     if success:
         if is_dry_run:
             console.print("\n[bold green]🎉 Dry run successful! Ready for real upload.[/bold green]")
-            console.print("\n[cyan]To perform actual upload, use: --upload[/cyan]")
+            console.print("\n[cyan]To perform actual upload, run without --dry-run flag[/cyan]")
         else:
             console.print("\n[bold green]🎉 Upload successful![/bold green]")
         return 0

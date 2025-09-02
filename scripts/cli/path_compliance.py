@@ -208,41 +208,6 @@ def detect_tracker_intent(dir_path: Path) -> Dict[str, Any]:
         'safe_for_red': not detected_trackers or 'red' in detected_trackers or 'h2oking' in dir_name.lower()
     }
 
-def get_confirmation_for_risky_changes(results: List[Dict[str, Any]]) -> bool:
-    """Get user confirmation for potentially risky changes"""
-    risky_dirs = []
-    
-    for result in results:
-        if not result.get('safe_for_red', True):
-            risky_dirs.append({
-                'path': result['path'],
-                'detected_trackers': result.get('tracker_intent', {}).get('detected_trackers', []),
-                'primary_intent': result.get('tracker_intent', {}).get('primary_intent', 'unknown')
-            })
-    
-    if not risky_dirs:
-        return True
-    
-    console.print("\n[bold yellow]⚠️  WARNING: Potentially risky changes detected![/bold yellow]")
-    console.print("The following directories might be intended for other trackers:")
-    
-    for risky in risky_dirs:
-        dir_name = Path(risky['path']).name
-        console.print(f"  • [cyan]{dir_name}[/cyan]")
-        console.print(f"    Detected: {', '.join(risky['detected_trackers']) or 'Unknown tracker intent'}")
-    
-    console.print(f"\n[yellow]Found {len(risky_dirs)} directories that might not be intended for RED.[/yellow]")
-    console.print("[yellow]Renaming these could break compatibility with other trackers.[/yellow]")
-    
-    while True:
-        response = input("\nProceed anyway? (y/N): ").strip().lower()
-        if response in ['y', 'yes']:
-            return True
-        elif response in ['n', 'no', '']:
-            return False
-        else:
-            console.print("Please enter 'y' or 'n'")
-
 # === SINGLE AUDIOBOOK MODE ===
 
 def handle_single_audiobook(args):
@@ -395,9 +360,9 @@ def display_compliance_table(analysis: Dict[str, Any], max_length: int = 180, sh
         # We need to show all files, but we only have violations stored
         # This is a limitation - we'll show a summary instead
         if hard_linked_files > 0:
-            table.add_row("All files", "≤ 180", "✅ PASS", "", f"🔗 Total: {hard_linked_files}")
+            table.add_row("All files", f"≤ {max_length}", "✅ PASS", "", f"🔗 Total: {hard_linked_files}")
         else:
-            table.add_row("All files", "≤ 180", "✅ PASS", "")
+            table.add_row("All files", f"≤ {max_length}", "✅ PASS", "")
     else:
         # Display violations only
         for violation in violations:
@@ -568,14 +533,19 @@ def handle_batch_scan(args):
     
     # Generate batch script if requested
     if args.generate_script:
-        generate_batch_script(results, args.generate_script, args.force)
+        generate_batch_script(results, args.generate_script, args.force, args.max_length)
     
     # Apply fixes directly in batch if requested
     if args.apply_batch:
         console.print("\n[bold yellow]🔧 Applying fixes in batch mode...[/bold yellow]")
         applied_count = 0
+        skipped_count = 0
         for r in results:
             if not r['compliant'] and r['fix_estimate'].get('fixable', False):
+                if (not r.get('safe_for_red', True)) and (not args.force):
+                    console.print(f"[yellow]⚠️ Skipping risky dir (use --force): {Path(r['path']).name}[/yellow]")
+                    skipped_count += 1
+                    continue
                 target = Path(r['path'])
                 # Re-read actual filenames at apply time
                 files = find_all_files(target)
@@ -586,7 +556,11 @@ def handle_batch_scan(args):
                     applied_count += 1
                 except Exception as e:
                     console.print(f"  [red]❌ Failed to fix {target.name}: {e}[/red]")
-        console.print(f"[green]✅ Batch apply completed! Fixed {applied_count} directories.[/green]")
+        
+        if skipped_count > 0:
+            console.print(f"[green]✅ Batch apply completed! Fixed {applied_count} directories, skipped {skipped_count} risky.[/green]")
+        else:
+            console.print(f"[green]✅ Batch apply completed! Fixed {applied_count} directories.[/green]")
     
     # Export JSON report if requested
     if args.export_json:
@@ -642,24 +616,23 @@ def scan_directory_for_batch(dir_path: Path, max_length: int = 180) -> Dict[str,
     
     # Estimate if fixable
     if not analysis['compliant']:
-        result['fix_estimate'] = estimate_fix_potential(folder_name, files, max_length)
+        result['fix_estimate'] = estimate_fix_potential(dir_path, files, max_length)
     else:
         result['fix_estimate'] = {'fixable': True}
     
     return result
 
-def estimate_fix_potential(folder_name: str, files: List[str], max_length: int = 180) -> Dict[str, Any]:
+def estimate_fix_potential(dir_path: Path, files: List[str], max_length: int = 180) -> Dict[str, Any]:
     """Estimate if path fixer can resolve compliance issues"""
     try:
         config = ComplianceConfig(max_full_path=max_length, dry_run=True)
         fixer = PathFixer(tracker='red', config=config)
         
-        new_folder, new_files, log_entries = fixer.fix_path(folder_name, files, apply_changes=False)
+        # Use ABS path here ↓
+        new_folder, new_files, log_entries = fixer.fix_path(str(dir_path), files, apply_changes=False)
         
-        # Check if fixes resolve all issues  
-        # Create a path object for the new folder (parent doesn't matter for analysis)
-        new_folder_path = Path(new_folder) 
-        final_analysis = analyze_path_compliance(new_folder_path, new_files, max_length)
+        # Analyze using the *proposed* folder name only; dir need not exist
+        final_analysis = analyze_path_compliance(Path(new_folder), new_files, max_length)
         
         return {
             'fixable': final_analysis['compliant'],
@@ -734,7 +707,7 @@ def display_batch_summary_table(results: List[Dict[str, Any]], max_length: int, 
     # Add legend
     console.print("\n[dim]Legend: Safe = ✅ RED-compatible, ⚠️ May affect other trackers[/dim]")
 
-def generate_batch_script(results: List[Dict[str, Any]], script_path: str, force_risky: bool = False):
+def generate_batch_script(results: List[Dict[str, Any]], script_path: str, force_risky: bool = False, max_length: int = 180):
     """Generate batch fix script with safety considerations"""
     py = sys.executable  # Use same interpreter/venv
     me = Path(__file__).resolve()
@@ -763,7 +736,7 @@ def generate_batch_script(results: List[Dict[str, Any]], script_path: str, force
                 
                 # Add --force flag for risky changes
                 force_flag = " --force" if not is_safe else ""
-                script_lines.append(f'{py} "{me}" "{path}" --apply{force_flag}')
+                script_lines.append(f'{py} "{me}" --max-length {max_length} "{path}" --apply{force_flag}')
                 script_lines.append("")
                 
                 if is_safe:
