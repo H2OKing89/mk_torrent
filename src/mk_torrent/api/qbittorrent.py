@@ -17,7 +17,7 @@ from rich.table import Table
 
 # Import secure credential management
 try:
-    from config import get_qbittorrent_password
+    from ..core.secure_credentials import get_secure_qbittorrent_password as get_qbittorrent_password
     SECURE_STORAGE_AVAILABLE = True
 except ImportError:
     SECURE_STORAGE_AVAILABLE = False
@@ -384,7 +384,7 @@ def run_health_check(config: Dict[str, Any]) -> bool:
 
     # Get password securely
     if SECURE_STORAGE_AVAILABLE:
-        password = get_qbittorrent_password(config)
+        password = get_qbittorrent_password(host, port, username)
         if not password:
             console.print("[red]❌ No password found in secure storage[/red]")
             console.print("[dim]Run setup again to store password securely[/dim]")
@@ -527,7 +527,11 @@ def validate_qbittorrent_config(config: Dict[str, Any]) -> bool:
 
     # Get password securely
     if SECURE_STORAGE_AVAILABLE:
-        password = get_qbittorrent_password(config)
+        password = get_qbittorrent_password(
+            config['qbit_host'], 
+            config.get('qbit_port', 8080), 
+            config.get('qbit_username', 'admin')
+        )
         if not password:
             console.print("[red]❌ No password found in secure storage[/red]")
             return False

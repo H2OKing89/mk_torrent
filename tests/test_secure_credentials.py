@@ -10,7 +10,7 @@ from unittest.mock import patch, MagicMock, mock_open
 import base64
 from cryptography.fernet import Fernet
 
-from core_secure_credentials import (
+from src.mk_torrent.core.secure_credentials import (
     SecureCredentialManager,
     setup_secure_storage,
     migrate_to_secure_storage,
@@ -385,7 +385,7 @@ class TestSecureCredentialManager:
 class TestGlobalFunctions:
     """Test global convenience functions"""
 
-    @patch('core_secure_credentials.secure_manager')
+    @patch('src.mk_torrent.core.secure_credentials.secure_manager')
     def test_setup_secure_storage(self, mock_manager):
         """Test global setup function"""
         mock_manager.setup_master_password.return_value = True
@@ -394,7 +394,7 @@ class TestGlobalFunctions:
         assert result is True
         mock_manager.setup_master_password.assert_called_once()
 
-    @patch('core_secure_credentials.secure_manager')
+    @patch('src.mk_torrent.core.secure_credentials.secure_manager')
     def test_get_secure_qbittorrent_password(self, mock_manager):
         """Test global qBittorrent password function"""
         mock_manager.get_qbittorrent_password.return_value = "test_password"
@@ -406,7 +406,7 @@ class TestGlobalFunctions:
             "localhost", 8080, "admin"
         )
 
-    @patch('core_secure_credentials.secure_manager')
+    @patch('src.mk_torrent.core.secure_credentials.secure_manager')
     def test_get_secure_tracker_url(self, mock_manager):
         """Test global secure tracker URL function"""
         mock_manager.get_secure_tracker_url.return_value = "https://tracker.com/passkey/announce"
@@ -418,7 +418,7 @@ class TestGlobalFunctions:
             "https://tracker.com  # SECURE_PASSKEY_STORED"
         )
 
-    @patch('core_secure_credentials.secure_manager')
+    @patch('src.mk_torrent.core.secure_credentials.secure_manager')
     def test_get_secure_tracker_credential(self, mock_manager):
         """Test global tracker credential function"""
         mock_manager.get_tracker_credential.return_value = "credential_value"
@@ -428,7 +428,7 @@ class TestGlobalFunctions:
         assert result == "credential_value"
         mock_manager.get_tracker_credential.assert_called_once_with("RED", "passkey")
 
-    @patch('core_secure_credentials.secure_manager')
+    @patch('src.mk_torrent.core.secure_credentials.secure_manager')
     def test_store_secure_tracker_credential(self, mock_manager):
         """Test global store tracker credential function"""
         store_secure_tracker_credential("RED", "passkey", "test_value")

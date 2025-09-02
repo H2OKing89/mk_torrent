@@ -8,7 +8,7 @@ from pathlib import Path
 from datetime import datetime, timedelta
 from unittest.mock import patch, MagicMock
 
-from core_upload_queue import UploadQueue, UploadJob, UploadStatus
+from src.mk_torrent.core.upload_queue import UploadQueue, UploadJob, UploadStatus
 
 class TestUploadJob(unittest.TestCase):
     """Test cases for UploadJob class"""

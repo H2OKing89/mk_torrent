@@ -100,7 +100,6 @@ omit = [
     "tests/*",
     "*/test_*",
     "src/mk_torrent/__main__.py",
-]
     "*/venv/*",
     "*/__pycache__/*",
     "setup.py"

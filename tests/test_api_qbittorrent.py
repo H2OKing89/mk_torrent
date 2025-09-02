@@ -7,7 +7,7 @@ from unittest.mock import patch, MagicMock, Mock
 from pathlib import Path
 import tempfile
 
-from api_qbittorrent import (
+from src.mk_torrent.api.qbittorrent import (
     QBittorrentAPI,
     run_health_check,
     check_docker_connectivity,
@@ -287,8 +287,8 @@ class TestQBittorrentAPI(unittest.TestCase):
 class TestGlobalFunctions(unittest.TestCase):
     """Test global utility functions"""
 
-    @patch('api_qbittorrent.QBittorrentAPI')
-    @patch('api_qbittorrent.get_qbittorrent_password')
+    @patch('src.mk_torrent.api.qbittorrent.QBittorrentAPI')
+    @patch('src.mk_torrent.api.qbittorrent.get_qbittorrent_password')
     def test_run_health_check_success(self, mock_get_password, mock_api_class):
         """Test successful health check run"""
         # Mock config
@@ -320,7 +320,7 @@ class TestGlobalFunctions(unittest.TestCase):
         self.assertTrue(result)
         mock_api.health_check.assert_called_once()
 
-    @patch('api_qbittorrent.get_qbittorrent_password', return_value=None)
+    @patch('src.mk_torrent.api.qbittorrent.get_qbittorrent_password', return_value=None)
     def test_run_health_check_no_password(self, mock_get_password):
         """Test health check with no stored password"""
         config = {
@@ -376,7 +376,7 @@ class TestGlobalFunctions(unittest.TestCase):
 
         self.assertFalse(result)
 
-    @patch('api_qbittorrent.Client')
+    @patch('src.mk_torrent.api.qbittorrent.Client')
     def test_validate_qbittorrent_config_success(self, mock_client_class):
         """Test successful qBittorrent config validation"""
         config = {
@@ -391,12 +391,12 @@ class TestGlobalFunctions(unittest.TestCase):
         mock_client_class.return_value = mock_client
 
         # Mock the get_qbittorrent_password function
-        with patch('api_qbittorrent.get_qbittorrent_password', return_value="test_password"):
+        with patch('src.mk_torrent.api.qbittorrent.get_qbittorrent_password', return_value="test_password"):
             result = validate_qbittorrent_config(config)
 
             self.assertTrue(result)
 
-    @patch('api_qbittorrent.Client')
+    @patch('src.mk_torrent.api.qbittorrent.Client')
     def test_validate_qbittorrent_config_failure(self, mock_client_class):
         """Test qBittorrent config validation failure"""
         config = {
@@ -412,7 +412,7 @@ class TestGlobalFunctions(unittest.TestCase):
 
         self.assertFalse(result)
 
-    @patch('api_qbittorrent.Client')
+    @patch('src.mk_torrent.api.qbittorrent.Client')
     def test_sync_qbittorrent_metadata_success(self, mock_client_class):
         """Test successful metadata synchronization"""
         config = {
@@ -437,7 +437,7 @@ class TestGlobalFunctions(unittest.TestCase):
         # Verify tag creation
         mock_client.torrents_create_tags.assert_called_once_with(["lossless", "new_tag"])
 
-    @patch('api_qbittorrent.Client')
+    @patch('src.mk_torrent.api.qbittorrent.Client')
     def test_sync_qbittorrent_metadata_failure(self, mock_client_class):
         """Test metadata synchronization failure"""
         config = {

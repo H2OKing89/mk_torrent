@@ -9,7 +9,7 @@ from unittest.mock import patch, MagicMock, mock_open
 from datetime import datetime
 import json
 
-from feature_metadata_engine import (
+from src.mk_torrent.features.metadata_engine import (
     MetadataEngine,
     HTMLCleaner,
     FormatDetector,
@@ -152,7 +152,7 @@ class TestFormatDetector:
         flac_file.touch()
         mp3_file.touch()
 
-        with patch('feature_metadata_engine.MUTAGEN_AVAILABLE', False):
+        with patch('src.mk_torrent.features.metadata_engine.MUTAGEN_AVAILABLE', False):
             result = detector.analyze([flac_file, mp3_file])
 
         assert "format" in result
@@ -279,7 +279,7 @@ class TestMetadataEngine:
         audio_file = temp_dir / "test.flac"
         audio_file.touch()
 
-        with patch('feature_metadata_engine.MUTAGEN_AVAILABLE', False):
+        with patch('src.mk_torrent.features.metadata_engine.MUTAGEN_AVAILABLE', False):
             result = engine.process_metadata([audio_file])
 
         assert "validation" in result
@@ -314,7 +314,7 @@ class TestMetadataEngine:
         assert "Test Publisher" in result
         assert "6h 0m" in result
 
-    @patch('feature_metadata_engine.requests.Session.get')
+    @patch('src.mk_torrent.features.metadata_engine.requests.Session.get')
     def test_enrich_with_audnexus(self, mock_get, engine, temp_dir, mock_audnexus_response):
         """Test Audnexus enrichment"""
         # Mock successful API response

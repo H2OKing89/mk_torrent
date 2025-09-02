@@ -118,9 +118,9 @@ def mock_dependencies():
     """Mock external dependencies that might not be available in test environment"""
     with pytest.MonkeyPatch().context() as m:
         # Mock optional dependencies
-        m.setattr("feature_metadata_engine.NH3_AVAILABLE", True)
-        m.setattr("feature_metadata_engine.MUTAGEN_AVAILABLE", True)
-        m.setattr("feature_metadata_engine.MUSICBRAINZ_AVAILABLE", False)
+        m.setattr("src.mk_torrent.features.metadata_engine.NH3_AVAILABLE", True)
+        m.setattr("src.mk_torrent.features.metadata_engine.MUTAGEN_AVAILABLE", True)
+        m.setattr("src.mk_torrent.features.metadata_engine.MUSICBRAINZ_AVAILABLE", False)
         yield
 
 
@@ -181,7 +181,7 @@ def test_utils():
 def engine():
     """Create a MetadataEngine instance for testing"""
     try:
-        from feature_metadata_engine import MetadataEngine
+        from src.mk_torrent.features.metadata_engine import MetadataEngine
         return MetadataEngine()
     except ImportError:
         pytest.skip("MetadataEngine not available")
