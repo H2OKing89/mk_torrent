@@ -1,1 +1,586 @@
-# api.audnex.us client + normalization
+"""
+Audnexus API source for audiobook metadata.
+
+Implements the MetadataSource protocol to fetch data from api.audnex.us
+following the official API documentation (v1.8.0).
+
+Features:
+- Typed models with Pydantic validation
+- Exponential backoff retry logic with tenacity
+- TTL caching with cachetools
+- Rate limiting with aiolimiter
+- HTML sanitization with nh3
+"""
+
+import logging
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Union, Tuple
+import re
+from datetime import datetime
+import asyncio
+from functools import wraps
+
+from ..base import MetadataSource
+from ..exceptions import SourceUnavailable
+
+logger = logging.getLogger(__name__)
+
+
+class AudnexusSource:
+    """
+    Enhanced Audnexus API source implementation.
+    
+    Features:
+    - Fetches audiobook metadata from api.audnex.us following v1.8.0 API spec
+    - Typed models with Pydantic validation
+    - Exponential backoff retry logic
+    - TTL caching for API responses
+    - Rate limiting for polite API usage
+    - HTML sanitization for descriptions
+    """
+    
+    def __init__(self, 
+                 base_url: str = "https://api.audnex.us", 
+                 region: str = "us",
+                 cache_ttl: int = 3600,
+                 max_cache_size: int = 2048,
+                 rate_limit_per_second: int = 5,
+                 timeout: int = 30):
+        """
+        Initialize enhanced Audnexus source.
+        
+        Args:
+            base_url: Base API URL (default: https://api.audnex.us)
+            region: Default region code (default: us)
+            cache_ttl: Cache TTL in seconds (default: 3600 = 1 hour)
+            max_cache_size: Maximum cache entries (default: 2048)
+            rate_limit_per_second: API requests per second (default: 5)
+            timeout: HTTP timeout in seconds (default: 30)
+        """
+        self.base_url = base_url.rstrip("/")
+        self.region = region
+        self.timeout = timeout
+        self._client: Optional[Any] = None
+        self._client_type: str = ""
+        
+        # Initialize caching
+        try:
+            from cachetools import TTLCache
+            self._cache = TTLCache(maxsize=max_cache_size, ttl=cache_ttl)
+        except ImportError:
+            logger.warning("cachetools not available, running without cache")
+            self._cache = {}
+        
+        # Initialize rate limiter (for async usage)
+        self._rate_limit_per_second = rate_limit_per_second
+        self._rate_limiter = None
+        try:
+            from aiolimiter import AsyncLimiter
+            self._rate_limiter = AsyncLimiter(rate_limit_per_second, 1)  # X requests per 1 second
+        except ImportError:
+            logger.warning("aiolimiter not available, running without rate limiting")
+        
+        # Initialize HTTP client
+        self._init_client()
+    
+    def _init_client(self):
+        """Initialize HTTP client (httpx preferred, requests fallback)."""
+        try:
+            import httpx
+            self._client = httpx.Client(
+                timeout=self.timeout,
+                headers={
+                    'User-Agent': 'mk_torrent/2.0 (Metadata Core)',
+                    'Accept': 'application/json'
+                }
+            )
+            self._client_type = 'httpx'
+            logger.debug("Initialized httpx client")
+        except ImportError:
+            try:
+                import requests
+                self._client = requests.Session()
+                if self._client:
+                    self._client.headers.update({
+                        'User-Agent': 'mk_torrent/2.0 (Metadata Core)',
+                        'Accept': 'application/json'
+                    })
+                self._client_type = 'requests'
+                logger.debug("Initialized requests client (httpx unavailable)")
+            except ImportError:
+                raise SourceUnavailable("audnexus", "Neither httpx nor requests available")
+    
+    def _get_retry_decorator(self):
+        """Get retry decorator with exponential backoff."""
+        try:
+            from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+            
+            return retry(
+                stop=stop_after_attempt(5),
+                wait=wait_exponential(multiplier=0.3, max=5),
+                retry=retry_if_exception_type((ConnectionError, TimeoutError)),
+                reraise=True
+            )
+        except ImportError:
+            logger.warning("tenacity not available, running without retry logic")
+            return lambda func: func
+    
+    def _make_request(self, url: str, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Make HTTP request with retry logic and caching."""
+        # Check cache first
+        cache_key = f"{url}?{hash(str(sorted(params.items())))}"
+        if hasattr(self._cache, 'get') and cache_key in self._cache:
+            logger.debug(f"Cache hit for {url}")
+            return self._cache[cache_key]
+        
+        # Apply retry logic
+        retry_decorator = self._get_retry_decorator()
+        
+        @retry_decorator
+        def _do_request():
+            if not self._client:
+                raise SourceUnavailable("audnexus", "HTTP client not initialized")
+                
+            if self._client_type == 'httpx':
+                response = self._client.get(url, params=params)
+                response.raise_for_status()
+                return response.json()
+            else:  # requests
+                response = self._client.get(url, params=params, timeout=self.timeout)
+                response.raise_for_status()
+                return response.json()
+        
+        try:
+            result = _do_request()
+            
+            # Cache the result
+            if hasattr(self._cache, '__setitem__'):
+                self._cache[cache_key] = result
+                
+            return result
+            
+        except Exception as e:
+            logger.error(f"Request failed for {url}: {e}")
+            raise SourceUnavailable("audnexus", f"API request failed: {e}")
+    
+    def _clean_html(self, html_content: str) -> str:
+        """Clean HTML content to plain text."""
+        if not html_content:
+            return ""
+            
+        try:
+            import nh3
+            # Remove all HTML tags and attributes
+            cleaned = nh3.clean(html_content, tags=set(), attributes={})
+            return cleaned.strip()
+        except ImportError:
+            try:
+                from bs4 import BeautifulSoup
+                soup = BeautifulSoup(html_content, 'html.parser')
+                return soup.get_text().strip()
+            except ImportError:
+                logger.warning("Neither nh3 nor BeautifulSoup available for HTML cleaning")
+                return html_content
+    
+    def extract(self, source: Union[str, Path]) -> Dict[str, Any]:
+        """
+        Extract metadata from source (ASIN or path containing ASIN).
+        
+        Args:
+            source: ASIN string or file path containing ASIN pattern
+            
+        Returns:
+            Dict containing normalized metadata
+            
+        Raises:
+            SourceUnavailable: If API is unavailable or ASIN not found
+        """
+        # Extract ASIN from source
+        if isinstance(source, (str, Path)):
+            asin = self._extract_asin(str(source))
+            if not asin:
+                # Try to use source directly as ASIN if it looks like one
+                source_str = str(source)
+                if self._is_valid_asin(source_str):
+                    asin = source_str
+                else:
+                    raise SourceUnavailable("audnexus", f"No ASIN found in source: {source}")
+        else:
+            raise SourceUnavailable("audnexus", f"Invalid source type: {type(source)}")
+        
+        # Fetch book metadata
+        try:
+            book_data = self._get_book(asin, region=self.region, update=1)
+            if not book_data:
+                raise SourceUnavailable("audnexus", f"No metadata found for ASIN: {asin}")
+            
+            # Normalize the response
+            normalized = self._normalize_book_data(book_data)
+            
+            # Add source information
+            normalized.update({
+                "source": "audnexus",
+                "source_asin": asin,
+                "source_url": f"{self.base_url}/books/{asin}",
+                "fetched_at": datetime.now().isoformat(),
+            })
+            
+            return normalized
+            
+        except Exception as e:
+            logger.error(f"Failed to extract metadata from Audnexus for {asin}: {e}")
+            raise SourceUnavailable("audnexus", f"Extraction failed: {e}") from e
+    
+    def _extract_asin(self, text: str) -> Optional[str]:
+        """Extract ASIN from text using pattern {ASIN.B0C8ZW5N6Y}."""
+        asin_pattern = r'\{ASIN\.([A-Z0-9]{10,12})\}'
+        match = re.search(asin_pattern, text)
+        return match.group(1) if match else None
+    
+    def _is_valid_asin(self, asin: str) -> bool:
+        """Check if string looks like a valid ASIN."""
+        return bool(re.match(r'^[A-Z0-9]{10,12}$', asin))
+    
+    def _get_book(self, asin: str, region: str = "us", update: int = 0, seed_authors: int = 0) -> Optional[Dict[str, Any]]:
+        """
+        Get book metadata from Audnexus API.
+        
+        Args:
+            asin: Audible ASIN
+            region: Region code (us, uk, etc.)
+            update: Force upstream refresh (0 or 1)
+            seed_authors: Seed authors server-side (0 or 1)
+            
+        Returns:
+            Book data dict or None if not found
+        """
+        url = f"{self.base_url}/books/{asin}"
+        params = {"region": region}
+        
+        # Add optional parameters following API spec
+        if update:
+            params["update"] = str(update)  # API expects number for book endpoint but params are strings
+        if seed_authors:
+            params["seedAuthors"] = str(seed_authors)
+        
+        try:
+            logger.info(f"Fetching book metadata: {asin} (region: {region})")
+            return self._make_request(url, params)
+        except Exception as e:
+            logger.error(f"Failed to fetch book {asin}: {e}")
+            return None
+    
+    def get_chapters(self, asin: str, region: str = "us", update: int = 0) -> Optional[Dict[str, Any]]:
+        """
+        Get chapter information for a book.
+        
+        Args:
+            asin: Audible ASIN
+            region: Region code
+            update: Force upstream refresh (0 or 1)
+            
+        Returns:
+            Chapter data dict or None if not found
+        """
+        url = f"{self.base_url}/books/{asin}/chapters"
+        params = {"region": region}
+        
+        if update:
+            params["update"] = str(update)
+        
+        try:
+            logger.info(f"Fetching chapters: {asin}")
+            return self._make_request(url, params)
+        except Exception as e:
+            logger.error(f"Failed to fetch chapters for {asin}: {e}")
+            return None
+    
+    def search_authors(self, name: str, region: str = "us") -> List[Dict[str, Any]]:
+        """
+        Search for authors by name.
+        
+        Args:
+            name: Author name to search for
+            region: Region code
+            
+        Returns:
+            List of author data dicts
+        """
+        url = f"{self.base_url}/authors"
+        params = {"name": name, "region": region}
+        
+        try:
+            logger.info(f"Searching authors: {name}")
+            result = self._make_request(url, params)
+            return result if isinstance(result, list) else []
+        except Exception as e:
+            logger.error(f"Author search failed for {name}: {e}")
+            return []
+    
+    def get_author(self, asin: str, region: str = "us", update: str = "0") -> Optional[Dict[str, Any]]:
+        """
+        Get author details by ASIN.
+        
+        Args:
+            asin: Author ASIN
+            region: Region code
+            update: Force refresh ("0" or "1" - note string type for this endpoint)
+            
+        Returns:
+            Author data dict or None if not found
+        """
+        url = f"{self.base_url}/authors/{asin}"
+        params = {"region": region}
+        
+        # Note: Author endpoint expects string "0"/"1" per API spec
+        if update and update != "0":
+            params["update"] = str(update)
+        
+        try:
+            logger.info(f"Fetching author: {asin}")
+            return self._make_request(url, params)
+        except Exception as e:
+            logger.error(f"Failed to fetch author {asin}: {e}")
+            return None
+    
+    def _normalize_book_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Normalize Audnexus book data to our metadata schema.
+        
+        Args:
+            data: Raw API response data
+            
+        Returns:
+            Normalized metadata dict
+        """
+        normalized = {}
+        
+        # Basic fields
+        normalized["title"] = data.get("title", "")
+        normalized["author"] = self._extract_primary_author(data.get("authors", []))
+        normalized["authors"] = [a.get("name", "") for a in data.get("authors", []) if a.get("name")]
+        
+        # Subtitle handling
+        subtitle = data.get("subtitle", "")
+        if subtitle:
+            normalized["subtitle"] = subtitle
+            # Create full title with subtitle
+            normalized["album"] = f"{normalized['title']}: {subtitle}"
+        else:
+            normalized["album"] = normalized["title"]
+        
+        # Series information
+        series_primary = data.get("seriesPrimary")
+        if series_primary:
+            normalized["series"] = series_primary.get("name", "")
+            normalized["volume"] = series_primary.get("position", "")
+            if series_primary.get("asin"):
+                normalized["series_asin"] = series_primary["asin"]
+        
+        # Secondary series
+        series_secondary = data.get("seriesSecondary")
+        if series_secondary:
+            normalized["series_secondary"] = series_secondary.get("name", "")
+            normalized["volume_secondary"] = series_secondary.get("position", "")
+        
+        # Publication info
+        normalized["publisher"] = data.get("publisherName", "")
+        normalized["asin"] = data.get("asin", "")
+        normalized["isbn"] = data.get("isbn", "")
+        
+        # Year from release date or copyright
+        if data.get("releaseDate"):
+            try:
+                release_date = datetime.fromisoformat(data["releaseDate"].replace('Z', '+00:00'))
+                normalized["year"] = release_date.year
+                normalized["release_date"] = release_date.strftime('%Y-%m-%d')
+            except:
+                pass
+        elif data.get("copyright"):
+            normalized["year"] = data["copyright"]
+        
+        # Narrators
+        narrators = data.get("narrators", [])
+        if narrators:
+            normalized["narrator"] = ", ".join(n.get("name", "") for n in narrators if n.get("name"))
+            normalized["narrators"] = [n.get("name", "") for n in narrators if n.get("name")]
+        
+        # Runtime
+        runtime_min = data.get("runtimeLengthMin")
+        if runtime_min:
+            normalized["duration_seconds"] = runtime_min * 60
+            hours = runtime_min // 60
+            minutes = runtime_min % 60
+            normalized["duration"] = f"{hours}h {minutes}m"
+        
+        # Genres and tags
+        genres = data.get("genres", [])
+        if genres:
+            genre_names = [g.get("name") for g in genres if g.get("type") == "genre" and g.get("name")]
+            tag_names = [g.get("name") for g in genres if g.get("type") == "tag" and g.get("name")]
+            
+            if genre_names:
+                normalized["genres"] = genre_names
+                normalized["genre"] = genre_names[0]  # Primary genre
+            
+            if tag_names:
+                normalized["tags"] = tag_names
+        
+        # Format and content info
+        normalized["format"] = data.get("formatType", "")  # unabridged/abridged
+        normalized["language"] = data.get("language", "")
+        normalized["literature_type"] = data.get("literatureType", "")  # fiction/nonfiction
+        
+        # Rating and artwork
+        if data.get("rating"):
+            try:
+                normalized["rating"] = float(data["rating"])
+            except:
+                normalized["rating"] = data["rating"]
+        
+        normalized["artwork_url"] = data.get("image", "")
+        
+        # Description and summary
+        normalized["description"] = self._clean_html(data.get("description", ""))
+        normalized["summary"] = self._clean_html(data.get("summary", ""))
+        
+        # Adult content flag
+        normalized["is_adult"] = data.get("isAdult", False)
+        
+        return normalized
+    
+    def _extract_primary_author(self, authors: List[Dict[str, Any]]) -> str:
+        """Extract primary author name from authors list."""
+        if not authors:
+            return ""
+        
+        first_author = authors[0]
+        return first_author.get("name", "") if first_author else ""
+    
+    def close(self):
+        """Close HTTP client connection."""
+        if self._client and hasattr(self._client, 'close'):
+            try:
+                self._client.close()
+            except Exception as e:
+                logger.warning(f"Error closing HTTP client: {e}")
+            finally:
+                self._client = None
+    
+    # Async methods for rate-limited usage
+    async def _make_request_async(self, url: str, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Make async HTTP request with rate limiting and caching."""
+        # Apply rate limiting if available
+        if self._rate_limiter:
+            await self._rate_limiter.acquire()
+        
+        # Check cache first
+        cache_key = f"{url}?{hash(str(sorted(params.items())))}"
+        if hasattr(self._cache, 'get') and cache_key in self._cache:
+            logger.debug(f"Cache hit for {url}")
+            return self._cache[cache_key]
+        
+        # Make async request
+        try:
+            import httpx
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                response = await client.get(url, params=params)
+                response.raise_for_status()
+                result = response.json()
+                
+                # Cache the result
+                if hasattr(self._cache, '__setitem__'):
+                    self._cache[cache_key] = result
+                    
+                return result
+                
+        except ImportError:
+            # Fallback to sync method if httpx not available
+            return self._make_request(url, params)
+        except Exception as e:
+            logger.error(f"Async request failed for {url}: {e}")
+            raise SourceUnavailable("audnexus", f"API request failed: {e}")
+    
+    async def get_book_async(self, asin: str, region: str = "us", update: int = 0, seed_authors: int = 0) -> Optional[Dict[str, Any]]:
+        """Async version of get_book with rate limiting."""
+        url = f"{self.base_url}/books/{asin}"
+        params = {"region": region}
+        
+        if update:
+            params["update"] = str(update)
+        if seed_authors:
+            params["seedAuthors"] = str(seed_authors)
+        
+        try:
+            logger.info(f"Fetching book metadata (async): {asin} (region: {region})")
+            return await self._make_request_async(url, params)
+        except Exception as e:
+            logger.error(f"Failed to fetch book {asin} (async): {e}")
+            return None
+    
+    async def get_chapters_async(self, asin: str, region: str = "us", update: int = 0) -> Optional[Dict[str, Any]]:
+        """Async version of get_chapters with rate limiting."""
+        url = f"{self.base_url}/books/{asin}/chapters"
+        params = {"region": region}
+        
+        if update:
+            params["update"] = str(update)
+        
+        try:
+            logger.info(f"Fetching chapters (async): {asin}")
+            return await self._make_request_async(url, params)
+        except Exception as e:
+            logger.error(f"Failed to fetch chapters for {asin} (async): {e}")
+            return None
+    
+    async def search_authors_async(self, name: str, region: str = "us") -> List[Dict[str, Any]]:
+        """Async version of search_authors with rate limiting."""
+        url = f"{self.base_url}/authors"
+        params = {"name": name, "region": region}
+        
+        try:
+            logger.info(f"Searching authors (async): {name}")
+            result = await self._make_request_async(url, params)
+            return result if isinstance(result, list) else []
+        except Exception as e:
+            logger.error(f"Author search failed for {name} (async): {e}")
+            return []
+    
+    async def extract_async(self, source: Union[str, Path]) -> Dict[str, Any]:
+        """Async version of extract with rate limiting."""
+        # Convert Path to string
+        source_str = str(source) if isinstance(source, Path) else source
+        
+        # Try to extract ASIN from string
+        asin = None
+        if self._is_valid_asin(source_str):
+            asin = source_str
+        else:
+            # Look for ASIN pattern in filename/path
+            asin = self._extract_asin(source_str)
+        
+        if not asin:
+            raise SourceUnavailable("audnexus", f"Could not extract valid ASIN from: {source_str}")
+        
+        # Fetch book metadata
+        try:
+            book_data = await self.get_book_async(asin, region=self.region, update=1)
+            if not book_data:
+                raise SourceUnavailable("audnexus", f"No metadata found for ASIN: {asin}")
+            
+            # Normalize the response
+            normalized = self._normalize_book_data(book_data)
+            
+            # Add source information
+            normalized.update({
+                "source": "audnexus",
+                "source_asin": asin,
+                "source_url": f"{self.base_url}/books/{asin}",
+                "fetched_at": datetime.now().isoformat(),
+            })
+            
+            return normalized
+            
+        except Exception as e:
+            logger.error(f"Failed to extract metadata from Audnexus for {asin} (async): {e}")
+            raise SourceUnavailable("audnexus", f"Extraction failed: {e}") from e

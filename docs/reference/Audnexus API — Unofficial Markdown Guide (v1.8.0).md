@@ -1,6 +1,6 @@
 # Audnexus API — Unofficial Markdown Guide (v1.8.0)
 
-> Aggregate audiobook data the easy way. This guide focuses on **read-only** endpoints you’ll actually use in scripts and apps. No deletes here—my mom taught me to clean up, not wipe out. 😄
+> Aggregate audiobook data the easy way. This guide focuses on **read-only** endpoints you’ll actually use in scripts and apps.
 
 ---
 
