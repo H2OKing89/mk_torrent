@@ -217,37 +217,31 @@ class AudiobookMetadata(MetadataProcessor):
             return metadata
         
         try:
-            # Use the dedicated Audnexus client
-            from mk_torrent.integrations.audnexus_api import fetch_metadata_by_asin
+            from mk_torrent.integrations.audnexus import get_audnexus_metadata
             
-            logger.info(f"Fetching metadata from Audnexus API: {asin}")
-            api_data = fetch_metadata_by_asin(asin)
+            logger.info(f"Enriching metadata with Audnexus API for ASIN: {asin}")
+            api_data = get_audnexus_metadata(asin)
             
             if api_data:
-                # Merge API data with existing metadata, prioritizing API data for enhanced fields
-                merged = metadata.copy()
+                # Merge API data with existing metadata (API data takes precedence for most fields)
+                enriched = metadata.copy()
                 
-                # Update with API data, preserving existing values where API has None
+                # Update with API data, preserving embedded data where appropriate
                 for key, value in api_data.items():
-                    if value is not None:
-                        if key not in merged or not merged[key]:
-                            merged[key] = value
-                        elif key in ['authors', 'artists'] and isinstance(value, list):
-                            # For artist/author lists, prefer API data if available
-                            merged[key] = value
-                        elif key == 'description' and value:
-                            # Prefer cleaned API description
-                            merged[key] = value
+                    if key not in enriched or not enriched[key] or key in ['summary', 'description', 'genre', 'genres']:
+                        enriched[key] = value
                 
                 logger.info(f"Successfully enriched metadata from Audnexus API")
-                return merged
+                return enriched
             else:
                 logger.warning(f"No data returned from Audnexus API for ASIN: {asin}")
                 
-        except ImportError as e:
-            logger.warning(f"Audnexus API module not available: {e}")
+        except ImportError:
+            logger.warning("Audnexus integration not available")
         except Exception as e:
-            logger.warning(f"Failed to fetch from Audnexus API: {e}")
+            logger.warning(f"Failed to enrich with Audnexus API: {e}")
+        
+        return metadata
         
         return metadata
     
