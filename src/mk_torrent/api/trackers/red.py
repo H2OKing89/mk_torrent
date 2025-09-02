@@ -157,10 +157,14 @@ class RedactedAPI(TrackerAPI):
             if not metadata.get(field):
                 errors.append(f"Missing {description}")
         
-        # Path length check
+        # Path length check - check the folder name that will be in the torrent, not full path
         if metadata.get('path'):
-            if len(str(metadata['path'])) > self.config.max_path_length:
-                errors.append(f"Path exceeds RED's {self.config.max_path_length} character limit")
+            path_obj = Path(metadata['path'])
+            folder_name = path_obj.name  # Just the folder name, not full path
+            if len(folder_name) > self.config.max_path_length:
+                errors.append(f"Folder name exceeds RED's {self.config.max_path_length} character limit: {len(folder_name)} chars")
+            elif len(folder_name) > self.config.max_path_length * 0.9:  # Warning at 90%
+                warnings.append(f"Folder name is close to RED's limit: {len(folder_name)}/{self.config.max_path_length} chars")
         
         # Format validation
         if metadata.get('format') and metadata['format'] not in ['FLAC', 'MP3', 'AAC', 'AC3', 'DTS']:
@@ -217,6 +221,8 @@ class RedactedAPI(TrackerAPI):
             return self.RELEASE_TYPES['COMPILATION']
         elif any(word in title for word in ['live', 'concert']):
             return self.RELEASE_TYPES['LIVE_ALBUM']
+        elif any(word in title for word in ['demo']):
+            return self.RELEASE_TYPES['DEMO']
         elif 'remix' in title:
             return self.RELEASE_TYPES['REMIX']
         else:

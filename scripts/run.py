@@ -1,25 +1,23 @@
 #!/usr/bin/env python3
-"""Entry point for the torrent creator application"""
+"""Entry point for the mk_torrent application using the new src layout."""
 
 import sys
 from pathlib import Path
 
-from rich.console import Console
-from rich.panel import Panel
-
-console = Console()
-
-# Add the script directory to path to ensure imports work
-sys.path.insert(0, str(Path(__file__).parent))
+# Add the src directory to Python path
+project_root = Path(__file__).parent.parent
+src_path = project_root / "src"
+sys.path.insert(0, str(src_path))
 
 try:
-    from cli import main
+    from mk_torrent.cli import main
     
     if __name__ == "__main__":
         main()
 except ImportError as e:
-    console.print(f"[red]Error: {e}[/red]")
-    console.print("\n[dim]Please ensure you're in the correct directory:[/dim]")
-    console.print("  [cyan]cd /mnt/cache/scripts/mk_torrent[/cyan]")
-    console.print("  [cyan]python run.py [command][/cyan]")
+    print(f"Error importing mk_torrent: {e}")
+    print("\nPlease ensure you're in the correct directory and the virtual environment is activated:")
+    print("  cd /mnt/cache/scripts/mk_torrent")
+    print("  source .venv/bin/activate")
+    print("  python scripts/run_new.py")
     sys.exit(1)

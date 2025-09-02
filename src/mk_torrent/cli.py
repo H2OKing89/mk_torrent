@@ -593,7 +593,7 @@ def upload(
 ):
     """Upload torrent to private tracker with metadata processing"""
     from pathlib import Path
-    from .api.red_integration import integrate_upload_workflow
+    from .workflows import upload_workflow
     
     source_path = Path(path)
     if not source_path.exists():
@@ -618,36 +618,11 @@ def upload(
             console.print("[yellow]Upload cancelled by user[/yellow]")
             raise typer.Exit(0)
     
-    # Check for existing torrents if requested
-    if check_existing and tracker == "red":
-        try:
-            from .features.red_uploader import REDUploader
-            uploader = REDUploader(config[api_key_field])
-            
-            # Extract basic metadata for search
-            from .features.metadata_engine import process_album_metadata
-            metadata = process_album_metadata(source_path)
-            
-            artist = metadata.get('artist', '')
-            album = metadata.get('album', '')
-            
-            if artist and album:
-                console.print(f"[cyan]Checking for existing torrents on {tracker.upper()}...[/cyan]")
-                existing = uploader.search_existing_torrent(artist, album)
-                
-                if existing:
-                    console.print(f"[yellow]⚠️ Found {len(existing)} existing torrent(s) for this album[/yellow]")
-                    if not force and not Confirm.ask("Continue with upload anyway?", default=False):
-                        console.print("[yellow]Upload cancelled - existing torrents found[/yellow]")
-                        raise typer.Exit(0)
-                else:
-                    console.print("[green]✓ No existing torrents found[/green]")
-        except Exception as e:
-            console.print(f"[yellow]⚠️ Could not check for existing torrents: {e}[/yellow]")
+    # NOTE: check_existing is now handled in the upload_workflow function
     
     # Perform the upload workflow
     try:
-        success = integrate_upload_workflow(source_path, tracker, config)
+        success = upload_workflow(source_path, tracker, config, dry_run=dry_run, check_existing=check_existing)
         
         if success:
             if dry_run:

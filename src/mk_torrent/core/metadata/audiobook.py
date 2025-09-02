@@ -74,30 +74,59 @@ class AudiobookMetadata(MetadataProcessor):
         """Extract metadata from file/folder path"""
         metadata = {}
         
-        # Use the existing metadata engine logic from the old system
-        # This is a simplified version - would integrate with existing code
-        path_str = str(path)
+        # Parse filename pattern: "Title - vol_XX (YEAR) (AUTHOR) {ASIN.XXXXX} [UPLOADER]"
+        path_name = path.name if path.is_dir() else path.parent.name
         
-        # Extract title (basic pattern matching)
-        if ' - vol_' in path.name:
-            title_part = path.name.split(' - vol_')[0]
-            metadata['title'] = title_part
-            volume_part = path.name.split(' - vol_')[1].split()[0]
-            metadata['volume'] = volume_part
-        
-        # Extract year
         import re
-        year_match = re.search(r'\((\d{4})\)', path_str)
+        
+        # Extract title and volume
+        if ' - vol_' in path_name:
+            title_part = path_name.split(' - vol_')[0]
+            metadata['title'] = title_part.strip()
+            metadata['album'] = title_part.strip()  # For RED compatibility
+            
+            volume_part = path_name.split(' - vol_')[1].split()[0]
+            metadata['volume'] = volume_part
+        else:
+            # Fallback - extract title before first parenthesis
+            title_match = re.match(r'^([^(]+)', path_name)
+            if title_match:
+                metadata['title'] = title_match.group(1).strip()
+                metadata['album'] = title_match.group(1).strip()
+        
+        # Extract year (first set of parentheses with 4 digits)
+        year_match = re.search(r'\((\d{4})\)', path_name)
         if year_match:
             metadata['year'] = year_match.group(1)
         
-        # Extract author (basic pattern)
-        author_match = re.search(r'\(([^)]+)\)', path_str)
-        if author_match and (not year_match or author_match != year_match):
-            # More sophisticated author extraction would go here
-            pass
+        # Extract author (second set of parentheses, after year)
+        if year_match:
+            # Look for next parentheses after year
+            after_year = path_name[year_match.end():]
+            author_match = re.search(r'\(([^)]+)\)', after_year)
+            if author_match:
+                author = author_match.group(1).strip()
+                metadata['author'] = author
+                metadata['artists'] = [author]  # For RED compatibility
         
         # Extract ASIN
+        asin_match = re.search(r'\{ASIN\.([^}]+)\}', path_name)
+        if asin_match:
+            metadata['asin'] = asin_match.group(1)
+        
+        # Extract uploader
+        uploader_match = re.search(r'\[([^\]]+)\]$', path_name)
+        if uploader_match:
+            metadata['uploader'] = uploader_match.group(1)
+        
+        # Set defaults for RED requirements
+        if not metadata.get('artists'):
+            metadata['artists'] = [metadata.get('author', 'Unknown')]
+        
+        if not metadata.get('album'):
+            metadata['album'] = metadata.get('title', 'Unknown')
+        
+        return metadata
         asin_match = re.search(r'ASIN\.([A-Z0-9]+)', path_str)
         if asin_match:
             metadata['asin'] = asin_match.group(1)
