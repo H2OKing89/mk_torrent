@@ -188,8 +188,8 @@ def apply_template(templates: Dict[str, Any]):
         return
     
     # Create torrent using template
-    from torrent_creator import TorrentCreator
-    from config import load_config
+    from ..core.torrent_creator import TorrentCreator
+    from ..config import load_config
     
     config = load_config()
     creator = TorrentCreator(config=config)

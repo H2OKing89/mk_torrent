@@ -19,15 +19,22 @@ Renames needed:
 import os
 import shutil
 from pathlib import Path
+from typing import List, Tuple
+
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
+from rich.progress import Progress, SpinnerColumn, TextColumn
+
+console = Console()
 
 def apply_compliance_renames():
     """Apply the compliance renames to make files RED-uploadable"""
     
-    print("🔧 Applying RED Compliance Renames")
-    print("=" * 50)
-    print("This will rename audiobook files to be RED-compatible")
-    print("(Under 150 character path limit)")
-    print()
+    console.print(Panel.fit("[bold cyan]🔧 RED Compliance Renames[/bold cyan]", border_style="cyan"))
+    console.print("[cyan]This will rename audiobook files to be RED-compatible[/cyan]")
+    console.print("[cyan](Under 150 character path limit)[/cyan]")
+    console.print()
     
     # Original paths
     original_dirs = [
@@ -64,14 +71,14 @@ def apply_compliance_renames():
     # Perform renames
     for i, (original_dir, target_dir) in enumerate(zip(original_dirs, target_dirs), 1):
         volume = f"vol_0{i}"
-        print(f"\n📁 Renaming {volume}...")
+        console.print(f"\n[cyan]📁 Renaming {volume}...[/cyan]")
         
         if not os.path.exists(original_dir):
-            print(f"❌ Original directory not found: {original_dir}")
+            console.print(f"[red]❌ Original directory not found: {original_dir}[/red]")
             continue
             
         if os.path.exists(target_dir):
-            print(f"⚠️  Target directory already exists: {target_dir}")
+            console.print(f"[yellow]⚠️  Target directory already exists: {target_dir}[/yellow]")
             continue
         
         try:

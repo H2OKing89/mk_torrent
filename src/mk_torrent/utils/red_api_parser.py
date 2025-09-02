@@ -8,6 +8,12 @@ import json
 from pathlib import Path
 from typing import Dict, Any, List
 
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
+
+console = Console()
+
 def extract_api_endpoints(docs_text: str) -> Dict[str, Any]:
     """Extract API endpoints from documentation text"""
     endpoints = {}
@@ -40,7 +46,7 @@ def extract_api_endpoints(docs_text: str) -> Dict[str, Any]:
         # Look for parameters
         elif current_endpoint is not None and (line.startswith('-') or line.startswith('*')):
             param = line.lstrip('-* ').strip()
-            if param:
+            if param and isinstance(current_endpoint['parameters'], list):
                 current_endpoint['parameters'].append(param)
 
     return endpoints
@@ -70,12 +76,12 @@ if __name__ == "__main__":
 
     if docs_file.exists():
         summary = create_api_summary(docs_file)
-        print("📊 RED API Documentation Summary:")
-        print(f"   📄 Total length: {summary['total_length']} characters")
-        print(f"   📝 Lines: {summary['lines_count']}")
-        print(f"   🔗 Endpoints found: {summary['endpoints_found']}")
-        print(f"   🔐 Has authentication: {'✅' if summary['has_authentication'] else '❌'}")
-        print(f"   📤 Has upload endpoints: {'✅' if summary['has_upload'] else '❌'}")
-        print(f"   ⏱️  Has rate limiting: {'✅' if summary['has_rate_limit'] else '❌'}")
+        console.print(Panel.fit("[bold cyan]📊 RED API Documentation Summary[/bold cyan]", border_style="cyan"))
+        console.print(f"[cyan]📄 Total length:[/cyan] {summary['total_length']} characters")
+        console.print(f"[cyan]📝 Lines:[/cyan] {summary['lines_count']}")
+        console.print(f"[cyan]🔗 Endpoints found:[/cyan] {summary['endpoints_found']}")
+        console.print(f"[cyan]🔐 Has authentication:[/cyan] {'✅' if summary['has_authentication'] else '❌'}")
+        console.print(f"[cyan]📤 Has upload endpoints:[/cyan] {'✅' if summary['has_upload'] else '❌'}")
+        console.print(f"[cyan]⏱️  Has rate limiting:[/cyan] {'✅' if summary['has_rate_limit'] else '❌'}")
     else:
-        print("❌ RED_API_REFERENCE.md not found. Please add your API documentation first.")
+        console.print("[red]❌ RED_API_REFERENCE.md not found. Please add your API documentation first.[/red]")

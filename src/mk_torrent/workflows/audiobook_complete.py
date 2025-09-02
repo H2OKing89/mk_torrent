@@ -22,17 +22,31 @@ from pathlib import Path
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
+
+console = Console()
+
 # Add current directory to path for imports
 sys.path.append(os.path.dirname(__file__))
 
 try:
     import mutagen
     from mutagen.mp4 import MP4
+    from mutagen._file import File
 except ImportError:
-    print("❌ Mutagen not installed. Please run: pip install mutagen")
+    console.print("[red]❌ Mutagen not installed. Please run: pip install mutagen[/red]")
     sys.exit(1)
 
-from core_secure_credentials import get_secure_tracker_credential
+from ..core.secure_credentials import get_secure_tracker_credential
+import sys
+from pathlib import Path
+
+# Add the project root to the path to import from examples
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
+
 from examples.audiobook_upload_workflow import AudiobookUploader
 
 @dataclass
@@ -82,14 +96,14 @@ class AudiobookProcessor:
         directory_name = os.path.basename(directory_path)
         files = list(Path(directory_path).glob("*"))
         
-        print(f"🔍 Validating filename lengths for RED compatibility...")
-        print(f"   Directory: {len(directory_name)} chars: {directory_name}")
+        console.print(f"[cyan]🔍 Validating filename lengths for RED compatibility...[/cyan]")
+        console.print(f"[dim]   Directory: {len(directory_name)} chars: {directory_name}[/dim]")
         
         # Check directory name length
         if len(directory_name) > self.MAX_FILENAME_LENGTH:
-            print(f"❌ Directory name too long: {len(directory_name)} chars (max {self.MAX_FILENAME_LENGTH})")
+            console.print(f"[red]❌ Directory name too long: {len(directory_name)} chars (max {self.MAX_FILENAME_LENGTH})[/red]")
             suggested = self.suggest_red_compatible_name(directory_path)
-            print(f"💡 Suggested name: {suggested}")
+            console.print(f"[blue]💡 Suggested name: {suggested}[/blue]")
             return False
         
         # Check individual file lengths and full paths
@@ -99,26 +113,26 @@ class AudiobookProcessor:
                 filename = file_path.name
                 full_path = f"{directory_name}/{filename}"
                 
-                print(f"   File: {len(filename)} chars: {filename}")
-                print(f"   Full path: {len(full_path)} chars")
+                console.print(f"[dim]   File: {len(filename)} chars: {filename}[/dim]")
+                console.print(f"[dim]   Full path: {len(full_path)} chars[/dim]")
                 
                 if len(filename) > self.MAX_FILENAME_LENGTH:
-                    print(f"❌ Filename too long: {len(filename)} chars (max {self.MAX_FILENAME_LENGTH})")
+                    console.print(f"[red]❌ Filename too long: {len(filename)} chars (max {self.MAX_FILENAME_LENGTH})[/red]")
                     issues_found = True
                     
                 if len(full_path) > self.MAX_PATH_LENGTH:
-                    print(f"❌ Full path too long: {len(full_path)} chars (max {self.MAX_PATH_LENGTH})")
-                    print(f"   Path: {full_path}")
+                    console.print(f"[red]❌ Full path too long: {len(full_path)} chars (max {self.MAX_PATH_LENGTH})[/red]")
+                    console.print(f"[dim]   Path: {full_path}[/dim]")
                     issues_found = True
         
         if issues_found:
-            print(f"💡 Solution: Rename files to be under {self.MAX_FILENAME_LENGTH} characters each")
-            print(f"💡 Remove release group tags like '[H2OKing]' and shorten ASIN info")
+            console.print(f"[blue]💡 Solution: Rename files to be under {self.MAX_FILENAME_LENGTH} characters each[/blue]")
+            console.print(f"[blue]💡 Remove release group tags like '[H2OKing]' and shorten ASIN info[/blue]")
             suggested = self.suggest_red_compatible_name(directory_path)
-            print(f"💡 Suggested directory name: {suggested}")
+            console.print(f"[blue]💡 Suggested directory name: {suggested}[/blue]")
             return False
         
-        print(f"✅ All filenames are RED-compatible")
+        console.print(f"[green]✅ All filenames are RED-compatible[/green]")
         return True
     
     def suggest_red_compatible_name(self, directory_path: str) -> str:
@@ -170,8 +184,8 @@ class AudiobookProcessor:
                 'uploader': match.group(6)
             }
         else:
-            print(f"⚠️  Could not parse filename: {dir_name}")
-            print(f"    Trying fallback patterns...")
+            console.print(f"[yellow]⚠️  Could not parse filename: {dir_name}[/yellow]")
+            console.print(f"[dim]    Trying fallback patterns...[/dim]")
             return {}
 
     def extract_m4b_metadata(self, m4b_path: str) -> Dict[str, Any]:
@@ -180,9 +194,9 @@ class AudiobookProcessor:
             return {}
         
         try:
-            audio = mutagen.File(m4b_path)
+            audio = File(m4b_path)
             if not isinstance(audio, MP4):
-                print(f"⚠️  Not a valid MP4/M4B file: {m4b_path}")
+                console.print(f"[yellow]⚠️  Not a valid MP4/M4B file: {m4b_path}[/yellow]")
                 return {}
             
             tags = audio.tags or {}
@@ -210,10 +224,10 @@ class AudiobookProcessor:
             return metadata
             
         except Exception as e:
-            print(f"❌ Error reading M4B metadata: {e}")
+            console.print(f"[red]❌ Error reading M4B metadata: {e}[/red]")
             return {}
 
-    def _get_tag_value(self, tags: dict, key: str, default: str = '') -> str:
+    def _get_tag_value(self, tags: Any, key: str, default: str = '') -> str:
         """Helper to extract tag value safely"""
         if key in tags and tags[key]:
             value = tags[key][0] if isinstance(tags[key], list) else tags[key]
@@ -223,13 +237,13 @@ class AudiobookProcessor:
     def create_torrent_for_audiobook(self, directory_path: str) -> Optional[str]:
         """Create a torrent file for an audiobook directory with RED compatibility checks"""
         if not os.path.exists(directory_path):
-            print(f"❌ Directory not found: {directory_path}")
+            console.print(f"[red]❌ Directory not found: {directory_path}[/red]")
             return None
         
         # SAFETY CHECK: Validate filename lengths before creating torrent
         if not self.validate_and_fix_filenames(directory_path):
-            print(f"❌ Filename validation failed - cannot upload to RED")
-            print(f"💡 Please rename files to be under {self.MAX_FILENAME_LENGTH} characters")
+            console.print(f"[red]❌ Filename validation failed - cannot upload to RED[/red]")
+            console.print(f"[blue]💡 Please rename files to be under {self.MAX_FILENAME_LENGTH} characters[/blue]")
             return None
         
         try:

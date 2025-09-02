@@ -1,69 +1,114 @@
 # Project Organization Guide
 
-## Directory Structure
+## New Src Layout Structure
 
 ```
 mk_torrent/
+├── 📁 src/mk_torrent/           # Main source code package
+│   ├── __init__.py             # Package initialization
+│   ├── __main__.py             # Module execution entry point
+│   ├── cli.py                  # Main CLI interface
+│   ├── config.py               # Configuration management
+│   ├── 📁 api/                 # External API integrations
+│   │   ├── qbittorrent.py      # qBittorrent API client
+│   │   ├── red_integration.py  # RED tracker integration
+│   │   └── tracker_upload.py   # Generic tracker upload
+│   ├── 📁 core/                # Core application logic
+│   │   ├── torrent_creator.py  # Torrent creation engine
+│   │   ├── health_checks.py    # System health monitoring
+│   │   ├── secure_credentials.py # Credential management
+│   │   └── upload_queue.py     # Upload queue management
+│   ├── 📁 features/            # Extended functionality
+│   │   ├── metadata_engine.py  # Metadata processing
+│   │   ├── validator.py        # File/path validation
+│   │   ├── cross_seed.py       # Cross-seeding features
+│   │   ├── red_uploader.py     # RED-specific uploading
+│   │   └── templates.py        # Template management
+│   ├── 📁 utils/               # Utility modules
+│   │   ├── async_helpers.py    # Async utilities
+│   │   ├── red_api_parser.py   # RED API parsing
+│   │   └── red_compliance.py   # RED compliance checks
+│   └── 📁 workflows/           # Automated workflows
+│       ├── wizard.py           # Setup wizard
+│       └── audiobook_complete.py # Audiobook workflow
+├── 📁 tests/                   # Unit and integration tests
+├── 📁 test_results/            # Test output and reports
 ├── 📁 docs/                    # All documentation
-│   ├── AUDIOBOOK_METADATA_BREAKTHROUGH.md
-│   ├── TRACKER_UPLOAD_ENHANCEMENT.md
-│   └── ... (other docs)
+├── 📁 examples/                # Example usage files
 ├── 📁 scripts/                 # Utility scripts and runners
-│   ├── run.py                 # Application entry point
+│   ├── run_new.py             # New entry point script
 │   ├── test_metadata.py       # Metadata test runner
 │   └── test_mutagen_m4b.py    # Audio testing script
-├── 📁 tests/                  # Unit and integration tests
-├── 📁 test_results/           # Test output and reports
-├── 📁 examples/               # Example usage files
-├── 📁 qBittorrent-api/        # API documentation
-├── 🐍 *.py                    # Core application modules
-├── 📋 pyproject.toml          # Project configuration
+├── � pyproject.toml          # Modern Python project config
 ├── 📋 requirements.txt        # Dependencies
-├── 📋 setup.py               # Legacy setup (consider removing)
+├── 📋 test_runner.py          # Test management script
 ├── 📋 README.md              # Project documentation
 └── 📋 LICENSE                # License file
 ```
 
-## File Organization Rules
+## Benefits of Src Layout
 
-### ✅ Keep in Root:
-- Core application modules (`*.py`)
-- Project configuration (`pyproject.toml`, `requirements.txt`)
-- Essential docs (`README.md`, `LICENSE`)
-- Entry points (`__init__.py`, `__main__.py`)
+### ✅ **Organization Benefits:**
+- **Logical grouping**: Related modules are organized by purpose
+- **Clear separation**: Source code isolated from config/docs/tests
+- **Namespace protection**: Prevents accidental imports during development
+- **Standard compliance**: Follows modern Python packaging standards
 
-### 📁 Move to Subdirectories:
-- Documentation → `docs/`
-- Scripts/tools → `scripts/`
-- Test files → `tests/`
-- Examples → `examples/`
-- Test results → `test_results/`
+### ✅ **Development Benefits:**
+- **IDE support**: Better IntelliSense and code navigation
+- **Import clarity**: Clear module hierarchy and relationships
+- **Testing isolation**: Tests import from installed package, not source
+- **Pip installable**: Can be installed as proper Python package
 
-### 🗑️ Remove:
-- Empty files
-- Temporary files
-- Cache directories (use `.gitignore`)
-- Duplicate files
+### ✅ **Maintenance Benefits:**
+- **Scalability**: Easy to add new modules in appropriate categories
+- **Refactoring**: Module moves don't break external imports
+- **Documentation**: Structure is self-documenting
+- **Collaboration**: New developers understand organization quickly
 
-## Maintenance Tips
+## Module Categories
 
-1. **Regular cleanup**: Run `find . -name "*.pyc" -delete` periodically
-2. **Cache management**: Clear `__pycache__/` and `.pytest_cache/` when needed
-3. **Test results**: Use `python test_runner.py clean` to clear old results
-4. **Git status**: Keep working directory clean before commits
+### 🔌 **API Package** (`src/mk_torrent/api/`)
+External service integrations and client libraries.
 
-## Quick Commands
+### ⚙️ **Core Package** (`src/mk_torrent/core/`)
+Essential application logic and base functionality.
 
+### 🎯 **Features Package** (`src/mk_torrent/features/`)
+Extended functionality and specialized modules.
+
+### 🛠️ **Utils Package** (`src/mk_torrent/utils/`)
+Helper functions and utility modules.
+
+### 🔄 **Workflows Package** (`src/mk_torrent/workflows/`)
+Automated processes and multi-step operations.
+
+## Usage Examples
+
+### Running the Application
 ```bash
-# Clean Python cache
-find . -name "__pycache__" -type d -exec rm -rf {} +
+# Using new entry point
+python scripts/run_new.py
 
-# Clean test cache
-rm -rf .pytest_cache/
+# Using module execution
+python -m mk_torrent
 
-# Clean all test results
-python test_runner.py clean
-
-# Check for large files
-find . -size +1M -ls
+# After pip install -e .
+mk-torrent
 ```
+
+### Importing Modules
+```python
+# Import from organized packages
+from mk_torrent.core.torrent_creator import TorrentCreator
+from mk_torrent.api.qbittorrent import QBittorrentAPI
+from mk_torrent.features.metadata_engine import MetadataEngine
+```
+
+## Migration Notes
+
+- Old files remain in root for reference
+- New entry point: `scripts/run_new.py`
+- Tests updated to use src layout
+- pyproject.toml configured for src layout
+- See `docs/MIGRATION_GUIDE.md` for details

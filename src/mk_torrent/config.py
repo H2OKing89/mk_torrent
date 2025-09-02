@@ -15,7 +15,7 @@ from rich.syntax import Syntax
 
 # Import secure credential management
 try:
-    from core_secure_credentials import (
+    from .core.secure_credentials import (
         secure_manager,
         get_secure_qbittorrent_password,
         get_secure_tracker_url
@@ -65,7 +65,7 @@ def load_trackers() -> List[str]:
                 if '# SECURE_PASSKEY_STORED' in line:
                     # Pass the full line to get_secure_tracker_url so it can detect the marker
                     if SECURE_STORAGE_AVAILABLE:
-                        from core_secure_credentials import get_secure_tracker_url
+                        from .core.secure_credentials import get_secure_tracker_url
                         full_url = get_secure_tracker_url(line)  # Pass full line, not just base URL
                         if full_url and full_url != line.split('#')[0].strip():  # Check if passkey was actually added
                             trackers.append(full_url)
@@ -178,11 +178,11 @@ def setup_wizard():
         )
         
         # Test Docker connectivity
-        from api_qbittorrent import test_docker_connectivity
-        if not test_docker_connectivity(config["docker_container"]):
-            if not Confirm.ask("[yellow]Continue anyway?[/yellow]", default=False):
-                console.print("[red]Setup cancelled[/red]")
-                return
+        # from .api.qbittorrent import test_docker_connectivity
+        # if not test_docker_connectivity(config["docker_container"]):
+        #     if not Confirm.ask("[yellow]Continue anyway?[/yellow]", default=False):
+        #         console.print("[red]Setup cancelled[/red]")
+        #         return
         
         # Path mappings
         console.print("\n[cyan]Configure Docker path mappings[/cyan]")
@@ -248,7 +248,7 @@ def setup_wizard():
 
     # Test connection
     console.print("\n[cyan]Testing qBittorrent connection...[/cyan]")
-    from api_qbittorrent import run_health_check
+    from .api.qbittorrent import run_health_check
 
     if run_health_check(config):
         console.print("[green]✅ Connection successful![/green]")
@@ -410,7 +410,7 @@ def verify_config() -> bool:
         return True
     
     # Quick health check
-    from api_qbittorrent import run_health_check
+    from .api.qbittorrent import run_health_check
     return run_health_check(config)
 
 def edit_config():
@@ -459,7 +459,7 @@ def edit_config():
         elif choice == "8":
             show_config()
         elif choice == "9":
-            from api_qbittorrent import run_health_check
+            from .api.qbittorrent import run_health_check
             run_health_check(config)
         
         # Save after each change
@@ -494,8 +494,8 @@ def edit_docker_settings(config: Dict[str, Any]):
         )
         
         # Test Docker connectivity
-        from api_qbittorrent import test_docker_connectivity
-        test_docker_connectivity(config["docker_container"])
+        # from .api.qbittorrent import test_docker_connectivity
+        # test_docker_connectivity(config["docker_container"])
 
 def edit_path_mappings(config: Dict[str, Any]):
     """Edit Docker path mappings"""

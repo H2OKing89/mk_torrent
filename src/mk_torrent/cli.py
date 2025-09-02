@@ -11,27 +11,27 @@ from rich.prompt import Prompt, Confirm
 from rich.progress import Progress
 from rich.table import Table
 
-from config import (
+from .config import (
     load_config, 
     save_config, 
     setup_wizard,
     show_config,
     edit_config
 )
-from torrent_creator import TorrentCreator, QBitMode
-from core_health_checks import (
+from .core.torrent_creator import TorrentCreator, QBitMode
+from .core.health_checks import (
     run_comprehensive_health_check, 
     run_quick_health_check, 
     ContinuousMonitor
 )
-from wizard import run_wizard
-from feature_templates import (
+from .workflows.wizard import run_wizard
+from .features.templates import (
     load_templates,
     save_template,
     list_templates
 )
-from feature_validator import validate_path
-from api_qbittorrent import validate_qbittorrent_config, sync_qbittorrent_metadata
+from .features.validator import validate_path
+from .api.qbittorrent import validate_qbittorrent_config, sync_qbittorrent_metadata
 
 console = Console()
 app = typer.Typer(
@@ -163,7 +163,7 @@ def health(
 @app.command()
 def validate(path: str = typer.Argument(..., help="Path to validate")):
     """Validate a path for torrent creation"""
-    from feature_validator import validate_path
+    from .features.validator import validate_path
     
     is_valid, errors = validate_path(path)
     
@@ -202,12 +202,12 @@ def templates(
             console.print("[yellow]No templates found[/yellow]")
     elif apply and path:
         # Import here to avoid issues
-        from feature_templates import apply_template_cli
+        from .features.templates import apply_template_cli
         success = apply_template_cli(apply, Path(path))
         raise typer.Exit(0 if success else 1)
     else:
         # Interactive template management
-        from feature_templates import create_template, edit_template, delete_template, view_templates
+        from .features.templates import create_template, edit_template, delete_template, view_templates
         
         templates_dict = {t['name']: t for t in list_templates()}
         
@@ -229,7 +229,7 @@ def templates(
             delete_template(templates_dict)
             save_template(templates_dict)
         elif action == "apply":
-            from feature_templates import apply_template
+            from .features.templates import apply_template
             apply_template(templates_dict)
 
 @app.command()
@@ -366,7 +366,7 @@ def info():
 @app.command()
 def crossseed():
     """Manage torrents for cross-seeding"""
-    from feature_cross_seed import cross_seed_wizard
+    from .features.cross_seed import cross_seed_wizard
     cross_seed_wizard()
 
 @app.command()
@@ -378,7 +378,7 @@ def metadata(
     show_description: bool = typer.Option(False, "--show-description", "-d", help="Show full RED description")
 ):
     """Extract and display metadata for RED compliance"""
-    from feature_metadata_engine import process_album_metadata
+    from .features.metadata_engine import process_album_metadata
     from pathlib import Path
     import json
     
@@ -593,7 +593,7 @@ def upload(
 ):
     """Upload torrent to private tracker with metadata processing"""
     from pathlib import Path
-    from tracker_red_integration import integrate_upload_workflow
+    from .api.red_integration import integrate_upload_workflow
     
     source_path = Path(path)
     if not source_path.exists():
@@ -621,11 +621,11 @@ def upload(
     # Check for existing torrents if requested
     if check_existing and tracker == "red":
         try:
-            from feature_red_uploader import REDUploader
+            from .features.red_uploader import REDUploader
             uploader = REDUploader(config[api_key_field])
             
             # Extract basic metadata for search
-            from feature_metadata_engine import process_album_metadata
+            from .features.metadata_engine import process_album_metadata
             metadata = process_album_metadata(source_path)
             
             artist = metadata.get('artist', '')
@@ -694,7 +694,7 @@ def batch(
     sync_qbittorrent_metadata(config)
     
     # Create torrent creator
-    from torrent_creator import TorrentCreator
+    from .core.torrent_creator import TorrentCreator
     creator = TorrentCreator(mode=mode, container_name=container_name, config=config)
     
     # Get base path

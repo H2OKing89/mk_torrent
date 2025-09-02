@@ -180,7 +180,7 @@ class MetadataHealthChecker:
 
         # Test metadata extraction speed
         try:
-            from feature_metadata_engine import MetadataEngine
+            from .metadata_engine import MetadataEngine
 
             engine = MetadataEngine()
 

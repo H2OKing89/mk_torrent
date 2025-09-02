@@ -60,6 +60,9 @@ coverage.xml
 # Test results directory
 test_results/
 
+# Legacy code archive (optional: remove this line if you want to track the archive)
+archive/
+
 # Translations
 *.mo
 *.pot

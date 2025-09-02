@@ -3,10 +3,26 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "torrent-creator"
+name = "mk-torrent"
 version = "1.0.0"
-description = "Interactive torrent creator for qBittorrent"
+description = "A comprehensive torrent creation and upload tool"
 readme = "README.md"
+license = {file = "LICENSE"}
+authors = [
+    {name = "H2OKing89", email = "h2oking89@example.com"}
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
 requires-python = ">=3.8"
 dependencies = [
     "typer>=0.9.0",
@@ -16,10 +32,37 @@ dependencies = [
     "sqlalchemy>=2.0.25",
     "requests>=2.31.0",
     "python-dateutil>=2.8.2",
+    "mutagen>=1.47.0",
+    "nh3>=0.2.0",
+    "beautifulsoup4>=4.12.0",
+    "pillow>=10.0.0",
+    "musicbrainzngs>=0.7.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=6.0.0",
+    "pytest-html>=4.0.0",
+    "pytest-asyncio>=0.23.0",
+    "black>=24.0.0",
+    "flake8>=7.0.0",
+    "mypy>=1.8.0",
 ]
 
 [project.scripts]
-torrent-creator = "cli:main"
+mk-torrent = "mk_torrent.cli:main"
+
+[project.urls]
+"Homepage" = "https://github.com/H2OKing89/mk_torrent"
+"Bug Reports" = "https://github.com/H2OKing89/mk_torrent/issues"
+"Source" = "https://github.com/H2OKing89/mk_torrent"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -34,7 +77,7 @@ addopts = [
     "--html=test_results/report.html",
     "--self-contained-html",
     "--junitxml=test_results/junit.xml",
-    "--cov=.",
+    "--cov=src/mk_torrent",
     "--cov-report=html:test_results/coverage_html",
     "--cov-report=xml:test_results/coverage.xml",
     "--cov-report=term-missing"
@@ -52,9 +95,12 @@ filterwarnings = [
 ]
 
 [tool.coverage.run]
-source = ["."]
+source = ["src/mk_torrent"]
 omit = [
     "tests/*",
+    "*/test_*",
+    "src/mk_torrent/__main__.py",
+]
     "*/venv/*",
     "*/__pycache__/*",
     "setup.py"

@@ -4,6 +4,11 @@
 import sys
 from pathlib import Path
 
+from rich.console import Console
+from rich.panel import Panel
+
+console = Console()
+
 # Add the script directory to path to ensure imports work
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -13,8 +18,8 @@ try:
     if __name__ == "__main__":
         main()
 except ImportError as e:
-    print(f"Error: {e}")
-    print("\nPlease ensure you're in the correct directory:")
-    print("  cd /mnt/cache/scripts/mk_torrent")
-    print("  python run.py [command]")
+    console.print(f"[red]Error: {e}[/red]")
+    console.print("\n[dim]Please ensure you're in the correct directory:[/dim]")
+    console.print("  [cyan]cd /mnt/cache/scripts/mk_torrent[/cyan]")
+    console.print("  [cyan]python run.py [command][/cyan]")
     sys.exit(1)

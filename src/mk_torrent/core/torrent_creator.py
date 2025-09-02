@@ -114,7 +114,7 @@ class TorrentCreator:
     def _initial_health_check(self):
         """Run a quick health check on initialization"""
         if self.config.get("auto_health_check", True):
-            from core_health_checks import SystemHealthCheck
+            from .health_checks import SystemHealthCheck
             
             checker = SystemHealthCheck(self.config)
             checker.check_disk_space()
@@ -670,7 +670,7 @@ class TorrentCreator:
         
         # Health check before batch operations
         if self.config.get("batch_health_check", True):
-            from core_health_checks import run_quick_health_check
+            from .health_checks import run_quick_health_check
             
             console.print("[cyan]Running pre-batch health check...[/cyan]")
             if not run_quick_health_check(self.config):
@@ -742,7 +742,7 @@ class TorrentCreator:
             if item.is_dir():
                 size = sum(f.stat().st_size for f in item.rglob('*') if f.is_file())
                 if size > 10 * 1024**3:  # > 10GB
-                    from core_health_checks import SystemHealthCheck
+                    from .health_checks import SystemHealthCheck
                     
                     checker = SystemHealthCheck(self.config)
                     checker.check_disk_space()
@@ -1040,7 +1040,7 @@ class TorrentCreator:
     def _save_to_history(self, source: Path, output: Path):
         """Save torrent creation to history database"""
         try:
-            from feature_database import save_torrent_history
+            from ..features.database import save_torrent_history
             save_torrent_history(source, output, self.trackers, self.private)
         except ImportError:
             # If database module not available, skip history

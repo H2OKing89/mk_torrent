@@ -16,7 +16,7 @@ import requests
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from feature_metadata_engine import MetadataEngine, process_album_metadata
+from .metadata_engine import MetadataEngine, process_album_metadata
 
 console = Console()
 logger = logging.getLogger(__name__)

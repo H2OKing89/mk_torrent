@@ -19,6 +19,7 @@ import requests
 from bs4 import BeautifulSoup, Comment
 from PIL import Image
 from rich.console import Console
+from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeElapsedColumn
 
 # Modern HTML sanitization
 try:
@@ -742,35 +743,65 @@ class MetadataEngine:
         
         metadata = {}
         
-        # 1. Extract from file tags
-        console.print("  [dim]Extracting metadata from files...[/dim]")
-        metadata.update(self._extract_file_metadata(source_files))
+        # Progress tracking for metadata processing steps
+        steps = [
+            "Extracting metadata from files",
+            "Enriching with audnexus API data", 
+            "Sanitizing HTML content",
+            "Analyzing audio format",
+            "Discovering album artwork",
+            "Normalizing genre tags",
+            "Validating RED compliance"
+        ]
         
-        # 1.5. Enrich with audnexus API data if ASIN found
-        console.print("  [dim]Enriching with audnexus API data...[/dim]")
-        metadata.update(self._enrich_with_audnexus(source_files, metadata))
-        
-        # 2. Clean HTML entities and tags
-        console.print("  [dim]Sanitizing HTML content...[/dim]")
-        metadata = self.html_cleaner.sanitize(metadata)
-        
-        # 3. Detect format/quality from audio analysis
-        console.print("  [dim]Analyzing audio format...[/dim]")
-        metadata.update(self.format_detector.analyze(source_files))
-        
-        # 4. Find album artwork URLs
-        console.print("  [dim]Discovering album artwork...[/dim]")
-        metadata['artwork'] = self.image_finder.discover(metadata)
-        
-        # 5. Normalize tags for RED requirements
-        if metadata.get('tags'):
-            console.print("  [dim]Normalizing genre tags...[/dim]")
-            metadata['tags'] = self.tag_normalizer.normalize(metadata.get('tags', []))
-        
-        # 6. Validate RED compliance
-        console.print("  [dim]Validating RED compliance...[/dim]")
-        validation_result = self._validate_red_compliance(metadata)
-        metadata['validation'] = validation_result
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+            TimeElapsedColumn(),
+            console=console,
+            transient=True
+        ) as progress:
+            task = progress.add_task("Processing metadata...", total=len(steps))
+            
+            # 1. Extract from file tags
+            progress.update(task, description=steps[0])
+            metadata.update(self._extract_file_metadata(source_files))
+            progress.advance(task)
+            
+            # 1.5. Enrich with audnexus API data if ASIN found
+            progress.update(task, description=steps[1])
+            metadata.update(self._enrich_with_audnexus(source_files, metadata))
+            progress.advance(task)
+            
+            # 2. Clean HTML entities and tags
+            progress.update(task, description=steps[2])
+            metadata = self.html_cleaner.sanitize(metadata)
+            progress.advance(task)
+            
+            # 3. Detect format/quality from audio analysis
+            progress.update(task, description=steps[3])
+            metadata.update(self.format_detector.analyze(source_files))
+            progress.advance(task)
+            
+            # 4. Find album artwork URLs
+            progress.update(task, description=steps[4])
+            metadata['artwork'] = self.image_finder.discover(metadata)
+            progress.advance(task)
+            
+            # 5. Normalize tags for RED requirements
+            if metadata.get('tags'):
+                progress.update(task, description=steps[5])
+                metadata['tags'] = self.tag_normalizer.normalize(metadata.get('tags', []))
+            else:
+                progress.advance(task)
+            
+            # 6. Validate RED compliance
+            progress.update(task, description=steps[6])
+            validation_result = self._validate_red_compliance(metadata)
+            metadata['validation'] = validation_result
+            progress.advance(task)
         
         console.print(f"[green]✓ Metadata processing complete[/green]")
         if validation_result['errors']:

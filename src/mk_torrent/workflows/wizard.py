@@ -71,8 +71,8 @@ def wizard_single_torrent():
         default="private"  # Changed default to private
     )
     
-    from torrent_creator import TorrentCreator
-    from config import load_config
+    from ..core.torrent_creator import TorrentCreator
+    from ..config import load_config
     
     config = load_config()
     creator = TorrentCreator(config=config)
@@ -341,8 +341,8 @@ def show_tutorial():
 # Helper functions for batch operations
 def create_tv_torrents(base_dir: Path, folders: List[Path], strategy: str):
     """Create torrents for TV content"""
-    from torrent_creator import TorrentCreator
-    from config import load_config
+    from ..core.torrent_creator import TorrentCreator
+    from ..config import load_config
     
     config = load_config()
     creator = TorrentCreator(config=config)
@@ -506,8 +506,8 @@ def wizard_multiple_folders():
         return
     
     # Create torrents
-    from torrent_creator import TorrentCreator
-    from config import load_config
+    from ..core.torrent_creator import TorrentCreator
+    from ..config import load_config
     
     config = load_config()
     creator = TorrentCreator(config=config)
@@ -539,7 +539,7 @@ def wizard_multiple_folders():
     
     if use_parallel:
         # Prepare paths for parallel creation
-        from async_utils import run_async_batch
+        from ..utils.async_helpers import run_async_batch
         
         paths = []
         for item in selected_items:

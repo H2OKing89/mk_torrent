@@ -2,6 +2,7 @@
 """
 Test runner script with organized output to test_results directory.
 This script provides convenient commands for running tests and managing test results.
+Updated for src layout.
 """
 
 import subprocess
@@ -9,6 +10,12 @@ import sys
 from pathlib import Path
 import argparse
 import shutil
+
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
+
+console = Console()
 
 def run_tests(test_path=None, verbose=True, coverage=True):
     """Run pytest with organized output to test_results directory."""
@@ -20,21 +27,24 @@ def run_tests(test_path=None, verbose=True, coverage=True):
     if verbose:
         cmd.extend(["-v", "--tb=short"])
 
+    # Add src to Python path for testing
+    env = {"PYTHONPATH": str(Path(__file__).parent / "src")}
+    
     # The pytest configuration in pyproject.toml will handle the output directories
-    print("Running tests with output to test_results/ directory...")
-    result = subprocess.run(cmd, cwd=Path(__file__).parent)
+    console.print("[cyan]Running tests with output to test_results/ directory...[/cyan]")
+    result = subprocess.run(cmd, cwd=Path(__file__).parent, env=env)
     return result.returncode
 
 def clean_results():
     """Clean up test results directory."""
     results_dir = Path("test_results")
     if results_dir.exists():
-        print("Cleaning test results directory...")
+        console.print("[yellow]Cleaning test results directory...[/yellow]")
         shutil.rmtree(results_dir)
         results_dir.mkdir()
-        print("✅ Test results directory cleaned")
+        console.print("[green]✅ Test results directory cleaned[/green]")
     else:
-        print("Test results directory doesn't exist")
+        console.print("[dim]Test results directory doesn't exist[/dim]")
 
 def show_results():
     """Show available test result files."""
@@ -42,18 +52,24 @@ def show_results():
     if results_dir.exists():
         files = list(results_dir.glob("*"))
         if files:
-            print("Available test result files:")
+            table = Table(title="📊 Test Result Files", show_header=True, header_style="bold cyan")
+            table.add_column("Type", style="cyan", no_wrap=True)
+            table.add_column("Name", style="white")
+            table.add_column("Size/Details", style="dim")
+            
             for file in sorted(files):
                 if file.is_file():
                     size = file.stat().st_size
-                    print(f"  📄 {file.name} ({size} bytes)")
+                    table.add_row("📄", file.name, f"{size} bytes")
                 elif file.is_dir():
                     items = list(file.glob("*"))
-                    print(f"  📁 {file.name}/ ({len(items)} items)")
+                    table.add_row("📁", f"{file.name}/", f"{len(items)} items")
+            
+            console.print(table)
         else:
-            print("No test result files found")
+            console.print("[yellow]No test result files found[/yellow]")
     else:
-        print("Test results directory doesn't exist")
+        console.print("[red]Test results directory doesn't exist[/red]")
 
 def main():
     parser = argparse.ArgumentParser(description="Test runner with organized output")
@@ -69,10 +85,10 @@ def main():
         coverage = not args.no_coverage
         exit_code = run_tests(args.test_path, coverage=coverage)
         if exit_code == 0:
-            print("\n✅ All tests passed!")
+            console.print("\n[green]✅ All tests passed![/green]")
             show_results()
         else:
-            print(f"\n❌ Tests failed with exit code {exit_code}")
+            console.print(f"\n[red]❌ Tests failed with exit code {exit_code}[/red]")
         sys.exit(exit_code)
 
     elif args.command == "clean":
@@ -82,11 +98,11 @@ def main():
         show_results()
 
     elif args.command == "all":
-        print("Running full test suite...")
+        console.print("[bold cyan]Running full test suite...[/bold cyan]")
         clean_results()
         exit_code = run_tests(coverage=True)
         if exit_code == 0:
-            print("\n✅ All tests passed!")
+            console.print("\n[green]✅ All tests passed![/green]")
         show_results()
         sys.exit(exit_code)
 

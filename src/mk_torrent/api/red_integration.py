@@ -66,11 +66,12 @@ class TrackerIntegration:
         
         # Validate requirements
         if not self._validate_tracker_requirements(source_path, tracker_config, metadata):
-            result['errors'].append("Failed tracker requirement validation")
+            if isinstance(result['errors'], list):
+                result['errors'].append("Failed tracker requirement validation")
             return result
         
         # Create the torrent with proper settings
-        from torrent_creator import TorrentCreator
+        from ..core.torrent_creator import TorrentCreator
         
         creator = TorrentCreator(config=self.config)
         
@@ -99,9 +100,11 @@ class TrackerIntegration:
                     console.print("[green]✓ Torrent added to qBittorrent[/green]")
                 else:
                     console.print("[yellow]⚠️ Failed to add to qBittorrent - manual add required[/yellow]")
-                    result['errors'].append("Failed to add to qBittorrent")
+                    if isinstance(result['errors'], list):
+                        result['errors'].append("Failed to add to qBittorrent")
         else:
-            result['errors'].append("Failed to create torrent file")
+            if isinstance(result['errors'], list):
+                result['errors'].append("Failed to create torrent file")
             console.print("[red]✗ Failed to create torrent[/red]")
         
         return result
@@ -192,7 +195,7 @@ def integrate_upload_workflow(source_path: Path, tracker: str, config: Dict[str,
     integration = TrackerIntegration(config)
     
     # Initialize the RED uploader for metadata processing
-    from feature_red_uploader import REDUploader
+    from ..features.red_uploader import REDUploader
     
     # Check API key
     api_key = config.get('red_api_key')
