@@ -471,7 +471,7 @@ def run_health_check(config: Dict[str, Any]) -> bool:
         console.print("\n[yellow]⚠️ Some checks failed. Please review settings.[/yellow]")
         return False
 
-def test_docker_connectivity(container_name: str) -> bool:
+def check_docker_connectivity(container_name: str) -> bool:
     """Test if Docker container is running and accessible"""
     import subprocess
     

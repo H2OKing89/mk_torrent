@@ -18,6 +18,11 @@ from rich.prompt import Prompt, Confirm
 
 console = Console()
 
+from rich.console import Console
+from rich.prompt import Prompt, Confirm
+
+console = Console()
+
 class SecureCredentialManager:
     """Secure credential storage using encryption and keyring"""
 
@@ -270,15 +275,18 @@ class SecureCredentialManager:
                 if '/announce' in tracker and len(tracker.split('/')) >= 4:
                     # Extract passkey from URL
                     parts = tracker.split('/')
-                    if len(parts) >= 4 and parts[-2] and len(parts[-2]) > 10:  # Likely a passkey
-                        passkey = parts[-2]
-                        base_url = '/'.join(parts[:-2]) + '/announce'
+                    if len(parts) >= 4 and parts[-2] and len(parts[-2]) > 10:
+                        # More specific check: passkeys are typically 8-64 chars and don't contain dots
+                        # (avoiding domain names which usually contain dots)
+                        if 8 <= len(parts[-2]) <= 64 and '.' not in parts[-2]:
+                            passkey = parts[-2]
+                            base_url = '/'.join(parts[:-2]) + '/announce'
 
-                        self.store_tracker_passkey(base_url, passkey)
+                            self.store_tracker_passkey(base_url, passkey)
 
-                        # Replace with placeholder
-                        migrated_trackers.append(f"{base_url}  # SECURE_PASSKEY_STORED")
-                        console.print(f"[green]✅ Passkey for {base_url} migrated[/green]")
+                            # Replace with placeholder
+                            migrated_trackers.append(f"{base_url}  # SECURE_PASSKEY_STORED")
+                            console.print(f"[green]✅ Passkey for {base_url} migrated[/green]")
                     else:
                         migrated_trackers.append(tracker)
                 else:
@@ -308,6 +316,9 @@ class SecureCredentialManager:
                 # Other trackers - try generic passkey lookup
                 passkey = self.get_tracker_passkey(base_url)
                 if passkey:
+                    # Ensure base_url ends with /announce for replacement
+                    if not base_url.endswith('/announce'):
+                        base_url = base_url.rstrip('/') + '/announce'
                     # Insert passkey back into URL (old format for compatibility)
                     return base_url.replace('/announce', f'/{passkey}/announce')
         return tracker_url
