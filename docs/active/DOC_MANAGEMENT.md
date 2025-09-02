@@ -12,6 +12,7 @@
 
 | Document | Date | Status | Purpose | Location |
 |----------|------|--------|---------|----------|
+| **METADATA_CLEANUP_2025-09-02.md** | 2025-09-02 | ✅ Complete | Metadata module overlap cleanup | `docs/active/` |
 | **RED_MODULES_REFACTOR.md** | 2025-09-02 | ✅ Current | RED modules refactor documentation | `docs/active/` |
 | **CURRENT_STATUS.md** | 2025-09-01 | ✅ Current | Project status overview | `docs/active/` |
 | **NEXT_STEPS.md** | 2025-09-01 | ✅ Current | Upcoming development tasks | `docs/active/` |
