@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Dict, Any, List, Union
 from abc import ABC, abstractmethod
 import logging
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +69,10 @@ class AudiobookMetadata(MetadataProcessor):
         elif source_path.suffix.lower() in ['.m4b', '.mp3']:
             metadata.update(self._extract_from_audio_file(source_path))
         
+        # Enrich with Audnexus API if ASIN is available
+        if metadata.get('asin'):
+            metadata = self._enrich_with_audnexus_api(metadata)
+        
         return metadata
     
     def _extract_from_path(self, path: Path) -> Dict[str, Any]:
@@ -127,33 +132,122 @@ class AudiobookMetadata(MetadataProcessor):
             metadata['album'] = metadata.get('title', 'Unknown')
         
         return metadata
-        asin_match = re.search(r'ASIN\.([A-Z0-9]+)', path_str)
-        if asin_match:
-            metadata['asin'] = asin_match.group(1)
-        
-        return metadata
     
     def _extract_from_audio_file(self, file_path: Path) -> Dict[str, Any]:
         """Extract metadata from audio file tags"""
         metadata = {}
         
         try:
-            # This would use mutagen or similar library
-            # For now, just basic file info
+            # Try to import mutagen for metadata extraction
+            import mutagen
+            from mutagen.mp4 import MP4
+            
+            if file_path.suffix.lower() == '.m4b':
+                audio = MP4(str(file_path))
+                if audio and audio.tags:
+                    # Map M4B tags to our metadata format
+                    tag_mapping = {
+                        '©nam': 'title',
+                        '©ART': 'artist',
+                        'aART': 'album_artist', 
+                        '©wrt': 'narrator',
+                        '©alb': 'album',
+                        '©day': 'year',
+                        '©gen': 'genre',
+                        'cprt': 'publisher',
+                        '©grp': 'series',
+                        '©cmt': 'comment',
+                        'desc': 'description'
+                    }
+                    
+                    for tag_key, meta_key in tag_mapping.items():
+                        if tag_key in audio.tags:
+                            value = audio.tags[tag_key]
+                            if isinstance(value, list) and len(value) > 0:
+                                metadata[meta_key] = str(value[0])
+                            else:
+                                metadata[meta_key] = str(value)
+                    
+                    # Special handling for track number
+                    if 'trkn' in audio.tags:
+                        track_info = audio.tags['trkn'][0]
+                        if isinstance(track_info, tuple) and len(track_info) > 0:
+                            metadata['track_number'] = track_info[0]
+                    
+                    # Get audio info
+                    if audio.info:
+                        metadata['duration_seconds'] = audio.info.length
+                        metadata['duration'] = f"{audio.info.length/3600:.1f} hours"
+                        metadata['duration_hours'] = audio.info.length/3600
+                        metadata['bitrate'] = audio.info.bitrate
+                        metadata['format'] = 'M4B'
+                        metadata['encoding'] = 'AAC'
+                    
+                    # Set RED-compatible fields
+                    if metadata.get('artist') and not metadata.get('artists'):
+                        metadata['artists'] = [metadata['artist']]
+                    
+                    # Clean up genre field (remove extra categories)
+                    if metadata.get('genre'):
+                        # Split on semicolon and take first part
+                        genre = metadata['genre'].split(';')[0].strip()
+                        metadata['genre'] = genre
+            
+            # Basic file info
+            stat = file_path.stat()
+            metadata['file_size'] = stat.st_size
+            metadata['file_path'] = str(file_path)
+            
+        except ImportError:
+            logger.warning("Mutagen not available, limited metadata extraction")
+            # Fallback to basic file info
             stat = file_path.stat()
             metadata['file_size'] = stat.st_size
             metadata['format'] = file_path.suffix.upper().lstrip('.')
             
-            # TODO: Add actual audio metadata extraction
-            # import mutagen
-            # audio_file = mutagen.File(file_path)
-            # if audio_file:
-            #     metadata['title'] = audio_file.get('TIT2', [''])[0]
-            #     metadata['author'] = audio_file.get('TPE1', [''])[0]
-            #     etc.
-            
         except Exception as e:
             logger.warning(f"Failed to extract audio metadata from {file_path}: {e}")
+        
+        return metadata
+    
+    def _enrich_with_audnexus_api(self, metadata: Dict[str, Any]) -> Dict[str, Any]:
+        """Enrich metadata with Audnexus API data if ASIN is available"""
+        asin = metadata.get('asin')
+        if not asin:
+            return metadata
+        
+        try:
+            # Use the dedicated Audnexus client
+            from mk_torrent.integrations.audnexus_api import fetch_metadata_by_asin
+            
+            logger.info(f"Fetching metadata from Audnexus API: {asin}")
+            api_data = fetch_metadata_by_asin(asin)
+            
+            if api_data:
+                # Merge API data with existing metadata, prioritizing API data for enhanced fields
+                merged = metadata.copy()
+                
+                # Update with API data, preserving existing values where API has None
+                for key, value in api_data.items():
+                    if value is not None:
+                        if key not in merged or not merged[key]:
+                            merged[key] = value
+                        elif key in ['authors', 'artists'] and isinstance(value, list):
+                            # For artist/author lists, prefer API data if available
+                            merged[key] = value
+                        elif key == 'description' and value:
+                            # Prefer cleaned API description
+                            merged[key] = value
+                
+                logger.info(f"Successfully enriched metadata from Audnexus API")
+                return merged
+            else:
+                logger.warning(f"No data returned from Audnexus API for ASIN: {asin}")
+                
+        except ImportError as e:
+            logger.warning(f"Audnexus API module not available: {e}")
+        except Exception as e:
+            logger.warning(f"Failed to fetch from Audnexus API: {e}")
         
         return metadata
     
