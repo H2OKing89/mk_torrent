@@ -6,175 +6,9 @@ capabilities in the torrent creator system.
 """
 
 import sys
-from rich.console import Console
-
-console = Console()
-
-def check_dependencies():
-    """Check all metadata-related dependencies"""
-    console.print("[cyan]Checking Dependencies...[/cyan]")
-
-    dependencies = {
-        "mutagen": "Audio metadata extraction",
-        "nh3": "HTML sanitization (modern)",
-        "beautifulsoup4": "HTML parsing fallback",
-        "pillow": "Image processing",
-        "requests": "HTTP requests for APIs"
-    }
-
-    missing_deps = []
-
-    for package, description in dependencies.items():
-        try:
-            __import__(package)
-            console.print(f"  ✅ {package}: {description}")
-        except ImportError:
-            console.print(f"  ❌ {package}: {description} - MISSING")
-            missing_deps.append(package)
-
-    return missing_deps
-
-def check_capabilities():
-    """Check metadata processing capabilities"""
-    console.print("[cyan]Checking Processing Capabilities...[/cyan]")
-
-    # Audio format support
-    try:
-        import mutagen
-        console.print("  ✅ Audio metadata extraction available")
-        audio_ok = True
-    except ImportError:
-        console.print("  ❌ Audio metadata extraction unavailable")
-        audio_ok = False
-
-    # HTML sanitization
-    html_ok = False
-    try:
-        import nh3
-        console.print("  ✅ Modern HTML sanitization (nh3) available")
-        html_ok = True
-    except ImportError:
-        try:
-            from bs4 import BeautifulSoup
-            console.print("  ⚠️  Basic HTML sanitization (BeautifulSoup) available")
-            html_ok = True
-        except ImportError:
-            console.print("  ❌ HTML sanitization unavailable")
-
-    # Image processing
-    try:
-        from PIL import Image
-        console.print("  ✅ Image processing available")
-        image_ok = True
-    except ImportError:
-        console.print("  ❌ Image processing unavailable")
-        image_ok = False
-
-    return {
-        "audio": audio_ok,
-        "html": html_ok,
-        "image": image_ok
-    }
-
-def check_connectivity():
-    """Check connectivity to external services"""
-    console.print("[cyan]Checking External Connectivity...[/cyan]")
-
-    import requests
-
-    # Audnexus API
-    try:
-        response = requests.get("https://api.audnex.us", timeout=10)
-        if response.status_code == 200:
-            console.print("  ✅ Audnexus API: Reachable")
-            audnexus_ok = True
-        else:
-            console.print(f"  ⚠️  Audnexus API: HTTP {response.status_code}")
-            audnexus_ok = False
-    except Exception as e:
-        console.print(f"  ❌ Audnexus API: {str(e)}")
-        audnexus_ok = False
-
-    return {"audnexus": audnexus_ok}
-
-def generate_report(missing_deps, capabilities, connectivity):
-    """Generate a comprehensive health report"""
-    console.print("\n[bold green]Metadata Health Report[/bold green]")
-    console.print("=" * 50)
-
-    # Overall status
-    critical_issues = len(missing_deps)
-    if not capabilities.get("audio"):
-        critical_issues += 1
-
-    if critical_issues == 0:
-        status = "[green]✅ HEALTHY[/green]"
-    elif critical_issues <= 2:
-        status = "[yellow]⚠️  WARNING[/yellow]"
-    else:
-        status = "[red]❌ CRITICAL ISSUES[/red]"
-
-    console.print(f"Overall Status: {status}")
-
-    # Summary
-    console.print("\n[cyan]Summary:[/cyan]")
-    console.print(f"  • Audio processing: {'✅' if capabilities.get('audio') else '❌'}")
-    console.print(f"  • HTML sanitization: {'✅' if capabilities.get('html') else '❌'}")
-    console.print(f"  • Image processing: {'✅' if capabilities.get('image') else '❌'}")
-    console.print(f"  • Audnexus API: {'✅' if connectivity.get('audnexus') else '❌'}")
-
-    # Recommendations
-    console.print("\n[cyan]Recommendations:[/cyan]")
-    if missing_deps:
-        for dep in missing_deps:
-            console.print(f"  • Install {dep}: pip install {dep}")
-    else:
-        console.print("  • All core dependencies available")
-
-    if not capabilities.get("audio"):
-        console.print("  • Install mutagen for audio metadata: pip install mutagen")
-
-    if not capabilities.get("html"):
-        console.print("  • Install nh3 for HTML sanitization: pip install nh3")
-
-def main():
-    """Main entry point"""
-    console.print("[bold blue]Metadata Health Checker[/bold blue]")
-    console.print("Comprehensive health check for metadata processing capabilities\n")
-
-    try:
-        # Run checks
-        missing_deps = check_dependencies()
-        capabilities = check_capabilities()
-        connectivity = check_connectivity()
-
-        # Generate report
-        generate_report(missing_deps, capabilities, connectivity)
-
-        # Save simple results
-        results = {
-            "missing_dependencies": missing_deps,
-            "capabilities": capabilities,
-            "connectivity": connectivity
-        }
-
-        import json
-        with open("metadata_health_results.json", 'w') as f:
-            json.dump(results, f, indent=2)
-
-        console.print(f"\n[green]Results saved to: metadata_health_results.json[/green]")
-
-    except Exception as e:
-        console.print(f"[red]Health check failed: {e}[/red]")
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
-
-import sys
 import json
 from pathlib import Path
+from typing import Dict, Any, List
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -187,7 +21,7 @@ class MetadataHealthChecker:
     """Comprehensive metadata health checker"""
 
     def __init__(self):
-        self.results = {
+        self.results: Dict[str, Any] = {
             "dependencies": {},
             "capabilities": {},
             "connectivity": {},
@@ -199,18 +33,19 @@ class MetadataHealthChecker:
         """Check all metadata-related dependencies"""
         console.print("[cyan]Checking Dependencies...[/cyan]")
 
+        # Map package names to their import names
         dependencies = {
-            "mutagen": "Audio metadata extraction",
-            "nh3": "HTML sanitization (modern)",
-            "beautifulsoup4": "HTML parsing fallback",
-            "pillow": "Image processing",
-            "requests": "HTTP requests for APIs",
-            "musicbrainzngs": "MusicBrainz API (optional)"
+            "mutagen": ("mutagen", "Audio metadata extraction"),
+            "nh3": ("nh3", "HTML sanitization (modern)"),
+            "beautifulsoup4": ("bs4", "HTML parsing fallback"),
+            "pillow": ("PIL", "Image processing"),
+            "requests": ("requests", "HTTP requests for APIs"),
+            "musicbrainzngs": ("musicbrainzngs", "MusicBrainz API (optional)")
         }
 
-        for package, description in dependencies.items():
+        for package, (import_name, description) in dependencies.items():
             try:
-                __import__(package)
+                __import__(import_name)
                 self.results["dependencies"][package] = {
                     "status": "available",
                     "description": description
@@ -290,8 +125,9 @@ class MetadataHealthChecker:
 
         import requests
 
-        # Audnexus API
+        # Audnexus API - check if service is available (may return 404 for root endpoint)
         try:
+            # Try the base URL first
             response = requests.get("https://api.audnex.us", timeout=10)
             if response.status_code == 200:
                 console.print("  ✅ Audnexus API: Reachable")
@@ -299,6 +135,21 @@ class MetadataHealthChecker:
                     "status": "reachable",
                     "response_time": response.elapsed.total_seconds()
                 }
+            elif response.status_code == 404:
+                # 404 is expected for root endpoint, try a sample book endpoint
+                sample_response = requests.get("https://api.audnex.us/books/B0F2B3RZ32?update=1", timeout=10)
+                if sample_response.status_code == 200:
+                    console.print("  ✅ Audnexus API: Available (sample endpoint)")
+                    self.results["connectivity"]["audnexus"] = {
+                        "status": "available",
+                        "note": "Root endpoint returns 404 but API is functional"
+                    }
+                else:
+                    console.print("  ⚠️  Audnexus API: Limited availability")
+                    self.results["connectivity"]["audnexus"] = {
+                        "status": "limited",
+                        "note": "API may be experiencing issues"
+                    }
             else:
                 console.print(f"  ⚠️  Audnexus API: HTTP {response.status_code}")
                 self.results["connectivity"]["audnexus"] = {
@@ -349,31 +200,33 @@ class MetadataHealthChecker:
             test_file.unlink(missing_ok=True)
 
         except Exception as e:
-            console.print(f"  ❌ Performance test failed: {e}")
+            console.print(f"  ⚠️  Performance test failed: {str(e)}")
             self.results["performance"]["processing_speed"] = None
-
-        except Exception as e:
-            console.print(f"  ❌ Performance test failed: {e}")
-            self.results["performance"]["processing_speed"] = None
+            self.results["recommendations"].append("Performance testing requires working metadata engine")
 
     def generate_report(self):
-        """Generate a comprehensive health report"""
+        """Generate comprehensive health report"""
         console.print("\n[bold green]Metadata Health Report[/bold green]")
         console.print("=" * 50)
 
         # Overall status
-        status = "[green]✅ HEALTHY[/green]"
-        console.print(f"Overall Status: {status}")
+        critical_issues = 0
+        for dep, info in self.results["dependencies"].items():
+            if info["status"] == "missing":
+                critical_issues += 1
 
-        # Simple summary
-        console.print("\n[cyan]Summary:[/cyan]")
-        console.print("  • Dependencies checked")
-        console.print("  • Capabilities verified")
-        console.print("  • Connectivity tested")
-        console.print("  • Basic health assessment completed")
+        if critical_issues == 0:
+            status = "[green]✅ HEALTHY[/green]"
+        elif critical_issues <= 2:
+            status = "[yellow]⚠️  WARNING[/yellow]"
+        else:
+            status = "[red]❌ CRITICAL[/red]"
+
+        console.print(f"Overall Status: {status}")
+        console.print(f"Critical Issues: {critical_issues}")
 
         # Recommendations
-        if self.results.get("recommendations"):
+        if self.results["recommendations"]:
             console.print("\n[cyan]Recommendations:[/cyan]")
             for rec in self.results["recommendations"]:
                 console.print(f"  • {rec}")

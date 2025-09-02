@@ -40,6 +40,8 @@ pip-delete-this-directory.txt
 # Testing samples
 test_torrents/
 test_audiobooks/
+tests/samples
+
 
 # Unit test / coverage reports
 htmlcov/
