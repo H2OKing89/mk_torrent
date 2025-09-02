@@ -396,9 +396,22 @@ class QBittorrentAPI:
         """Run comprehensive health check."""
 ```
 
-### **REDIntegration** (Planned)
-*Location*: `src/mk_torrent/api/red_integration.py`
+### **REDIntegration** ⚠️ **DEPRECATED**
+*Location*: ~~`src/mk_torrent/api/red_integration.py`~~ → **REPLACED BY** `src/mk_torrent/api/trackers/red.py`  
+*Status*: **DEPRECATED as of Sep 2, 2025** - See RED_MODULES_REFACTOR.md  
 
+**New Usage:**
+```python
+from mk_torrent.api.trackers import get_tracker_api
+
+# Old way (deprecated)
+# from mk_torrent.api.red_integration import REDIntegration
+
+# New way (current)
+red_api = get_tracker_api('red', api_key='your_key')
+```
+
+~~Old Documentation:~~
 ```python
 from mk_torrent.api.red_integration import REDIntegration
 

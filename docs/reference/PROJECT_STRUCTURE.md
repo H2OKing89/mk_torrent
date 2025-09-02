@@ -61,11 +61,18 @@ External service integrations and client libraries.
 api/
 ├── __init__.py
 ├── qbittorrent.py        # qBittorrent Web API client
-├── red_integration.py    # RED tracker integration  
-└── tracker_upload.py     # Generic tracker upload interface
+├── red_integration.py    # ⚠️ DEPRECATED: See api/trackers/red.py
+├── tracker_upload.py     # Generic tracker upload interface
+└── trackers/             # 🆕 NEW: Modular tracker system (Sep 2, 2025)
+    ├── __init__.py       # Factory pattern & registry
+    ├── base.py           # Abstract TrackerAPI base class
+    ├── red.py            # Complete RED implementation
+    └── mam.py            # MAM placeholder
 ```
 
 **Purpose**: Isolate external dependencies and provide clean interfaces to third-party services.
+
+**Recent Changes (Sep 2, 2025)**: Added modular tracker architecture. See `docs/active/RED_MODULES_REFACTOR.md`
 
 ### ⚙️ **Core Package** (`src/mk_torrent/core/`)
 Essential application logic and foundational components.
@@ -76,10 +83,20 @@ core/
 ├── torrent_creator.py    # Torrent file creation and validation
 ├── health_checks.py      # System health monitoring
 ├── secure_credentials.py # Credential encryption and storage
-└── upload_queue.py       # Upload job queue management
+├── upload_queue.py       # Upload job queue management
+├── metadata/             # 🆕 NEW: Tracker-agnostic metadata system (Sep 2, 2025)
+│   ├── __init__.py       # Metadata package exports
+│   ├── engine.py         # Main metadata processing engine
+│   └── audiobook.py      # Audiobook-specific processor
+└── compliance/           # 🆕 NEW: Multi-tracker path compliance (Sep 2, 2025)
+    ├── __init__.py       # Compliance package exports
+    ├── path_validator.py # Path validation rules per tracker
+    └── path_fixer.py     # Path fixing/renaming logic
 ```
 
 **Purpose**: Core business logic that other modules depend on.
+
+**Recent Changes (Sep 2, 2025)**: Added metadata and compliance subsystems for tracker-agnostic processing. See `docs/active/RED_MODULES_REFACTOR.md`
 
 ### 🎯 **Features Package** (`src/mk_torrent/features/`)
 Extended functionality and specialized processing modules.
@@ -87,10 +104,17 @@ Extended functionality and specialized processing modules.
 ```
 features/
 ├── __init__.py
-├── metadata_engine.py        # Audiobook metadata processing
+├── metadata_engine.py        # ⚠️ PARTIAL: Now part of core/metadata/ system
 ├── validator.py              # File and path validation
 ├── cross_seed.py            # Cross-seeding functionality
-├── red_uploader.py          # RED-specific upload logic
+├── red_uploader.py          # ⚠️ DEPRECATED: See api/trackers/red.py
+├── templates.py             # Template management
+└── database.py              # Database operations
+```
+
+**Purpose**: Extended functionality and specialized processing modules.
+
+**Recent Changes (Sep 2, 2025)**: RED uploader moved to `api/trackers/red.py`, metadata organized under `core/metadata/`. See `docs/active/RED_MODULES_REFACTOR.md`
 ├── templates.py             # Template management
 ├── check_metadata_health.py # Metadata validation
 └── database.py              # Data persistence
@@ -105,12 +129,14 @@ Helper functions and utility modules.
 utils/
 ├── __init__.py
 ├── async_helpers.py          # Async operation utilities
-├── red_api_parser.py        # RED API documentation parsing
-├── red_compliance_rename.py # RED file naming compliance
-└── red_path_compliance.py   # RED directory structure compliance
+├── api_parser.py            # 🆕 RENAMED: Generic API doc parsing (was red_api_parser.py)
+├── red_compliance_rename.py # ⚠️ DEPRECATED: See core/compliance/path_fixer.py
+└── red_path_compliance.py   # ⚠️ DEPRECATED: See core/compliance/path_validator.py
 ```
 
 **Purpose**: Reusable utility functions that support other modules.
+
+**Recent Changes (Sep 2, 2025)**: Path compliance tools moved to `core/compliance/`. See `docs/active/RED_MODULES_REFACTOR.md`
 
 ### 🔄 **Workflows Package** (`src/mk_torrent/workflows/`)
 Automated processes and multi-step operations.

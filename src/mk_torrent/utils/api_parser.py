@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-RED API Documentation Parser
-Helper script to extract key information from RED API documentation
+Generic API Documentation Parser
+Helper script to extract key information from tracker API documentation
 """
 
 import json
