@@ -99,6 +99,62 @@ Source data is transformed to the canonical model through service-specific mappi
 
 Detailed mapping tables and transformation logic are specified in their respective service documents. All source adapters must append a `Provenance` entry with the unmodified payload to support troubleshooting and data lineage tracking.
 
+### 4.4.1 Audnexus API Field Mapping
+
+**Critical**: The Audnexus API provides both `description` and `summary` fields with different purposes:
+- **`description`**: Short, plain text, often truncated
+- **`summary`**: Full, HTML-formatted content with complete details
+
+**Recommended mapping strategy to avoid field conflicts:**
+
+```python
+# Direct field mappings
+audnexus_response["asin"] → audiobook.asin
+audnexus_response["title"] → audiobook.title
+audnexus_response["subtitle"] → audiobook.subtitle
+audnexus_response["copyright"] → audiobook.copyright (convert int to string)
+audnexus_response["formatType"] → audiobook.format_type
+audnexus_response["image"] → audiobook.artwork_url
+audnexus_response["isAdult"] → audiobook.is_adult
+audnexus_response["isbn"] → audiobook.isbn
+audnexus_response["language"] → audiobook.language
+audnexus_response["literatureType"] → audiobook.literature_type
+audnexus_response["publisherName"] → audiobook.publisher
+audnexus_response["rating"] → audiobook.rating (convert string to float)
+audnexus_response["region"] → audiobook.region
+audnexus_response["releaseDate"] → audiobook.release_date
+
+# Description fields (avoiding conflicts)
+audnexus_response["description"] → audiobook.description      # Backward compatibility
+audnexus_response["description"] → audiobook.description_text # Short, plain text
+audnexus_response["summary"] → audiobook.description_html     # Full, HTML content
+
+# Array/structured mappings
+audnexus_response["authors"] → audiobook.author (join names) + rich entities
+audnexus_response["narrators"] → audiobook.narrator (join names) + rich entities
+audnexus_response["genres"] → audiobook.genres + audiobook.tags (split by type)
+audnexus_response["seriesPrimary"] → audiobook.series + audiobook.volume
+audnexus_response["runtimeLengthMin"] → audiobook.duration_sec (multiply by 60)
+```
+
+**Rationale**: This strategy preserves backward compatibility while leveraging enhanced fields to capture the full richness of Audnexus data without field conflicts.
+
+**Example of the description field distinction:**
+```json
+// Audnexus API response
+{
+  "description": "Souma presses Elfrieden's siege on the Amidonian principality...",
+  "summary": "<p><b>The Battle Continues!</b></p> <p>Souma presses Elfrieden's siege on the Amidonian principality, whose soldiers fight tooth and nail to keep him at bay. The violence on the front lines is bad enough, but a surprise attack at the rear will confound the bloody battle further. Souma and Carla must fend off Gaius themselves in a life-or-death test of nerves, loyalty, and steel. When hard-fought victory finally dawns over the capital, it's time for the realist hero to get to work...</p>"
+}
+
+// Maps to AudiobookMeta
+{
+  "description": "Souma presses Elfrieden's siege on the Amidonian principality...",     // Short version
+  "description_text": "Souma presses Elfrieden's siege on the Amidonian principality...", // Same, explicit
+  "description_html": "<p><b>The Battle Continues!</b></p> <p>Souma presses..."           // Full HTML version
+}
+```
+
 ---
 
 ## 4.5 Enhanced Model - Rich Entities (Now Available)
