@@ -97,6 +97,27 @@ logger.info(
 )
 ```
 
+### Rich Logging Setup (Recommended)
+```python
+import logging
+from rich.logging import RichHandler
+
+# Configure Rich logging handler (from 00 — Packages)
+logging.basicConfig(
+    level="INFO",
+    format="%(message)s",
+    datefmt="[%X]",
+    handlers=[RichHandler(rich_tracebacks=True, markup=True)],
+)
+
+logger = logging.getLogger("mk_torrent.metadata")
+
+# Usage with Rich markup
+logger.info("[bold green]Metadata extraction[/bold green] completed successfully")
+logger.warning("[yellow]Missing[/yellow] optional field: [bold]narrator[/bold]")
+logger.error("[bold red]Validation failed[/bold red]: Missing required field 'title'")
+```
+
 ## Monitoring and Observability
 
 ### Metrics Collection

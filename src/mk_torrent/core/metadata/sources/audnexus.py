@@ -19,6 +19,7 @@ import re
 from datetime import datetime
 
 from ..exceptions import SourceUnavailable
+from ..services.html_cleaner import HTMLCleaner
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +83,9 @@ class AudnexusSource:
             )  # X requests per 1 second
         except ImportError:
             logger.warning("aiolimiter not available, running without rate limiting")
+
+        # Initialize HTML cleaner
+        self._html_cleaner = HTMLCleaner(preserve_formatting=False)
 
         # Initialize HTTP client
         self._init_client()
@@ -178,27 +182,8 @@ class AudnexusSource:
             raise SourceUnavailable("audnexus", f"API request failed: {e}")
 
     def _clean_html(self, html_content: str) -> str:
-        """Clean HTML content to plain text."""
-        if not html_content:
-            return ""
-
-        try:
-            import nh3
-
-            # Remove all HTML tags and attributes
-            cleaned = nh3.clean(html_content, tags=set(), attributes={})
-            return cleaned.strip()
-        except ImportError:
-            try:
-                from bs4 import BeautifulSoup
-
-                soup = BeautifulSoup(html_content, "html.parser")
-                return soup.get_text().strip()
-            except ImportError:
-                logger.warning(
-                    "Neither nh3 nor BeautifulSoup available for HTML cleaning"
-                )
-                return html_content
+        """Clean HTML content to plain text using HTMLCleaner service."""
+        return self._html_cleaner.clean_html(html_content)
 
     def extract(self, source: Union[str, Path]) -> Dict[str, Any]:
         """

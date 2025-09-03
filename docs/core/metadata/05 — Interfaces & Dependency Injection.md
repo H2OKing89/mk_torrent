@@ -19,7 +19,7 @@ class MetadataProcessor(Protocol):
 # engine.py (registration sketch)
 cleaner = HTMLCleaner()
 detector = FormatDetector()
-aud = AudnexusAPI(http_client=RequestsClient(), rate_limit=...)
+aud = AudnexusAPI(http_client=HTTPXClient(), rate_limit=...)
 pathinfo = PathInfoParser()
 merger = FieldMerger(precedence=["embedded", "api", "path"])  # configurable
 

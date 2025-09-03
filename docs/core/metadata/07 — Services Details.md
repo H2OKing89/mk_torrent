@@ -68,7 +68,7 @@ class FormatDetector:
 **Key Features:**
 - ASIN extraction from filenames and embedded tags
 - API response normalization with field mapping
-- Pluggable HTTP backend (httpx/requests) with rate limiting
+- Pluggable HTTP backend (httpx preferred/requests fallback) with rate limiting
 - Comprehensive error handling and retry logic
 
 **Interface Preview:**

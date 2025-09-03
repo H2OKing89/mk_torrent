@@ -388,7 +388,7 @@ class MetadataProcessor(Protocol):
 # engine.py (registration sketch)
 cleaner = HTMLCleaner()
 detector = FormatDetector()
-aud = AudnexusAPI(http_client=RequestsClient(), rate_limit=...)
+aud = AudnexusAPI(http_client=HTTPXClient(), rate_limit=...)
 pathinfo = PathInfoParser()
 merger = FieldMerger(precedence=["embedded", "api", "path"])  # configurable
 
@@ -451,7 +451,7 @@ self.processors["audiobook"] = AudiobookMetadata(
 
 * Extract ASIN from filename or embedded tag.
 * Fetch & normalize book JSON (authors, narrators, summary, publisher, releaseDate → `year`, runtime → `duration_sec`).
-* Pluggable HTTP backend (`httpx` by default; tiny `requests` adapter only if needed).
+* Pluggable HTTP backend (`httpx` preferred; optional `requests` adapter for compatibility).
 
 ### 7.4 Path Info (`sources/pathinfo.py`)
 
