@@ -27,10 +27,33 @@ from .exceptions import (
     ExtractionError,
 )
 
+# Rich entity model (enhanced metadata structures)
+from .entities import (
+    AudiobookMetaRich,
+    PersonRef,
+    GenreTag,
+    SeriesRef,
+    Chapter,
+    ImageAsset,
+    AudioStream,
+    FileRef,
+    Provenance,
+)
+
 __all__ = [
     # Core data models
     "AudiobookMeta",
     "ValidationResult",
+    # Rich entity model
+    "AudiobookMetaRich",
+    "PersonRef",
+    "GenreTag",
+    "SeriesRef",
+    "Chapter",
+    "ImageAsset",
+    "AudioStream",
+    "FileRef",
+    "Provenance",
     # Protocols/interfaces
     "MetadataSource",
     "MetadataService",
