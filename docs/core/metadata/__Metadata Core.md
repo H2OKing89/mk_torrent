@@ -1,6 +1,236 @@
 # mk\_torrent — Metadata Architecture Refactor (v1)
 
+> **Conductor Document**: This is the master index for the metadata core architecture. Each section links to detailed specifications.
+
 > Scope: **metadata core only** (how we extract, normalize, validate, and present metadata), wired to, but separate from, `qbittorrent` (torrent creation) and `trackers` (upload flows like RED).
+
+---
+
+## Architecture Overview
+
+This document serves as the conductor for the metadata architecture refactor. Each numbered section below has a corresponding detailed specification document.
+
+## 📋 Table of Contents
+
+### Foundation & Design
+1. **[Goals](./1%20—%20Goals.md)** - Core objectives and design principles
+2. **[High-level Architecture](./2%20—%20High-level%20Architecture.md)** - System overview and component responsibilities
+3. **[Proposed Directory Layout](./3%20—%20Proposed%20Directory%20Layout.md)** - File structure and module organization
+4. **[Canonical Data Model](./4%20—%20Canonical%20Data%20Model.md)** - Primary data structures and normalization rules
+
+### Core Components
+5. **[Interfaces & Dependency Injection](./5%20—%20Interfaces%20&%20Dependency%20Injection.md)** - Protocols, DI patterns, and component wiring
+6. **[Engine Pipeline](./6%20—%20Engine%20Pipeline.md)** - Processing flow and data transformation steps
+7. **[Services Details](./7%20—%20Services%20Details.md)** - Generic utilities and service modules
+   - **[Field Merger Specification](./7.5%20—%20Audiobook%20Metadata%20Field%20Merger.md)** - Detailed merge logic and precedence rules
+8. **[Validators](./8%20—%20Validators.md)** - Quality assurance and completeness scoring
+
+### Integration & Output
+9. **[Tracker Mapping](./9%20—%20Tracker%20Mapping.md)** - Output formatting for tracker APIs
+10. **[Configuration](./10%20—%20Configuration.md)** - Settings, precedence rules, and runtime behavior
+10.5. **[Recommended Packages & Project Extras](./10.5%20—%20Recommended%20Packages%20&%20Project%20Extras.md)** - Dependencies and optional enhancements
+
+### Development & Deployment
+11. **[Testing Strategy](./11%20—%20Testing%20Strategy.md)** - Test architecture and quality assurance
+12. **[Migration Plan](./12%20—%20Migration%20Plan.md)** - Low-risk incremental implementation steps
+13. **[Error Handling & Logging](./13%20—%20Error%20Handling%20&%20Logging.md)** - Exception hierarchy and monitoring
+14. **[Example: Processor Skeleton](./14%20—%20Example%20Processor%20Skeleton.md)** - Implementation patterns and examples
+
+### Extensibility & Future
+15. **[Extension Guide](./15%20—%20Extension%20Guide.md)** - Adding new sources, content types, and trackers
+16. **[Next Steps](./16%20—%20Next%20Steps.md)** - Implementation checklist and current priorities
+
+---
+
+## Quick Reference
+
+### Current Implementation Status
+- ✅ Validation system (audiobook_validator.py) - completed and lint-compliant
+- ✅ Architecture cleanup - legacy code removed, modern structure in place
+- ✅ Documentation organization - detailed specifications created
+- 🎯 **Next Priority**: Implement field merger (`services/merge.py`) per [dedicated specification](./7.5%20—%20Audiobook%20Metadata%20Field%20Merger.md)
+
+### Key Architectural Decisions
+- **Primary Data Model**: Dataclass (fast, zero deps) with optional Pydantic mirror
+- **Dependency Injection**: Constructor-based DI for easy testing and flexibility
+- **Declarative Merging**: Configuration-driven precedence rules per field
+- **Modular Services**: Composable utilities for HTML cleaning, format detection, etc.
+- **Tracker Isolation**: Mappers handle tracker-specific transformations
+
+### Essential Components
+- **Engine**: Orchestrates the entire pipeline
+- **Processors**: Content-type specific handlers (audiobook, music, video)
+- **Sources**: Metadata extractors (embedded tags, APIs, path parsing)
+- **Services**: Generic utilities (cleaning, merging, validation)
+- **Mappers**: Tracker-specific output formatters
+
+---
+
+## Result Vision
+
+**A crisp, plug-and-play metadata core** that's easy to reason about, test, and extend—without surprising knock-on effects in trackers or torrent creation.
+
+---
+
+## Quick Implementation Guide
+
+For immediate implementation needs, here are the most important sections with their inline details:
+
+## 1) Goals
+
+* **Single, canonical metadata engine** that is easy to extend.
+* Clean separation of **content processors** (audiobook/music/video), **sources** (embedded tags, Audnexus API), and **services** (HTML cleaning, format detection, image discovery, tag normalization).
+* **Deterministic merging** of multiple sources with precedence rules.
+* **Strict-but-friendly validation** with actionable error/warning output for tracker requirements (starting with RED).
+* A **stable internal model** (dataclass / pydantic) that downstreams (trackers, CLI, workflows) can rely on.
+* **Unit-testable modules** with fast, IO-light tests; integration tests for end-to-end sanity.
+
+---
+
+## 2) High-level architecture
+
+```
++------------------------+        +----------------------+         +--------------------+
+|        Workflows       |        |       Trackers       |         |   qbittorrent API  |
+|  wizard.py / uploads   |        |  api/trackers/red.py |         |   api/qbittorrent  |
++-----------+------------+        +------------+---------+         +----------+---------+
+            |                                  |                              |
+            |                                  |                              |
+            v                                  |                              |
+   +--------+---------------------------+      |                              |
+   |         Metadata Engine            |      |                              |
+   |  core/metadata/engine.py          |      |                              |
+   +--------+---------------------------+      |                              |
+            |         ^                        |                              |
+            |         |                        |                              |
+            v         |                        v                              v
+   +--------+---------+-----+      +----------+-----------+         +--------+--------+
+   |   Processors (by type) |      |  Mappers (tracker)   |         |  Torrent Creator |
+   |  processors/audiobook  |----->|  mappers/red.py      |-------->|  core/torrent_.. |
+   +------------------------+      +----------------------+         +------------------+
+            |
+            v
+   +-------------------+   +------------------+   +-------------------+
+   | Sources/Extractors|   |  Services/Utils  |   |   Validators      |
+   | embedded.py       |   | html_cleaner.py  |   | audiobook_validator|
+   | audnexus.py       |   | format_detector.py|  | common.py          |
+   +-------------------+   +------------------+   +-------------------+
+```
+
+* **Engine** orchestrates processors → sources → merge → services → validate → (optionally) map to tracker shape.
+* **Processor** encapsulates content-type knowledge (path patterns, field expectations, defaults).
+* **Sources** pull raw metadata (file tags via Mutagen, Audnexus API, folder names).
+* **Services** provide generic utilities (sanitization, format sniffing, image URL detection, tag normalization).
+* **Validators** return `valid/errors/warnings/completeness` for precise UX.
+* **Mappers** translate from internal model to tracker-specific payloads (e.g., RED form fields), keeping trackers free of raw parsing.
+
+---
+
+## 4) Canonical data model
+
+Use a **dataclass** as the primary DTO (fast, zero deps), with an optional pydantic mirror under `schemas/` for strict-mode validation.
+
+```python
+# core/metadata/base.py
+from __future__ import annotations
+from dataclasses import dataclass, field, asdict
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+@dataclass
+class AudiobookMeta:
+    title: str = ""
+    author: str = ""
+    album: str = ""          # default: title
+    series: str = ""
+    volume: str = ""          # e.g., "08"
+    year: Optional[int] = None
+    narrator: str = ""
+    duration_sec: Optional[int] = None
+    format: str = ""          # AAC/FLAC/MP3/etc
+    encoding: str = ""        # V0/CBR320/Lossless/etc
+    asin: str = ""
+    isbn: str = ""
+    publisher: str = ""
+    language: str = "en"
+    description: str = ""
+    genres: List[str] = field(default_factory=list)
+    tags: List[str] = field(default_factory=list)
+    chapters: List[Dict[str, Any]] = field(default_factory=list)
+    files: List[Path] = field(default_factory=list)
+    source_path: Optional[Path] = None
+    artwork_url: str = ""
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+```
+
+---
+* **rich.logging.RichHandler** — readable, structured logs in dev.
+* *(Optional)* **structlog** — production JSON logs (pair with `orjson`).
+
+### Validation & search niceties
+
+* **rapidfuzz** — fast fuzzy matching when tags are noisy.
+* **python-dateutil** — you already have it; keep.
+
+### Testing
+
+* **pytest**, **pytest-cov**, **pytest-mock** — baseline.
+* **freezegun** — freeze time for year/drift tests.
+* **hypothesis** — property tests for path parser & merge.
+* **respx** — (again) excellent `httpx` mocking.
+
+---
+
+### Suggested `pyproject.toml` extras
+
+Keep runtime lean; let users opt into heavy stuff.
+
+```toml
+[project.optional-dependencies]
+core = [
+  "nh3>=0.2",
+  "beautifulsoup4>=4.12",
+  "mutagen>=1.47",
+  "Pillow>=10.0",
+  "python-slugify>=8.0",
+  "Unidecode>=1.3",
+  "cachetools>=5.3",
+]
+
+net = [
+  "httpx>=0.27",
+  "tenacity>=9.0",
+  "aiolimiter>=1.1",
+]
+
+strict = [
+  "pydantic>=2.7",
+  "pydantic-settings>=2.4",
+  "orjson>=3.10",
+]
+
+cli = [
+  "rich>=13.7",
+]
+
+test = [
+  "pytest>=8.0",
+  "pytest-cov>=5.0",
+  "pytest-mock>=3.14",
+  "freezegun>=1.5",
+  "hypothesis>=6.100",
+  "respx>=0.21",
+]
+```
+
+**Install examples**
+
+* Dev all-in: `pip install -e .[core,net,strict,cli,test]`
+* Runtime minimal (headless box): `pip install -e .[core,net]`
+
+[See ## 10.0) Recommended packages & project extras Continued](#100-recommended-packages-project-extras-continued)
 
 ---
 
@@ -230,8 +460,15 @@ self.processors["audiobook"] = AudiobookMetadata(
 
 ### 7.5 Merge (`services/merge.py`)
 
-* Field-level precedence (YAML/py config).
-* Smart union for lists (genres/tags): de-dupe + preserve higher-precedence ordering.
+**See dedicated specification:** [`7.5 — Audiobook Metadata Field Merger.md`](./7.5%20—%20Audiobook%20Metadata%20Field%20Merger.md)
+
+* **Declarative precedence** (YAML/py config) per field with smart rationales:
+  - `duration_sec`: embedded (precise seconds) > API (minute-granular) > path
+  - `series/volume`: path (tracker-compliant) > API > embedded
+  - `asin`: path (reliable extraction) > API > embedded
+* **Smart list union** for genres/tags: stable order + case-insensitive de-duplication
+* **Source tagging**: Each input requires `"_src": "path"|"embedded"|"api"` for traceability
+* **Meaningful value detection**: Ignores empty strings, null values, empty collections
 
 ---
 
@@ -274,115 +511,7 @@ Add metadata config under `config.py` or a `metadata.yaml`:
 
 ---
 
-## 10.5) Recommended packages & project extras
-
-Below are the add-ons that make the refactor sing. Grouped by concern with why they help and how they fit.
-
-### Networking & API (Audnexus, future sources)
-
-* **httpx** — sync+async client, HTTP/2, sane timeouts.
-* **tenacity** — clean retries with backoff/jitter.
-* **aiolimiter** — rate limiting if you go async.
-* **respx** — mock `httpx` in tests.
-
-> Standardize on `httpx` across the metadata core. Keep a tiny adapter for `requests` only if something upstream can't move yet.
-
-### Data modeling & config
-
-* **pydantic v2** — optional strict mirror of `AudiobookMeta`; great validators.
-* **pydantic-settings** — typed config (precedence, timeouts, drift rules).
-* **orjson** — super-fast JSON for logs/cache/IPC.
-
-### HTML & text cleanup
-
-* **nh3** — modern sanitizer (preferred path).
-* **beautifulsoup4** — fallback when `nh3` isn't available.
-* **python-slugify** + **Unidecode** — safe filenames, ASCII fallbacks.
-
-### Media & file metadata
-
-* **mutagen** — keep it (tags, duration, chapters).
-* **Pillow** — keep it (artwork dimensions/type).
-* *(Optional)* **python-magic** — MIME sniffing beyond extensions.
-
-### Async & concurrency (only if you go async)
-
-* **anyio** — unifies trio/asyncio; `httpx` plays nice.
-* **async-timeout** — explicit time scoping if you want it in addition to `httpx`.
-
-### Caching & rate limiting
-
-* **cachetools** — TTL LRU for Audnexus responses, image probes.
-* *(Optional)* **diskcache** — persistent cache for batch runs/warm starts.
-
-### Logging & CLI UX
-
-* **rich** — progress bars and pretty errors.
-* **rich.logging.RichHandler** — readable, structured logs in dev.
-* *(Optional)* **structlog** — production JSON logs (pair with `orjson`).
-
-### Validation & search niceties
-
-* **rapidfuzz** — fast fuzzy matching when tags are noisy.
-* **python-dateutil** — you already have it; keep.
-
-### Testing
-
-* **pytest**, **pytest-cov**, **pytest-mock** — baseline.
-* **freezegun** — freeze time for year/drift tests.
-* **hypothesis** — property tests for path parser & merge.
-* **respx** — (again) excellent `httpx` mocking.
-
----
-
-### Suggested `pyproject.toml` extras
-
-Keep runtime lean; let users opt into heavy stuff.
-
-```toml
-[project.optional-dependencies]
-core = [
-  "nh3>=0.2",
-  "beautifulsoup4>=4.12",
-  "mutagen>=1.47",
-  "Pillow>=10.0",
-  "python-slugify>=8.0",
-  "Unidecode>=1.3",
-  "cachetools>=5.3",
-]
-
-net = [
-  "httpx>=0.27",
-  "tenacity>=9.0",
-  "aiolimiter>=1.1",
-]
-
-strict = [
-  "pydantic>=2.7",
-  "pydantic-settings>=2.4",
-  "orjson>=3.10",
-]
-
-cli = [
-  "rich>=13.7",
-]
-
-test = [
-  "pytest>=8.0",
-  "pytest-cov>=5.0",
-  "pytest-mock>=3.14",
-  "freezegun>=1.5",
-  "hypothesis>=6.100",
-  "respx>=0.21",
-]
-```
-
-**Install examples**
-
-* Dev all-in: `pip install -e .[core,net,strict,cli,test]`
-* Runtime minimal (headless box): `pip install -e .[core,net]`
-
----
+## 10.0) Recommended packages & project extras Continued
 
 ### Tiny patterns to copy-paste
 
