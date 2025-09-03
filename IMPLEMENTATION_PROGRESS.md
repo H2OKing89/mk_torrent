@@ -2,7 +2,20 @@
 
 ### ✅ **COMPLETED: Core Architecture & Foundation**
 
-This document tracks the current implementation status of the metadata system refactor based on the "Metadata Core Refactor & Modularization Blueprint.md" specification.
+This tracks the current implementation status of the metadata system refactor based on the "Metadata Core Refactor & Modularization Blueprint.md" specification.
+
+---
+
+### 📋 **Next Steps** (per Blueprint)
+
+1. **Implement field merger (services/merge.py)** - Declarative precedence-based merging
+2. **Complete RED tracker mapper (mappers/red.py)** - AudiobookMeta → RED upload fields
+3. **Expand music/video processors** - Extend beyond audiobooks
+4. **Configuration system** - Implement precedence rules and settings
+5. **Performance optimization** - Benchmark and optimize
+6. **Documentation** - Complete API documentation
+
+**Status**: Core refactor successfully completed including comprehensive validation system. Field merger and tracker mapping are next priority items per blueprint.
 
 ---
 
@@ -35,7 +48,9 @@ src/mk_torrent/core/metadata/
 │   ├── image_finder.py    # ✅ Implemented
 │   ├── merge.py           # ✅ Implemented
 │   └── tag_normalizer.py  # ✅ Implemented
-├── validators/             # ✅ Directory created
+├── validators/             # ✅ Validation logic
+│   ├── common.py          # ✅ Basic validation primitives (NEW!)
+│   └── audiobook_validator.py # ✅ Audiobook + RED validation (NEW!)
 ├── mappers/               # ✅ Directory created
 └── schemas/               # ✅ Directory created
 ```
@@ -63,11 +78,16 @@ src/mk_torrent/core/metadata/
 - Utility services (HTML cleaning, format detection, etc.)
 - Exception handling system
 - Test coverage for core components
+- **🆕 Comprehensive validation system (NEW!):**
+  - Common validation primitives (year, ASIN, ISBN, duration checks)
+  - Audiobook-specific validator with RED compliance hints
+  - Integration with metadata engine pipeline
+  - Completeness scoring and detailed error/warning reporting
 
 #### **🔄 In Progress / Partial:**
 - Music and video processors (placeholders exist)
-- Comprehensive validator implementations
-- Tracker mappers beyond basic structure
+- Comprehensive field merger implementation (services/merge.py - stub)
+- Tracker mappers beyond basic structure (mappers/red.py - stub)
 - Advanced configuration system
 - Performance optimizations
 
@@ -89,10 +109,9 @@ The refactored system can currently:
 - ✅ **Integrate with AudNexus API** for enhanced metadata
 - ✅ **Clean HTML content** from descriptions
 - ✅ **Detect audio formats** and encoding details
-- ✅ **Validate basic metadata** requirements
-- ✅ **Maintain backward compatibility** with existing code
-
----
+- ✅ **Validate metadata comprehensively** with RED compliance hints (NEW!)
+- ✅ **Provide detailed validation feedback** with errors, warnings, and completeness scores (NEW!)
+- ✅ **Maintain backward compatibility** with existing code---
 
 ### 🎉 **Success Metrics**
 

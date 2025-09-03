@@ -142,7 +142,7 @@ class AudiobookProcessor:
 
     def validate(self, metadata: Dict[str, Any]) -> ValidationResult:
         """
-        Validate audiobook metadata.
+        Validate audiobook metadata using comprehensive validator.
 
         Args:
             metadata: Metadata dict to validate
@@ -150,52 +150,31 @@ class AudiobookProcessor:
         Returns:
             ValidationResult with validation status and details
         """
-        result = ValidationResult(valid=True)
+        # Import here to avoid circular imports
+        from ..validators.audiobook_validator import validate_audiobook
 
-        # Required fields
-        required_fields = ["title", "author"]
-        for field in required_fields:
-            if not metadata.get(field):
-                result.add_error(f"Missing required field: {field}")
+        # Use the comprehensive validator
+        validation_result = validate_audiobook(metadata)
 
-        # Optional but recommended fields
-        recommended_fields = [
-            "year",
-            "narrator",
-            "series",
-            "volume",
-            "asin",
-            "duration_seconds",
-        ]
+        # Convert to ValidationResult format
+        result = ValidationResult(valid=validation_result["valid"])
 
-        # Calculate completeness
-        total_fields = len(required_fields) + len(recommended_fields)
-        filled_fields = len(
-            [f for f in required_fields + recommended_fields if metadata.get(f)]
+        # Add errors
+        for error in validation_result["errors"]:
+            result.add_error(error)
+
+        # Add warnings
+        for warning in validation_result["warnings"]:
+            result.add_warning(warning)
+
+        # Set completeness
+        result.completeness = validation_result["completeness"]
+
+        logger.debug(
+            f"Validation completed: valid={result.valid}, "
+            f"errors={len(result.errors)}, warnings={len(result.warnings)}, "
+            f"completeness={result.completeness:.2f}"
         )
-        result.completeness = filled_fields / total_fields
-
-        # Validation warnings
-        if not metadata.get("year"):
-            result.add_warning("Missing publication year")
-
-        if not metadata.get("narrator"):
-            result.add_warning("Missing narrator information")
-
-        if not metadata.get("asin"):
-            result.add_warning("Missing ASIN - consider adding for better metadata")
-
-        if not metadata.get("duration_seconds"):
-            result.add_warning("Missing duration information")
-
-        # Data quality checks
-        year = metadata.get("year")
-        if year and (year < 1900 or year > 2030):
-            result.add_warning(f"Suspicious year value: {year}")
-
-        rating = metadata.get("rating")
-        if rating and isinstance(rating, (int, float)) and (rating < 0 or rating > 5):
-            result.add_warning(f"Rating out of expected range (0-5): {rating}")
 
         return result
 
