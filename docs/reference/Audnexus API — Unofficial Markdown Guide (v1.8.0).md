@@ -181,10 +181,110 @@ print(chap["asin"], "has", len(chap["chapters"]), "chapters")
   * `startOffsetMs` *(number)*, `startOffsetSec` *(number)*
   * `lengthMs` *(number)*
 
-*Example chapter item:*
+**Real-world example:**
 
 ```json
-{"title":"Chapter 1","startOffsetMs":19216,"startOffsetSec":19,"lengthMs":2203908}
+{
+  "asin": "B0C8ZW5N6Y",
+  "brandIntroDurationMs": 3924,
+  "brandOutroDurationMs": 4945,
+  "chapters": [
+    {
+      "lengthMs": 23243,
+      "startOffsetMs": 0,
+      "startOffsetSec": 0,
+      "title": "Opening Credits"
+    },
+    {
+      "lengthMs": 401658,
+      "startOffsetMs": 23243,
+      "startOffsetSec": 23,
+      "title": "Prologue: On a Moonlit Terrace"
+    },
+    {
+      "lengthMs": 5221680,
+      "startOffsetMs": 424901,
+      "startOffsetSec": 424,
+      "title": "Chapter 1: Project Lorelei"
+    },
+    {
+      "lengthMs": 1096678,
+      "startOffsetMs": 5646581,
+      "startOffsetSec": 5646,
+      "title": "Intermission 1: Lord Ishizuka"
+    },
+    {
+      "lengthMs": 4075264,
+      "startOffsetMs": 6743259,
+      "startOffsetSec": 6743,
+      "title": "Chapter 2: Meeting on a Street Corner in Van"
+    },
+    {
+      "lengthMs": 4060867,
+      "startOffsetMs": 10818523,
+      "startOffsetSec": 10818,
+      "title": "Chapter 3: Negotiations"
+    },
+    {
+      "lengthMs": 4174227,
+      "startOffsetMs": 14879390,
+      "startOffsetSec": 14879,
+      "title": "Chapter 4: Pact"
+    },
+    {
+      "lengthMs": 1973022,
+      "startOffsetMs": 19053617,
+      "startOffsetSec": 19053,
+      "title": "Chapter 5: Withdrawal"
+    },
+    {
+      "lengthMs": 1125169,
+      "startOffsetMs": 21026639,
+      "startOffsetSec": 21026,
+      "title": "Extra Story: The Story of a Certain Group of Adventurers 3"
+    },
+    {
+      "lengthMs": 1379938,
+      "startOffsetMs": 22151808,
+      "startOffsetSec": 22151,
+      "title": "Chapter 6: Standing in Front of the Lion's Cage"
+    },
+    {
+      "lengthMs": 2095066,
+      "startOffsetMs": 23531746,
+      "startOffsetSec": 23531,
+      "title": "Chapter 7: Promise"
+    },
+    {
+      "lengthMs": 726413,
+      "startOffsetMs": 25626812,
+      "startOffsetSec": 25626,
+      "title": "Intermission 2: What the Black-Robed Prime Minister Was Doing Then"
+    },
+    {
+      "lengthMs": 4064373,
+      "startOffsetMs": 26353225,
+      "startOffsetSec": 26353,
+      "title": "Chapter 8: Crime and Punishment"
+    },
+    {
+      "lengthMs": 1029294,
+      "startOffsetMs": 30417598,
+      "startOffsetSec": 30417,
+      "title": "Epilogue: Peace Is Yet Distant"
+    },
+    {
+      "lengthMs": 62437,
+      "startOffsetMs": 31446892,
+      "startOffsetSec": 31446,
+      "title": "End Credits"
+    }
+  ],
+  "isAccurate": true,
+  "region": "us",
+  "runtimeLengthMs": 31509329,
+  "runtimeLengthSec": 31509
+}
 ```
 
 ---

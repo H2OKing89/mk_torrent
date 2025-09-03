@@ -135,6 +135,11 @@ audnexus_response["narrators"] → audiobook.narrator (join names) + rich entiti
 audnexus_response["genres"] → audiobook.genres + audiobook.tags (split by type)
 audnexus_response["seriesPrimary"] → audiobook.series + audiobook.volume
 audnexus_response["runtimeLengthMin"] → audiobook.duration_sec (multiply by 60)
+
+# Chapter data (separate API endpoint: /books/{ASIN}/chapters)
+chapters_response["chapters"] → audiobook.chapters (transform to our format)
+chapters_response["runtimeLengthSec"] → audiobook.duration_sec (if not from main)
+chapters_response["isAccurate"] → metadata for chapter reliability
 ```
 
 **Rationale**: This strategy preserves backward compatibility while leveraging enhanced fields to capture the full richness of Audnexus data without field conflicts.
