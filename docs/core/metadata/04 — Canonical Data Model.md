@@ -1,5 +1,30 @@
 # 4) Canonical Data Model (Revised)
 
+## ✅ **Enhanced Fields Implementation Status**
+
+**Update**: The enhanced fields requested in community feedback have been **fully implemented** in both the simple `AudiobookMeta` and rich `AudiobookMetaRich` models. The system now supports all the fields identified as commonly available from path parsing, embedded metadata, and Audnexus API sources.
+
+### **Enhanced Fields Now Available:**
+
+- ✅ **`subtitle`** - Book subtitles and edition information
+- ✅ **`copyright`** - Copyright notices and ownership
+- ✅ **`release_date`** - Publication/release dates (ISO format)
+- ✅ **`rating`** - Numeric ratings (0.0-5.0 scale)
+- ✅ **`cover_dimensions`** - Image dimensions (`{"width": 1400, "height": 2100}`)
+- ✅ **`region`** - Country/region codes (JP, US, UK, etc.)
+- ✅ **`literature_type`** - Content classification (fiction, non-fiction, light-novel, etc.)
+- ✅ **`format_type`** - Audio format specification (m4b, mp3, etc.)
+- ✅ **`is_adult`** - Adult content flag
+- ✅ **`description_html`** - Rich HTML descriptions
+- ✅ **`description_text`** - Plain text descriptions
+
+These fields are seamlessly supported in:
+- **Simple Model**: Direct field access (`audiobook.subtitle`, `audiobook.rating`)
+- **Rich Model**: Structured entities with type safety and conversion utilities
+- **Round-trip Conversion**: Full compatibility between simple and rich representations
+
+---
+
 ## 4.1 Scope & Principles
 
 * **Scope:** Canonical representation of an audiobook compiled from:
@@ -9,16 +34,17 @@
 
 * **Goals:** One stable DTO for downstream tasks (pathing, slugs, chapter exports, tracker templates, UI), explicit **provenance**, and clear **normalization**.
 
-## 4.2 Current Implementation - AudiobookMeta Dataclass
+## 4.2 Current Implementation - Enhanced AudiobookMeta Dataclass
 
-The current working implementation uses a simplified but functional dataclass structure:
+The current working implementation uses an enhanced dataclass structure with comprehensive field support:
 
 ```python
 # src/mk_torrent/core/metadata/base.py
 @dataclass
 class AudiobookMeta:
-    """Canonical audiobook metadata container."""
+    """Canonical audiobook metadata container with enhanced fields."""
     title: str = ""
+    subtitle: str = ""  # Enhanced field for book subtitles
     author: str = ""
     album: str = ""  # default: title
     series: str = ""
@@ -31,14 +57,24 @@ class AudiobookMeta:
     asin: str = ""
     isbn: str = ""
     publisher: str = ""
+    copyright: str = ""  # Enhanced field for copyright notice
+    release_date: str = ""  # Enhanced field for release date (ISO format)
+    rating: Optional[float] = None  # Enhanced field for rating (0.0-5.0)
     language: str = "en"
+    region: str = ""  # Enhanced field for region/country code
+    literature_type: str = ""  # Enhanced field (fiction, non-fiction, etc.)
+    format_type: str = ""  # Enhanced field (m4b, mp3, etc.)
+    is_adult: Optional[bool] = None  # Enhanced field for adult content flag
     description: str = ""
+    description_html: str = ""  # Enhanced field for HTML description
+    description_text: str = ""  # Enhanced field for plain text description
     genres: List[str] = field(default_factory=list)
     tags: List[str] = field(default_factory=list)
     chapters: List[Dict[str, Any]] = field(default_factory=list)
     files: List[Path] = field(default_factory=list)
     source_path: Optional[Path] = None
     artwork_url: str = ""
+    cover_dimensions: Optional[Dict[str, int]] = None  # Enhanced field {"width": 600, "height": 800}
 ```
 
 ## 4.3 Normalization Rules

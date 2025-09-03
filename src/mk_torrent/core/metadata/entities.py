@@ -110,7 +110,7 @@ class AudiobookMetaRich:
 
     # Identity & naming
     title: str = ""
-    subtitle: str = ""
+    subtitle: str = ""  # Often available from Audnexus/embedded
     series: SeriesRef = field(default_factory=SeriesRef)
     volume: str = ""  # zero-padded (e.g., "03")
 
@@ -120,20 +120,23 @@ class AudiobookMetaRich:
     authors: List[PersonRef] = field(default_factory=list)
     narrators: List[PersonRef] = field(default_factory=list)
 
-    # Publishing & classification
+    # Publishing & identification
     asin: str = ""
     isbn: str = ""
     publisher: str = ""
+    copyright: str = ""  # NEW: Copyright information
+    release_date: Optional[date] = None  # NEW: Full release date
+    year: Optional[int] = None
+
+    # Content classification
     language: str = "en"  # ISO-639-1 where possible
     region: str = ""  # "us" etc.
     literature_type: str = ""  # "fiction"|"nonfiction"|...
     format_type: str = ""  # "unabridged"|"abridged"
     is_adult: Optional[bool] = None
-    rating: Optional[float] = None  # 0.0 to 5.0
+    rating: Optional[float] = None  # 0.0 to 5.0 scale
 
     # Time & runtime
-    release_date: Optional[date] = None
-    year: Optional[int] = None
     runtime_min: Optional[int] = None  # remote (Audnexus)
     duration_sec: Optional[int] = None  # embedded (file trumps remote)
 
@@ -168,6 +171,9 @@ class AudiobookMetaRich:
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "AudiobookMetaRich":
         """Create instance from dictionary data."""
+        # Handle cover_dimensions BEFORE filtering (it's not a dataclass field)
+        cover_dimensions = data.get("cover_dimensions", None)
+
         # Filter out unknown fields and convert complex objects
         valid_fields = {k: v for k, v in data.items() if k in cls.__dataclass_fields__}
 
@@ -176,6 +182,64 @@ class AudiobookMetaRich:
             valid_fields["source_path"], str
         ):
             valid_fields["source_path"] = Path(valid_fields["source_path"])
+
+        # Convert release_date string to date object
+        if "release_date" in valid_fields and isinstance(
+            valid_fields["release_date"], str
+        ):
+            try:
+                if valid_fields["release_date"]:
+                    from datetime import datetime
+
+                    parsed_date = datetime.fromisoformat(
+                        valid_fields["release_date"]
+                    ).date()
+                    valid_fields["release_date"] = parsed_date
+                else:
+                    valid_fields["release_date"] = None
+            except (ValueError, TypeError):
+                valid_fields["release_date"] = None
+
+        # Handle cover_dimensions BEFORE processing cover field
+        # (cover_dimensions was extracted earlier, before filtering)
+
+        # Convert nested objects if they're dicts
+        if "series" in valid_fields and isinstance(valid_fields["series"], dict):
+            valid_fields["series"] = SeriesRef(**valid_fields["series"])
+
+        if "cover" in valid_fields and isinstance(valid_fields["cover"], dict):
+            valid_fields["cover"] = ImageAsset(**valid_fields["cover"])
+
+        # Apply cover_dimensions if present
+        if cover_dimensions and isinstance(cover_dimensions, dict):
+            if "cover" not in valid_fields or not valid_fields["cover"]:
+                valid_fields["cover"] = ImageAsset(
+                    width=cover_dimensions.get("width"),
+                    height=cover_dimensions.get("height"),
+                )
+            else:
+                # Update existing cover with dimensions
+                existing_cover = valid_fields["cover"]
+                valid_fields["cover"] = ImageAsset(
+                    url=existing_cover.url if hasattr(existing_cover, "url") else "",
+                    embedded=(
+                        existing_cover.embedded
+                        if hasattr(existing_cover, "embedded")
+                        else False
+                    ),
+                    width=cover_dimensions.get("width"),
+                    height=cover_dimensions.get("height"),
+                    format=(
+                        existing_cover.format
+                        if hasattr(existing_cover, "format")
+                        else ""
+                    ),
+                    size_bytes=(
+                        existing_cover.size_bytes
+                        if hasattr(existing_cover, "size_bytes")
+                        else None
+                    ),
+                )
 
         if "files" in valid_fields:
             files = []
@@ -187,13 +251,6 @@ class AudiobookMetaRich:
                 else:
                     files.append(FileRef(path=Path(f)))
             valid_fields["files"] = files
-
-        # Convert nested objects if they're dicts
-        if "series" in valid_fields and isinstance(valid_fields["series"], dict):
-            valid_fields["series"] = SeriesRef(**valid_fields["series"])
-
-        if "cover" in valid_fields and isinstance(valid_fields["cover"], dict):
-            valid_fields["cover"] = ImageAsset(**valid_fields["cover"])
 
         if "audio" in valid_fields and isinstance(valid_fields["audio"], dict):
             valid_fields["audio"] = AudioStream(**valid_fields["audio"])
@@ -240,14 +297,31 @@ class AudiobookMetaRich:
     def to_simple_audiobook_meta(self) -> Dict[str, Any]:
         """Convert to simple AudiobookMeta format for backward compatibility."""
 
+        # Extract cover dimensions from cover image asset
+        cover_dimensions = None
+        if self.cover and self.cover.width and self.cover.height:
+            cover_dimensions = {"width": self.cover.width, "height": self.cover.height}
+
+        # Convert release_date to string format
+        release_date = None
+        if self.release_date:
+            if hasattr(self.release_date, "isoformat"):
+                release_date = self.release_date.isoformat()
+            else:
+                release_date = str(self.release_date)
+
         # Extract simple fields from rich entities
         return {
             "title": self.title,
+            "subtitle": self.subtitle,
             "author": self.author_primary,
             "album": self.title,  # default: title
             "series": self.series.name if self.series else "",
             "volume": self.volume,
             "year": self.year,
+            "release_date": release_date,
+            "publisher": self.publisher,
+            "copyright": self.copyright,
             "narrator": self.narrator_primary,
             "duration_sec": self.duration_sec,
             "format": self.audio.codec if self.audio else "",
@@ -258,9 +332,9 @@ class AudiobookMetaRich:
             ),
             "asin": self.asin,
             "isbn": self.isbn,
-            "publisher": self.publisher,
             "language": self.language,
             "description": self.description_text,
+            "rating": self.rating,
             "genres": [g.name for g in self.genres],
             "tags": self.tags,
             "chapters": [
@@ -274,5 +348,6 @@ class AudiobookMetaRich:
             ],
             "files": [f.path for f in self.files],
             "source_path": self.source_path,
-            "artwork_url": self.artwork_url,
+            "artwork_url": self.cover.url if self.cover else "",
+            "cover_dimensions": cover_dimensions,
         }

@@ -21,6 +21,7 @@ class AudiobookMeta:
     """
 
     title: str = ""
+    subtitle: str = ""  # Enhanced field for book subtitles
     author: str = ""
     album: str = ""  # default: title
     series: str = ""
@@ -33,14 +34,26 @@ class AudiobookMeta:
     asin: str = ""
     isbn: str = ""
     publisher: str = ""
+    copyright: str = ""  # Enhanced field for copyright notice
+    release_date: str = ""  # Enhanced field for release date (ISO format)
+    rating: Optional[float] = None  # Enhanced field for rating (0.0-5.0)
     language: str = "en"
+    region: str = ""  # Enhanced field for region/country code
+    literature_type: str = ""  # Enhanced field (fiction, non-fiction, etc.)
+    format_type: str = ""  # Enhanced field (m4b, mp3, etc.)
+    is_adult: Optional[bool] = None  # Enhanced field for adult content flag
     description: str = ""
+    description_html: str = ""  # Enhanced field for HTML description
+    description_text: str = ""  # Enhanced field for plain text description
     genres: List[str] = field(default_factory=list)
     tags: List[str] = field(default_factory=list)
     chapters: List[Dict[str, Any]] = field(default_factory=list)
     files: List[Path] = field(default_factory=list)
     source_path: Optional[Path] = None
     artwork_url: str = ""
+    cover_dimensions: Optional[Dict[str, int]] = (
+        None  # Enhanced field {"width": 600, "height": 800}
+    )
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary representation."""
