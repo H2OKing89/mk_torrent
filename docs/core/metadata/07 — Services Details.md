@@ -97,7 +97,28 @@ class PathInfoParser:
     def validate_format(self, filename: str) -> bool: ...
 ```
 
-### 7.5 Field Merger (`services/merge.py`)
+### 7.5 Embedded Source (`sources/embedded.py`)
+
+**[📖 Detailed Specification](./7.2%20—%20Format%20Detector%20Service.md)** *(Technical extraction components)*
+
+**Summary**: Technical file metadata extraction focusing on reliable audio properties.
+
+**Key Features:**
+- **Technical-only approach**: Extract reliable file properties (duration, bitrate, codec, file size)
+- **Multi-backend support**: ffprobe (preferred) with mutagen fallback for compatibility
+- **Chapter extraction**: Precise timing information and chapter count detection
+- **Cover art detection**: Embedded cover presence and dimensions
+- **Quality assessment**: Bitrate, sample rate, and encoding format details
+
+**Interface Preview:**
+```python
+class EmbeddedSource:
+    def extract_technical_metadata(self, file_path: Path) -> Dict[str, Any]: ...
+    def get_duration_precise(self, file_path: Path) -> Optional[int]: ...
+    def detect_chapters(self, file_path: Path) -> List[Dict[str, Any]]: ...
+```
+
+### 7.6 Field Merger (`services/merge.py`)
 
 **[📖 Dedicated Specification](./7.5%20—%20Audiobook%20Metadata%20Field%20Merger.md)**
 
@@ -105,9 +126,9 @@ class PathInfoParser:
 
 **Key Features:**
 - **Declarative precedence** (YAML/py config) per field with smart rationales:
-  - `duration_sec`: embedded (precise seconds) > API (minute-granular) > path
-  - `series/volume`: path (tracker-compliant) > API > embedded
-  - `asin`: path (reliable extraction) > API > embedded
+  - **Technical fields**: embedded (authoritative) > API (limited) - duration, bitrate, file size
+  - **Descriptive fields**: API + path only (embedded unreliable) - title, author, series
+  - **Compliance fields**: path (tracker-compliant) > API - series/volume, ASIN
 - **Smart list union** for genres/tags: stable order + case-insensitive de-duplication
 - **Source tagging**: Each input requires `"_src": "path"|"embedded"|"api"` for traceability
 - **Meaningful value detection**: Ignores empty strings, null values, empty collections
@@ -234,3 +255,15 @@ def test_processor_with_mocked_services():
 ---
 
 For detailed implementation guidance, API references, and usage examples, please refer to the individual service specification documents linked above.
+
+---
+
+## Changelog
+
+### 2025-09-03 - Embedded Source Strategy Refactor
+- **Added**: New embedded source (7.5) with technical-only focus
+- **Updated**: Service architecture for three-source strategy
+- **Enhanced**: Field merger service with technical vs descriptive precedence
+- **See**: [CHANGELOG.md](./CHANGELOG.md#2025-09-03---three-source-strategy-implementation) for implementation details
+
+```

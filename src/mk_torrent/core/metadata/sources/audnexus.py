@@ -224,6 +224,38 @@ class AudnexusSource:
             # Normalize the response
             normalized = self._normalize_book_data(book_data)
 
+            # Try to fetch chapter data (best effort - don't fail if unavailable)
+            try:
+                chapter_data = self.get_chapters(asin)
+                if chapter_data:
+                    # Add chapter information to normalized data
+                    chapters = chapter_data.get("chapters", [])
+                    if chapters:
+                        normalized["chapters"] = chapters
+                        normalized["chapter_count"] = len(chapters)
+                        normalized["has_chapters"] = True
+
+                        # If chapter runtime is more accurate, use it
+                        if chapter_data.get("runtimeLengthSec"):
+                            normalized["duration_sec"] = chapter_data[
+                                "runtimeLengthSec"
+                            ]
+
+                        # Add chapter accuracy flag
+                        normalized["chapter_accuracy"] = chapter_data.get(
+                            "isAccurate", True
+                        )
+                    else:
+                        normalized["has_chapters"] = False
+                        normalized["chapter_count"] = 0
+                else:
+                    normalized["has_chapters"] = False
+                    normalized["chapter_count"] = 0
+            except Exception as e:
+                logger.debug(f"Chapter data unavailable for {asin}: {e}")
+                normalized["has_chapters"] = False
+                normalized["chapter_count"] = 0
+
             # Add source information
             normalized.update(
                 {

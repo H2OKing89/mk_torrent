@@ -291,11 +291,15 @@ src/mk_torrent/core/metadata/
 
 ---
 
+---
+
 <div align="center" style="margin: 3rem 0; padding: 2rem; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border-radius: 12px;">
 
 ## 🎉 Ready to Build!
 
 This documentation provides everything you need to implement a robust, extensible metadata system. Start with the **[📋 Main Conductor](./__Metadata Core.md)** and dive into the detailed specifications.
+
+For tracking changes and implementation history, see **[📝 CHANGELOG.md](./CHANGELOG.md)** for detailed change notes.
 
 **Happy coding! 🚀**
 
@@ -304,3 +308,5 @@ This documentation provides everything you need to implement a robust, extensibl
 *Built with ❤️ for the torrent creation community*
 
 </div>
+
+```

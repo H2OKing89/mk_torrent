@@ -14,7 +14,18 @@ This document serves as the conductor for the metadata architecture refactor. Ea
 
 ### Foundation & Design
 1. **[Goals](./1%20—%20Goals.md)** - Core objectives and design principles
-2. **[High-level Architecture](./2%20—%20High-level%20Architecture.md)** - System overview and component responsibilities
+2. **[High-level Archit**Result**: A crisp, plug-and-play metadata core that's easy to reason about, test, and extend—without surprising knock-on effects in trackers or torrent creation.
+
+---
+
+## Changelog
+
+### 2025-09-03 - Three-Source Strategy Implementation
+- **MAJOR**: Embedded source refactored from descriptive to technical-only approach
+- **Added**: New embedded source specification (7.6) and updated field merger strategy
+- **Enhanced**: Audnexus source with integrated chapter support
+- **See**: [CHANGELOG.md](./CHANGELOG.md#2025-09-03---three-source-strategy-implementation) for complete details
+````cture](./2%20—%20High-level%20Architecture.md)** - System overview and component responsibilities
 3. **[Proposed Directory Layout](./3%20—%20Proposed%20Directory%20Layout.md)** - File structure and module organization
 4. **[Canonical Data Model](./4%20—%20Canonical%20Data%20Model.md)** - Primary data structures and normalization rules
 
@@ -23,6 +34,7 @@ This document serves as the conductor for the metadata architecture refactor. Ea
 6. **[Engine Pipeline](./6%20—%20Engine%20Pipeline.md)** - Processing flow and data transformation steps
 7. **[Services Details](./7%20—%20Services%20Details.md)** - Generic utilities and service modules
    - **[Field Merger Specification](./7.5%20—%20Audiobook%20Metadata%20Field%20Merger.md)** - Detailed merge logic and precedence rules
+   - **[Embedded Source (Technical Focus)](./7.6%20—%20Embedded%20Source%20(Technical%20Focus).md)** - Technical file metadata extraction
 8. **[Validators](./8%20—%20Validators.md)** - Quality assurance and completeness scoring
 
 ### Integration & Output
@@ -39,6 +51,9 @@ This document serves as the conductor for the metadata architecture refactor. Ea
 ### Extensibility & Future
 15. **[Extension Guide](./15%20—%20Extension%20Guide.md)** - Adding new sources, content types, and trackers
 16. **[Next Steps](./16%20—%20Next%20Steps.md)** - Implementation checklist and current priorities
+
+### Change Management
+📝 **[CHANGELOG](./CHANGELOG.md)** - Detailed change tracking and implementation notes
 
 ---
 
@@ -119,7 +134,10 @@ For immediate implementation needs, here are the most important sections with th
 
 * **Engine** orchestrates processors → sources → merge → services → validate → (optionally) map to tracker shape.
 * **Processor** encapsulates content-type knowledge (path patterns, field expectations, defaults).
-* **Sources** pull raw metadata (file tags via Mutagen, Audnexus API, folder names).
+* **Sources** pull raw metadata with specialized focus:
+  - **embedded.py**: Technical file properties (duration, bitrate, codec, file size, chapters)
+  - **audnexus.py**: Authoritative descriptive metadata (title, author, series, description)
+  - **pathinfo.py**: Tracker-compliant naming information (series, volume, ASIN)
 * **Services** provide generic utilities (sanitization, format sniffing, image URL detection, tag normalization).
 * **Validators** return `valid/errors/warnings/completeness` for precise UX.
 * **Mappers** translate from internal model to tracker-specific payloads (e.g., RED form fields), keeping trackers free of raw parsing.
@@ -277,7 +295,10 @@ test = [
 
 * **Engine** orchestrates processors → sources → merge → services → validate → (optionally) map to tracker shape.
 * **Processor** encapsulates content-type knowledge (path patterns, field expectations, defaults).
-* **Sources** pull raw metadata (file tags via Mutagen, Audnexus API, folder names).
+* **Sources** pull raw metadata with specialized focus:
+  - **embedded.py**: Technical file properties (duration, bitrate, codec, file size, chapters)
+  - **audnexus.py**: Authoritative descriptive metadata (title, author, series, description)
+  - **pathinfo.py**: Tracker-compliant naming information (series, volume, ASIN)
 * **Services** provide generic utilities (sanitization, format sniffing, image URL detection, tag normalization).
 * **Validators** return `valid/errors/warnings/completeness` for precise UX.
 * **Mappers** translate from internal model to tracker-specific payloads (e.g., RED form fields), keeping trackers free of raw parsing.
