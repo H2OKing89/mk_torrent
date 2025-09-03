@@ -6,6 +6,7 @@ from rich.console import Console
 
 console = Console()
 
+
 def main():
     """Main entry point"""
     console.print("[bold blue]Metadata Health Checker[/bold blue]")
@@ -15,34 +16,32 @@ def main():
         # Check basic dependencies
         console.print("[cyan]Checking Dependencies...[/cyan]")
 
+        import importlib.util
+
         missing = []
-        try:
-            import mutagen
+        if importlib.util.find_spec("mutagen") is not None:
             console.print("  ✅ mutagen: Available")
-        except ImportError:
+        else:
             console.print("  ❌ mutagen: Missing")
             missing.append("mutagen")
 
-        try:
-            import requests
+        if importlib.util.find_spec("requests") is not None:
             console.print("  ✅ requests: Available")
-        except ImportError:
+        else:
             console.print("  ❌ requests: Missing")
             missing.append("requests")
 
         # Check capabilities
         console.print("\n[cyan]Checking Capabilities...[/cyan]")
 
-        try:
-            from mutagen.mp3 import MP3
+        if importlib.util.find_spec("mutagen.mp3") is not None:
             console.print("  ✅ MP3 support: Available")
-        except ImportError:
+        else:
             console.print("  ❌ MP3 support: Missing")
 
-        try:
-            from mutagen.flac import FLAC
+        if importlib.util.find_spec("mutagen.flac") is not None:
             console.print("  ✅ FLAC support: Available")
-        except ImportError:
+        else:
             console.print("  ❌ FLAC support: Missing")
 
         # Summary
@@ -50,13 +49,16 @@ def main():
 
         if missing:
             console.print(f"[yellow]Missing packages: {', '.join(missing)}[/yellow]")
-            console.print("[yellow]Install with: pip install {' '.join(missing)}[/yellow]")
+            console.print(
+                "[yellow]Install with: pip install {' '.join(missing)}[/yellow]"
+            )
         else:
             console.print("[green]All basic dependencies available![/green]")
 
     except Exception as e:
         console.print(f"[red]Health check failed: {e}[/red]")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

@@ -1,7 +1,7 @@
 # 👨‍💻 Development Guide
 
-**Prerequisites**: Python 3.11+, Git, Basic Python packaging knowledge  
-**Development Approach**: Test-driven development with modern Python practices  
+**Prerequisites**: Python 3.11+, Git, Basic Python packaging knowledge
+**Development Approach**: Test-driven development with modern Python practices
 **Code Style**: Black formatting, type hints, comprehensive documentation
 
 ---
@@ -14,7 +14,7 @@
 git clone <repository-url>
 cd mk_torrent
 
-# Create virtual environment  
+# Create virtual environment
 python -m venv .venv
 source .venv/bin/activate  # Linux/Mac
 # or .venv\Scripts\activate  # Windows
@@ -58,7 +58,7 @@ export PYTHONPATH="${PWD}/src:${PYTHONPATH}"
 ```
 src/mk_torrent/
 ├── api/          # External service integrations
-├── core/         # Essential business logic  
+├── core/         # Essential business logic
 ├── features/     # Extended functionality
 ├── utils/        # Helper utilities
 └── workflows/    # Multi-step processes
@@ -66,7 +66,7 @@ src/mk_torrent/
 
 ### **Dependency Guidelines**
 - **Core modules**: Independent, no feature dependencies
-- **Features**: Can use core, minimal feature interdependence  
+- **Features**: Can use core, minimal feature interdependence
 - **API**: External integrations, minimal internal dependencies
 - **Utils**: Helper functions, used by all packages
 - **Workflows**: Orchestrate other packages, no business logic
@@ -98,7 +98,7 @@ def new_feature():
 git checkout -b feature/descriptive-name
 git commit -m "feat: add new functionality"
 
-# Bug fixes  
+# Bug fixes
 git checkout -b fix/issue-description
 git commit -m "fix: resolve specific problem"
 
@@ -154,48 +154,48 @@ logger = logging.getLogger(__name__)
 
 class MetadataProcessor(BaseProcessor):
     """Process audiobook metadata with validation and enhancement.
-    
+
     Args:
         config: Configuration dictionary
         validation_enabled: Whether to enable strict validation
-        
+
     Example:
         >>> processor = MetadataProcessor(config)
         >>> metadata = processor.process(audiobook_files)
         >>> print(metadata['title'])
     """
-    
+
     def __init__(
-        self, 
-        config: Dict[str, Any], 
+        self,
+        config: Dict[str, Any],
         validation_enabled: bool = True
     ) -> None:
         super().__init__(config)
         self.validation_enabled = validation_enabled
         self._cache: Dict[str, Any] = {}
-    
+
     def process(self, files: List[Path]) -> Dict[str, Any]:
         """Process files and extract metadata.
-        
+
         Args:
             files: List of audiobook files to process
-            
+
         Returns:
             Dictionary containing extracted metadata
-            
+
         Raises:
             ValidationError: If validation fails and strict mode enabled
         """
         logger.info(f"Processing {len(files)} files")
-        
+
         try:
             metadata = self._extract_metadata(files)
-            
+
             if self.validation_enabled:
                 validate_metadata(metadata)
-                
+
             return metadata
-            
+
         except Exception as e:
             logger.error(f"Failed to process metadata: {e}")
             raise
@@ -215,14 +215,14 @@ from src.mk_torrent.features.metadata_engine import MetadataProcessor
 
 class TestMetadataProcessor:
     """Test MetadataProcessor functionality."""
-    
+
     @pytest.fixture
     def processor(self):
         """Create processor instance for testing."""
         config = {"validation": True, "source": "audnexus"}
         return MetadataProcessor(config)
-    
-    @pytest.fixture  
+
+    @pytest.fixture
     def sample_files(self, tmp_path):
         """Create sample audiobook files."""
         files = []
@@ -231,30 +231,30 @@ class TestMetadataProcessor:
             file_path.touch()
             files.append(file_path)
         return files
-    
+
     def test_process_basic_metadata(self, processor, sample_files):
         """Test basic metadata extraction works."""
         # Act
         result = processor.process(sample_files)
-        
+
         # Assert
         assert isinstance(result, dict)
         assert 'title' in result
         assert len(result) > 0
-    
+
     @patch('src.mk_torrent.features.metadata_engine.validate_metadata')
     def test_process_with_validation_disabled(self, mock_validate, processor, sample_files):
         """Test processing with validation disabled."""
         # Arrange
         processor.validation_enabled = False
-        
+
         # Act
         result = processor.process(sample_files)
-        
+
         # Assert
         mock_validate.assert_not_called()
         assert result is not None
-    
+
     def test_process_empty_files_raises_error(self, processor):
         """Test processing empty file list raises appropriate error."""
         with pytest.raises(ValueError, match="No files provided"):
@@ -286,7 +286,7 @@ python -m pytest --cov=src --cov-report=html
 # Format code
 black src/ tests/
 
-# Sort imports  
+# Sort imports
 isort src/ tests/
 
 # Type checking
@@ -345,21 +345,21 @@ from ..core.secure_credentials import get_secure_api_key
 
 class NewTrackerAPI:
     """Client for NewTracker API integration."""
-    
+
     def __init__(self, config: Dict[str, Any]):
         self.config = config
         self.base_url = config.get("new_tracker_url", "https://api.newtracker.com")
         self.session = requests.Session()
-    
+
     def authenticate(self) -> bool:
         """Authenticate with NewTracker API."""
         api_key = get_secure_api_key("new_tracker")
         if not api_key:
             return False
-            
+
         headers = {"Authorization": f"Bearer {api_key}"}
         self.session.headers.update(headers)
-        
+
         # Test authentication
         response = self.session.get(f"{self.base_url}/user")
         return response.status_code == 200
@@ -376,15 +376,15 @@ from src.mk_torrent.api.new_tracker import NewTrackerAPI
 
 class TestNewTrackerAPI:
     """Test NewTrackerAPI functionality."""
-    
+
     def test_initialization(self):
         """Test API client initialization."""
         config = {"new_tracker_url": "https://test.com"}
         api = NewTrackerAPI(config)
-        
+
         assert api.config == config
         assert api.base_url == "https://test.com"
-    
+
     @patch('src.mk_torrent.api.new_tracker.get_secure_api_key')
     @patch('requests.Session.get')
     def test_authenticate_success(self, mock_get, mock_get_key):
@@ -394,12 +394,12 @@ class TestNewTrackerAPI:
         mock_response = Mock()
         mock_response.status_code = 200
         mock_get.return_value = mock_response
-        
+
         api = NewTrackerAPI({})
-        
+
         # Act
         result = api.authenticate()
-        
+
         # Assert
         assert result is True
         mock_get.assert_called_once()
@@ -419,7 +419,7 @@ class TestNewTrackerAPI:
 # Wrong:
 from api_qbittorrent import QBittorrentAPI
 
-# Correct:  
+# Correct:
 from mk_torrent.api.qbittorrent import QBittorrentAPI
 # Or in tests:
 from src.mk_torrent.api.qbittorrent import QBittorrentAPI
@@ -460,10 +460,10 @@ import cProfile
 def test_performance():
     """Test function performance."""
     start_time = time.time()
-    
+
     # Run function
     result = expensive_function()
-    
+
     execution_time = time.time() - start_time
     print(f"Execution time: {execution_time:.2f} seconds")
     assert execution_time < 10.0  # Should complete in under 10 seconds

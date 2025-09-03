@@ -2,24 +2,24 @@
 
 from .audnexus import (
     Person,
-    Genre, 
+    Genre,
     Series,
     Book,
     Chapter,
     ChapterItem,
     Author,
     ApiError,
-    Region
+    Region,
 )
 
 __all__ = [
     "Person",
     "Genre",
-    "Series", 
+    "Series",
     "Book",
     "Chapter",
     "ChapterItem",
     "Author",
     "ApiError",
-    "Region"
+    "Region",
 ]

@@ -37,7 +37,7 @@ FRIENDLY = {
     "disk": "disc_number",
     "cpil": "compilation",
     "pgap": "gapless",
-    "stik": "media_type",      # 2 often = Audiobook
+    "stik": "media_type",  # 2 often = Audiobook
     "tmpo": "tempo_bpm",
     "tvsh": "show",
     "tven": "episode_id",
@@ -52,11 +52,13 @@ FRIENDLY = {
 
 _PRINTABLE = set(bytes(string.printable, "ascii"))
 
+
 def _is_mostly_text(b: bytes, threshold: float = 0.90) -> bool:
     if not b:
         return True
     printable = sum(ch in _PRINTABLE for ch in b)
     return (printable / len(b)) >= threshold
+
 
 def _decode_bytes(b: bytes):
     """Return UTF-8/Latin-1 string if readable; otherwise a safe summary."""
@@ -71,6 +73,7 @@ def _decode_bytes(b: bytes):
         "bytes": len(b),
         "base64_preview": base64.b64encode(b[:96]).decode("ascii"),
     }
+
 
 def _decode_value(v):
     """Turn Mutagen values into serializable strings/tuples/summaries."""
@@ -90,6 +93,7 @@ def _decode_value(v):
     except Exception:
         return str(v)
 
+
 def mp4_tags_to_dict(tags):
     out = {}
     if not tags:
@@ -104,6 +108,7 @@ def mp4_tags_to_dict(tags):
         out[friendly] = val
     return out
 
+
 def _fmt_hms_ms(seconds: float | None) -> str | None:
     if seconds is None:
         return None
@@ -112,6 +117,7 @@ def _fmt_hms_ms(seconds: float | None) -> str | None:
     m = (int(seconds) // 60) % 60
     h = int(seconds) // 3600
     return f"{h:02d}:{m:02d}:{s:02d}.{ms:03d}"
+
 
 def extract_chapters(mp4: MP4):
     """
@@ -140,30 +146,37 @@ def extract_chapters(mp4: MP4):
             sec = None
 
         hms = _fmt_hms_ms(sec) if sec is not None else None
-        chapters_out.append({
-            "index": idx,
-            "start_seconds": sec,
-            "start": hms,
-            "title": title,
-        })
+        chapters_out.append(
+            {
+                "index": idx,
+                "start_seconds": sec,
+                "start": hms,
+                "title": title,
+            }
+        )
         if hms is not None:
             pretty.append(f"{hms} : {title}")
 
     return chapters_out, pretty
 
+
 def main():
-    ap = argparse.ArgumentParser(description="Read metadata & chapters from an M4B using Mutagen.")
+    ap = argparse.ArgumentParser(
+        description="Read metadata & chapters from an M4B using Mutagen."
+    )
     ap.add_argument(
         "--file",
-        default=str(Path(
-            "/mnt/user/data/downloads/torrents/qbittorrent/seedvault/audiobooks/How a Realist Hero Rebuilt the Kingdom - vol_03 (2023) (Dojyomaru) {ASIN.B0C8ZW5N6Y} [H2OKing]/How a Realist Hero Rebuilt the Kingdom - vol_03 (2023) (Dojyomaru) {ASIN.B0C8ZW5N6Y}.m4b"
-        )),
+        default=str(
+            Path(
+                "/mnt/user/data/downloads/torrents/qbittorrent/seedvault/audiobooks/How a Realist Hero Rebuilt the Kingdom - vol_03 (2023) (Dojyomaru) {ASIN.B0C8ZW5N6Y} [H2OKing]/How a Realist Hero Rebuilt the Kingdom - vol_03 (2023) (Dojyomaru) {ASIN.B0C8ZW5N6Y}.m4b"
+            )
+        ),
         help="Path to the .m4b file",
     )
     ap.add_argument(
         "--print-chapters",
         action="store_true",
-        help="Also print a MediaInfo-style chapter list after the JSON."
+        help="Also print a MediaInfo-style chapter list after the JSON.",
     )
     args = ap.parse_args()
     path = Path(args.file)
@@ -187,11 +200,11 @@ def main():
     if isinstance(audio, MP4):
         ai = getattr(audio, "info", None)
         if ai:
-            info["length_seconds"]   = getattr(ai, "length", None)
-            info["bitrate"]          = getattr(ai, "bitrate", None)
-            info["sample_rate"]      = getattr(ai, "sample_rate", None)
-            info["channels"]         = getattr(ai, "channels", None)
-            info["bits_per_sample"]  = getattr(ai, "bits_per_sample", None)
+            info["length_seconds"] = getattr(ai, "length", None)
+            info["bitrate"] = getattr(ai, "bitrate", None)
+            info["sample_rate"] = getattr(ai, "sample_rate", None)
+            info["channels"] = getattr(ai, "channels", None)
+            info["bits_per_sample"] = getattr(ai, "bits_per_sample", None)
 
         tags = mp4_tags_to_dict(audio.tags)
 
@@ -202,9 +215,9 @@ def main():
         ai = getattr(audio, "info", None)
         if ai:
             info["length_seconds"] = getattr(ai, "length", None)
-            info["bitrate"]        = getattr(ai, "bitrate", None)
-            info["sample_rate"]    = getattr(ai, "sample_rate", None)
-            info["channels"]       = getattr(ai, "channels", None)
+            info["bitrate"] = getattr(ai, "bitrate", None)
+            info["sample_rate"] = getattr(ai, "sample_rate", None)
+            info["channels"] = getattr(ai, "channels", None)
 
         if getattr(audio, "tags", None):
             for k, v in audio.tags.items():

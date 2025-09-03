@@ -10,7 +10,7 @@ This implementation successfully transforms the metadata system from a monolithi
 
 #### **Core Components Built:**
 - **`base.py`**: Protocol-based interfaces + AudiobookMeta dataclass
-- **`engine.py`**: Dependency injection engine with registry pattern  
+- **`engine.py`**: Dependency injection engine with registry pattern
 - **`exceptions.py`**: Typed exception hierarchy with context
 - **Complete modular structure**: processors/, sources/, services/, validators/, mappers/
 
@@ -44,12 +44,12 @@ This implementation successfully transforms the metadata system from a monolithi
 ```
 src/mk_torrent/core/metadata/
 ├── __init__.py              # ✅ Clean public API exports
-├── base.py                  # ✅ Core protocols & AudiobookMeta dataclass  
+├── base.py                  # ✅ Core protocols & AudiobookMeta dataclass
 ├── engine.py               # ✅ Main orchestration with dependency injection
 ├── exceptions.py           # ✅ Typed exception hierarchy
 ├── processors/             # ✅ Content-type specific processing
 ├── sources/                # ✅ Data extraction sources
-├── services/               # ✅ Utility services 
+├── services/               # ✅ Utility services
 ├── validators/             # ✅ Validation logic
 ├── mappers/                # ✅ Tracker-specific formatting
 └── schemas/                # ✅ Optional Pydantic models
@@ -94,7 +94,7 @@ audiobook = AudiobookMeta.from_dict(metadata)
 #### **Full Pipeline Processing:**
 ```python
 result = engine.process_full_pipeline(
-    "audiobook.m4b", 
+    "audiobook.m4b",
     tracker_name="red",
     validate=True
 )
@@ -121,7 +121,7 @@ Successfully extracts from actual sample:
 #### **Optional Enhancements Available:**
 ```toml
 [project.optional-dependencies]
-net = ["httpx>=0.25.0", "aiofiles>=23.0.0"]  
+net = ["httpx>=0.25.0", "aiofiles>=23.0.0"]
 strict = ["pydantic>=2.0.0"]
 html = ["nh3>=0.2.0", "markupsafe>=2.1.0"]
 ```
@@ -150,7 +150,7 @@ html = ["nh3>=0.2.0", "markupsafe>=2.1.0"]
 
 - **34 Tests Passing** - Comprehensive test coverage
 - **Real File Processing** - Handles actual audiobook samples
-- **Zero Dependencies** - Lightweight core implementation  
+- **Zero Dependencies** - Lightweight core implementation
 - **100% Backward Compatible** - No migration required
 - **Type Safe** - Full Python typing support
 - **Modular** - Easy to extend and maintain

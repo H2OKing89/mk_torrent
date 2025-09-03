@@ -13,7 +13,7 @@
 This directory contains detailed documentation for the `qbittorrent-api` Python library, which provides a complete interface to qBittorrent's Web API. The documentation is organized by functional area and usage patterns, making it easy to find exactly what you need for your torrent management application.
 
 **Supported Versions:**
-- **qBittorrent**: v5.1.2+ 
+- **qBittorrent**: v5.1.2+
 - **Web API**: v2.11.4+
 - **Python**: 3.8+
 
@@ -140,7 +140,7 @@ from qbittorrentapi import Client
 # Simple connection
 client = Client(
     host="localhost:8080",
-    username="admin", 
+    username="admin",
     password="adminadmin"
 )
 

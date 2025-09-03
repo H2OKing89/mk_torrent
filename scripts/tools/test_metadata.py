@@ -11,9 +11,9 @@ from pathlib import Path
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
-from rich.progress import Progress, SpinnerColumn, TextColumn
 
 console = Console()
+
 
 class MetadataTestRunner:
     """Runner for metadata tests and health checks"""
@@ -36,10 +36,13 @@ class MetadataTestRunner:
         if coverage:
             cmd.extend(["--cov=feature_metadata_engine", "--cov-report=term-missing"])
 
-        cmd.extend([
-            str(self.tests_dir / "test_metadata_engine.py"),
-            "-m", "not integration and not slow"
-        ])
+        cmd.extend(
+            [
+                str(self.tests_dir / "test_metadata_engine.py"),
+                "-m",
+                "not integration and not slow",
+            ]
+        )
 
         return self._run_command(cmd)
 
@@ -48,10 +51,13 @@ class MetadataTestRunner:
         console.print("[bold cyan]Running Metadata Integration Tests[/bold cyan]")
 
         cmd = [
-            "python", "-m", "pytest",
+            "python",
+            "-m",
+            "pytest",
             str(self.tests_dir / "test_metadata_engine.py"),
-            "-m", "integration",
-            "-v"
+            "-m",
+            "integration",
+            "-v",
         ]
 
         return self._run_command(cmd)
@@ -67,11 +73,11 @@ class MetadataTestRunner:
             config = {
                 "output_directory": str(self.project_root / "output"),
                 "qbit_host": "localhost",
-                "qbit_port": 8080
+                "qbit_port": 8080,
             }
 
             checker = MetadataHealthCheck(config)
-            results = checker.run_all_checks()
+            _results = checker.run_all_checks()
             checker.display_results()
 
             return True
@@ -121,10 +127,13 @@ class MetadataTestRunner:
         report_path = self.project_root / "test_report.html"
 
         cmd = [
-            "python", "-m", "pytest",
+            "python",
+            "-m",
+            "pytest",
             str(self.tests_dir / "test_metadata_engine.py"),
-            "--html", str(report_path),
-            "--self-contained-html"
+            "--html",
+            str(report_path),
+            "--self-contained-html",
         ]
 
         result = self._run_command(cmd)
@@ -138,10 +147,7 @@ class MetadataTestRunner:
         """Run a command and return success status"""
         try:
             result = subprocess.run(
-                cmd,
-                cwd=self.project_root,
-                capture_output=False,
-                text=True
+                cmd, cwd=self.project_root, capture_output=False, text=True
             )
             return result.returncode == 0
         except Exception as e:
@@ -166,7 +172,11 @@ class MetadataTestRunner:
         console.print("\n")
         console.print(table)
 
-        overall_status = "✅ ALL TESTS PASSED" if passed == total else f"⚠️  {passed}/{total} TESTS PASSED"
+        overall_status = (
+            "✅ ALL TESTS PASSED"
+            if passed == total
+            else f"⚠️  {passed}/{total} TESTS PASSED"
+        )
 
         panel = Panel.fit(
             f"[bold]{overall_status}[/bold]\n\n"
@@ -175,7 +185,7 @@ class MetadataTestRunner:
             f"Health Checks: {'✅' if results[2][1] else '❌'}\n"
             f"Performance Tests: {'✅' if results[3][1] else '❌'}",
             title="Metadata Test Results",
-            border_style="green" if passed == total else "yellow"
+            border_style="green" if passed == total else "yellow",
         )
 
         console.print(panel)
@@ -189,17 +199,11 @@ def main():
     parser.add_argument(
         "action",
         choices=["unit", "integration", "health", "performance", "all", "report"],
-        help="Test action to run"
+        help="Test action to run",
     )
+    parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
     parser.add_argument(
-        "--verbose", "-v",
-        action="store_true",
-        help="Verbose output"
-    )
-    parser.add_argument(
-        "--no-coverage",
-        action="store_true",
-        help="Skip coverage reporting"
+        "--no-coverage", action="store_true", help="Skip coverage reporting"
     )
 
     args = parser.parse_args()
@@ -208,7 +212,9 @@ def main():
 
     try:
         if args.action == "unit":
-            success = runner.run_unit_tests(verbose=args.verbose, coverage=not args.no_coverage)
+            success = runner.run_unit_tests(
+                verbose=args.verbose, coverage=not args.no_coverage
+            )
         elif args.action == "integration":
             success = runner.run_integration_tests()
         elif args.action == "health":

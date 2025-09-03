@@ -1,0 +1,3 @@
+[codespell]
+skip = *.pyc,*.pyo,__pycache__
+ignore-words-list = nam,assertIn

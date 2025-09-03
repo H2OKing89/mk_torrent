@@ -1,10 +1,10 @@
 # 🔄 RED Modules Refactor: Tracker-Agnostic Architecture
 
-**Date Created:** September 2, 2025  
-**Status:** ✅ COMPLETED  
-**Version:** 1.0  
-**Related Branch:** `feature/red-tracker-integration`  
-**Author:** H2OKing89 + GitHub Copilot  
+**Date Created:** September 2, 2025
+**Status:** ✅ COMPLETED
+**Version:** 1.0
+**Related Branch:** `feature/red-tracker-integration`
+**Author:** H2OKing89 + GitHub Copilot
 
 ---
 
@@ -24,7 +24,7 @@
 ```
 src/mk_torrent/
 ├── api/red_integration.py          # Torrent creation for RED uploads
-├── features/red_uploader.py        # API communication & metadata for RED  
+├── features/red_uploader.py        # API communication & metadata for RED
 ├── utils/red_api_parser.py         # Parses RED API docs (utility)
 ├── utils/red_path_compliance.py    # Path length compliance tool
 └── utils/red_compliance_rename.py  # Applies path renames
@@ -76,7 +76,7 @@ src/mk_torrent/
 # api/trackers/base.py
 class TrackerAPI(ABC):
     """Abstract base class for all tracker APIs"""
-    
+
     @abstractmethod
     def get_tracker_config(self) -> TrackerConfig
     def test_connection(self) -> bool
@@ -97,14 +97,14 @@ class TrackerAPI(ABC):
 # api/trackers/red.py
 class RedactedAPI(TrackerAPI):
     """Complete RED tracker implementation"""
-    
+
     # RED-specific features:
     RELEASE_TYPES = {
         'ALBUM': 1, 'SOUNDTRACK': 3, 'EP': 5,
         'AUDIOBOOK': 3,  # Uses SOUNDTRACK for audiobooks
         # ... 21 total release types
     }
-    
+
     def get_tracker_config(self) -> TrackerConfig:
         return TrackerConfig(
             name='Redacted',
@@ -151,16 +151,16 @@ mam_api = get_tracker_api('mam', username='user', password='pass')
 # core/metadata/engine.py
 class MetadataEngine:
     """Main metadata engine that delegates to specific processors"""
-    
+
     def process(self, source, content_type=None):
         # Auto-detect content type if not specified
         if not content_type:
             content_type = self._detect_content_type(source)
-        
+
         processor = self.processors.get(content_type)
         metadata = processor.extract(source)
         metadata = processor.enhance(metadata)
-        
+
         return metadata
 ```
 
@@ -249,10 +249,10 @@ class OrpheusAPI(TrackerAPI):
     def get_tracker_config(self):
         return TrackerConfig(
             name='Orpheus',
-            source_tag='OPS', 
+            source_tag='OPS',
             max_path_length=180
         )
-    
+
     # Implement abstract methods...
 ```
 
@@ -290,7 +290,7 @@ class MusicMetadata(MetadataProcessor):
 ### **Key Improvements**
 1. **🎯 Clear separation of concerns**: API, metadata, compliance all separated
 2. **🔧 Extensible architecture**: Easy to add MAM, OPS, BTN, etc.
-3. **📦 Reusable components**: Metadata engine works for any tracker  
+3. **📦 Reusable components**: Metadata engine works for any tracker
 4. **🛡️ Better abstraction**: TrackerAPI hides implementation details
 5. **🧪 Testable design**: Each component can be tested in isolation
 6. **📚 Self-documenting**: Structure clearly shows relationships
@@ -304,7 +304,7 @@ class MusicMetadata(MetadataProcessor):
 2. **Update imports**: Migrate any remaining code to use new structure
 3. **Documentation**: Update API docs to reflect new structure
 
-### **Short Term (Next 2 Weeks)**  
+### **Short Term (Next 2 Weeks)**
 1. **MAM implementation**: Complete MyAnonaMouseAPI
 2. **OPS implementation**: Add OrpheusAPI
 3. **Music metadata**: Add MusicMetadata processor
@@ -332,13 +332,13 @@ class MusicMetadata(MetadataProcessor):
 ## 📖 **Related Documentation**
 
 - **Project Structure**: `docs/reference/PROJECT_STRUCTURE.md`
-- **API Reference**: `docs/reference/API_REFERENCE.md`  
+- **API Reference**: `docs/reference/API_REFERENCE.md`
 - **Development Guide**: `docs/reference/DEVELOPMENT_GUIDE.md`
 - **Testing Guide**: `docs/active/TESTING_GUIDE.md`
 - **Migration Guide**: `docs/archive/completed/MIGRATION_GUIDE.md` (general src layout)
 
 ---
 
-**Document Status:** ✅ Complete and Current  
-**Last Updated:** September 2, 2025  
+**Document Status:** ✅ Complete and Current
+**Last Updated:** September 2, 2025
 **Next Review:** When adding new tracker implementations

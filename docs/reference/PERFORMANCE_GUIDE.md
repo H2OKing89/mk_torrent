@@ -28,13 +28,13 @@
     "memory_limit": "4GB",               // 25% of system RAM
     "io_buffer_size": "64KB"
   },
-  
+
   "caching": {
     "metadata_cache_size": "500MB",
     "api_response_cache": true,
     "cache_compression": true
   },
-  
+
   "torrent": {
     "piece_size_auto": true,             // Optimal piece sizes
     "include_md5": false                 // Skip MD5 unless required
@@ -121,7 +121,7 @@ config = {
     "batch_size": 50,                    // Files per batch
     "audio_analysis_threads": 4
   },
-  
+
   "torrent": {
     "hash_calculation_threads": 4,       // Parallel hash calculation
     "piece_size_auto": true,             // Reduces computation
@@ -155,7 +155,7 @@ taskset -c 0,1,2,3 python -m mk_torrent process /path/to/audiobooks
     "memory_cleanup_interval": 300,     // Cleanup every 5 minutes
     "large_file_threshold": "1GB"       // Stream large files
   },
-  
+
   "caching": {
     "metadata_cache_size": "500MB",
     "file_cache_size": "1GB",
@@ -175,10 +175,10 @@ def monitor_memory_usage():
     """Monitor and optimize memory usage."""
     process = psutil.Process()
     memory_info = process.memory_info()
-    
+
     print(f"RSS: {memory_info.rss / 1024 / 1024:.1f} MB")
     print(f"VMS: {memory_info.vms / 1024 / 1024:.1f} MB")
-    
+
     # Force garbage collection if memory usage is high
     if memory_info.rss > 4 * 1024 * 1024 * 1024:  # 4GB
         gc.collect()
@@ -194,7 +194,7 @@ def process_large_audiobook(file_path: Path, chunk_size: int = 1024*1024):
             chunk = f.read(chunk_size)
             if not chunk:
                 break
-            
+
             # Process chunk
             yield process_chunk(chunk)
 ```
@@ -212,7 +212,7 @@ def process_large_audiobook(file_path: Path, chunk_size: int = 1024*1024):
     "cache_directory": "/fast/ssd/cache",           // SSD for cache
     "log_directory": "/var/log/mk_torrent"          // Any storage for logs
   },
-  
+
   "io": {
     "buffer_size": "64KB",               // Optimal for most SSDs
     "read_ahead": true,                  // Enable OS read-ahead
@@ -234,10 +234,10 @@ def check_disk_performance():
     # Check free space
     working_space = shutil.disk_usage("/tmp/mk_torrent")
     output_space = shutil.disk_usage("~/torrents")
-    
+
     print(f"Working dir free: {working_space.free / 1024**3:.1f} GB")
     print(f"Output dir free: {output_space.free / 1024**3:.1f} GB")
-    
+
     # Recommend minimum free space
     recommended_free = 50 * 1024**3  # 50 GB
     if working_space.free < recommended_free:
@@ -278,13 +278,13 @@ def batch_file_operations(file_list: List[Path], batch_size: int = 100):
     "retry_attempts": 3,
     "retry_delay": 1.0,
     "exponential_backoff": true,
-    
+
     "connection_pool": {
       "max_connections": 20,
       "max_connections_per_host": 5,
       "pool_keepalive": 300
     },
-    
+
     "http_optimization": {
       "http2": true,
       "compression": true,
@@ -303,34 +303,34 @@ from aiohttp import ClientSession
 
 class RateLimitedAPI:
     """API client with built-in rate limiting."""
-    
+
     def __init__(self, rate_limit: int = 5, window: int = 60):
         self.rate_limit = rate_limit
         self.window = window
         self.requests = []
-        
+
     async def make_request(self, url: str, **kwargs):
         """Make rate-limited API request."""
         await self._enforce_rate_limit()
-        
+
         async with ClientSession() as session:
             async with session.get(url, **kwargs) as response:
                 return await response.json()
-    
+
     async def _enforce_rate_limit(self):
         """Enforce rate limiting."""
         now = asyncio.get_event_loop().time()
-        
+
         # Remove old requests outside window
-        self.requests = [req_time for req_time in self.requests 
+        self.requests = [req_time for req_time in self.requests
                         if now - req_time < self.window]
-        
+
         # Wait if rate limit exceeded
         if len(self.requests) >= self.rate_limit:
             sleep_time = self.window - (now - self.requests[0])
             if sleep_time > 0:
                 await asyncio.sleep(sleep_time)
-        
+
         self.requests.append(now)
 ```
 
@@ -342,17 +342,17 @@ import aiohttp
 async def fetch_metadata_concurrently(audiobook_ids: List[str]):
     """Fetch metadata for multiple audiobooks concurrently."""
     semaphore = asyncio.Semaphore(5)  # Limit concurrent requests
-    
+
     async def fetch_one(session, audiobook_id):
         async with semaphore:
             url = f"https://api.audnex.us/books/{audiobook_id}"
             async with session.get(url) as response:
                 return await response.json()
-    
+
     async with aiohttp.ClientSession() as session:
         tasks = [fetch_one(session, id) for id in audiobook_ids]
         results = await asyncio.gather(*tasks, return_exceptions=True)
-        
+
     return results
 ```
 
@@ -382,13 +382,13 @@ def measure_performance(func):
         start_time = time.time()
         start_cpu = psutil.cpu_percent()
         start_memory = psutil.virtual_memory().used
-        
+
         result = func(*args, **kwargs)
-        
+
         end_time = time.time()
         end_cpu = psutil.cpu_percent()
         end_memory = psutil.virtual_memory().used
-        
+
         metrics = PerformanceMetrics(
             execution_time=end_time - start_time,
             cpu_usage=end_cpu - start_cpu,
@@ -396,14 +396,14 @@ def measure_performance(func):
             disk_io=psutil.disk_io_counters()._asdict(),
             network_io=psutil.net_io_counters()._asdict()
         )
-        
+
         print(f"Performance: {func.__name__}")
         print(f"  Time: {metrics.execution_time:.2f}s")
         print(f"  CPU: {metrics.cpu_usage:.1f}%")
         print(f"  Memory: {metrics.memory_usage / 1024 / 1024:.1f} MB")
-        
+
         return result
-    
+
     return wrapper
 ```
 
@@ -417,17 +417,17 @@ def profile_cpu_usage():
     """Profile CPU usage of mk_torrent operations."""
     profiler = cProfile.Profile()
     profiler.enable()
-    
+
     # Run your mk_torrent operation here
     result = process_audiobook("/path/to/audiobook")
-    
+
     profiler.disable()
-    
+
     # Analyze results
     stats = pstats.Stats(profiler)
     stats.sort_stats('cumulative')
     stats.print_stats(20)  # Top 20 functions
-    
+
     return result
 
 # Memory profiling with memory_profiler
@@ -447,23 +447,23 @@ import time
 
 class PerformanceMonitor:
     """Real-time performance monitoring."""
-    
+
     def __init__(self, interval: int = 5):
         self.interval = interval
         self.monitoring = False
         self.stats = []
-    
+
     def start_monitoring(self):
         """Start performance monitoring."""
         self.monitoring = True
         thread = threading.Thread(target=self._monitor_loop)
         thread.daemon = True
         thread.start()
-    
+
     def stop_monitoring(self):
         """Stop performance monitoring."""
         self.monitoring = False
-    
+
     def _monitor_loop(self):
         """Monitoring loop."""
         while self.monitoring:
@@ -477,15 +477,15 @@ class PerformanceMonitor:
             }
             self.stats.append(stats)
             time.sleep(self.interval)
-    
+
     def get_summary(self):
         """Get performance summary."""
         if not self.stats:
             return None
-            
+
         avg_cpu = sum(s['cpu_percent'] for s in self.stats) / len(self.stats)
         max_memory = max(s['memory_percent'] for s in self.stats)
-        
+
         return {
             'average_cpu': avg_cpu,
             'peak_memory': max_memory,
@@ -522,7 +522,7 @@ import gc
 def cleanup_memory():
     """Force memory cleanup."""
     gc.collect()                         # Force garbage collection
-    
+
 # Use streaming for large files
 def process_large_files_streaming(files: List[Path]):
     """Process large files without loading into memory."""
@@ -566,21 +566,21 @@ config = {
 def diagnose_performance_issues():
     """Diagnose common performance issues."""
     issues = []
-    
+
     # Check system resources
     cpu_percent = psutil.cpu_percent(interval=1)
     memory_percent = psutil.virtual_memory().percent
     disk_usage = psutil.disk_usage('/').percent
-    
+
     if cpu_percent > 90:
         issues.append("High CPU usage - consider reducing worker count")
-    
+
     if memory_percent > 85:
         issues.append("High memory usage - enable memory cleanup")
-    
+
     if disk_usage > 95:
         issues.append("Low disk space - clean up temporary files")
-    
+
     # Check network connectivity
     try:
         import requests
@@ -589,7 +589,7 @@ def diagnose_performance_issues():
             issues.append("API connectivity issues")
     except:
         issues.append("Network connectivity problems")
-    
+
     return issues
 ```
 
@@ -599,9 +599,9 @@ def get_optimization_recommendations():
     """Get personalized optimization recommendations."""
     cpu_cores = psutil.cpu_count()
     memory_gb = psutil.virtual_memory().total / (1024**3)
-    
+
     recommendations = []
-    
+
     # CPU recommendations
     if cpu_cores >= 8:
         recommendations.append("Enable high-performance parallel processing")
@@ -609,7 +609,7 @@ def get_optimization_recommendations():
         recommendations.append("Use moderate parallel processing")
     else:
         recommendations.append("Disable parallel processing for stability")
-    
+
     # Memory recommendations
     if memory_gb >= 16:
         recommendations.append("Enable large cache sizes for better performance")
@@ -617,7 +617,7 @@ def get_optimization_recommendations():
         recommendations.append("Use moderate cache sizes")
     else:
         recommendations.append("Minimize cache usage to prevent OOM errors")
-    
+
     return recommendations
 ```
 

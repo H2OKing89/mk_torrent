@@ -1,0 +1,6 @@
+# Default owners
+*            @H2OKing89
+
+# Scoped ownership
+/src/mk_torrent/core/metadata/   @H2OKing89
+/tests/                          @H2OKing89

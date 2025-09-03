@@ -14,7 +14,7 @@ This document describes the comprehensive refactoring of the metadata system fro
 
 ### Key Benefits
 - ✅ **Testable**: Clean separation enables comprehensive unit testing
-- ✅ **Extensible**: Easy to add new content types, trackers, and data sources  
+- ✅ **Extensible**: Easy to add new content types, trackers, and data sources
 - ✅ **Maintainable**: Clear interfaces and single responsibility principle
 - ✅ **Type-Safe**: Full typing support with modern Python features
 - ✅ **Performance**: Lightweight core with optional enhancement modules
@@ -125,11 +125,11 @@ class MyAudiobookProcessor:
     def extract(self, source):
         # Extract basic metadata
         return {"title": "...", "author": "..."}
-    
+
     def validate(self, metadata):
         # Return ValidationResult
         pass
-    
+
     def enhance(self, metadata):
         # Add derived fields
         return metadata
@@ -171,7 +171,7 @@ result = engine.process_audiobook("file.m4b")
 
 The refactor includes 34 comprehensive tests covering:
 - AudiobookMeta dataclass operations
-- ValidationResult functionality  
+- ValidationResult functionality
 - MetadataEngine dependency injection
 - Full pipeline processing
 - Error handling and edge cases

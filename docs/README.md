@@ -10,7 +10,7 @@
 *Current development and immediate needs*
 
 - **[CURRENT_STATUS.md](active/CURRENT_STATUS.md)** - Project status, achievements, and metrics
-- **[NEXT_STEPS.md](active/NEXT_STEPS.md)** - Roadmap and upcoming development priorities  
+- **[NEXT_STEPS.md](active/NEXT_STEPS.md)** - Roadmap and upcoming development priorities
 - **[TESTING_GUIDE.md](active/TESTING_GUIDE.md)** - Complete testing documentation and best practices
 
 ### **📖 Reference Materials**
@@ -95,7 +95,7 @@ Completed and historical documentation:
 - Reflect current project state
 - Moved to archive when no longer current
 
-### **Reference Documents**  
+### **Reference Documents**
 - Updated when features are implemented
 - Maintained as authoritative technical reference
 - Versioned with the codebase

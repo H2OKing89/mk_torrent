@@ -11,12 +11,14 @@ sys.path.insert(0, str(src_path))
 
 try:
     from mk_torrent.cli import main
-    
+
     if __name__ == "__main__":
         main()
 except ImportError as e:
     print(f"Error importing mk_torrent: {e}")
-    print("\nPlease ensure you're in the correct directory and the virtual environment is activated:")
+    print(
+        "\nPlease ensure you're in the correct directory and the virtual environment is activated:"
+    )
     print("  cd /mnt/cache/scripts/mk_torrent")
     print("  source .venv/bin/activate")
     print("  python scripts/run_new.py")

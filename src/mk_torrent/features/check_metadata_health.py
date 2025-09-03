@@ -7,15 +7,13 @@ capabilities in the torrent creator system.
 
 import sys
 import json
+import time
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any
 from rich.console import Console
-from rich.panel import Panel
-from rich.table import Table
-from rich.columns import Columns
-from rich.text import Text
 
 console = Console()
+
 
 class MetadataHealthChecker:
     """Comprehensive metadata health checker"""
@@ -26,12 +24,14 @@ class MetadataHealthChecker:
             "capabilities": {},
             "connectivity": {},
             "performance": {},
-            "recommendations": []
+            "recommendations": [],
         }
 
     def check_dependencies(self):
         """Check all metadata-related dependencies"""
         console.print("[cyan]Checking Dependencies...[/cyan]")
+
+        import importlib.util
 
         # Map package names to their import names
         dependencies = {
@@ -40,44 +40,45 @@ class MetadataHealthChecker:
             "beautifulsoup4": ("bs4", "HTML parsing fallback"),
             "pillow": ("PIL", "Image processing"),
             "requests": ("requests", "HTTP requests for APIs"),
-            "musicbrainzngs": ("musicbrainzngs", "MusicBrainz API (optional)")
+            "musicbrainzngs": ("musicbrainzngs", "MusicBrainz API (optional)"),
         }
 
         for package, (import_name, description) in dependencies.items():
-            try:
-                __import__(import_name)
+            if importlib.util.find_spec(import_name) is not None:
                 self.results["dependencies"][package] = {
                     "status": "available",
-                    "description": description
+                    "description": description,
                 }
                 console.print(f"  ✅ {package}: {description}")
-            except ImportError:
+            else:
                 self.results["dependencies"][package] = {
                     "status": "missing",
-                    "description": description
+                    "description": description,
                 }
                 console.print(f"  ❌ {package}: {description} - MISSING")
-                self.results["recommendations"].append(f"Install {package}: pip install {package}")
+                self.results["recommendations"].append(
+                    f"Install {package}: pip install {package}"
+                )
 
     def check_capabilities(self):
         """Check metadata processing capabilities"""
         console.print("[cyan]Checking Processing Capabilities...[/cyan]")
 
         # Audio format support
+        import importlib.util
+
         audio_formats = {
             "FLAC": ["mutagen.flac"],
             "MP3": ["mutagen.mp3"],
             "AAC/M4B": ["mutagen.mp4"],
-            "Vorbis": ["mutagen.oggvorbis"]
+            "Vorbis": ["mutagen.oggvorbis"],
         }
 
         format_support = {}
         for format_name, modules in audio_formats.items():
             supported = True
             for module in modules:
-                try:
-                    __import__(module)
-                except ImportError:
+                if importlib.util.find_spec(module) is None:
                     supported = False
                     break
 
@@ -89,17 +90,11 @@ class MetadataHealthChecker:
 
         # HTML sanitization
         html_methods = []
-        try:
-            import nh3
+        if importlib.util.find_spec("nh3") is not None:
             html_methods.append("nh3 (recommended)")
-        except ImportError:
-            pass
 
-        try:
-            from bs4 import BeautifulSoup
+        if importlib.util.find_spec("bs4") is not None:
             html_methods.append("BeautifulSoup (fallback)")
-        except ImportError:
-            pass
 
         if html_methods:
             console.print(f"  ✅ HTML sanitization: {', '.join(html_methods)}")
@@ -107,21 +102,32 @@ class MetadataHealthChecker:
         else:
             console.print("  ❌ HTML sanitization: No methods available")
             self.results["capabilities"]["html_sanitization"] = []
-            self.results["recommendations"].append("Install nh3 for HTML sanitization: pip install nh3")
+            self.results["recommendations"].append(
+                "Install nh3 for HTML sanitization: pip install nh3"
+            )
 
         # Image processing
-        try:
-            from PIL import Image
+        if importlib.util.find_spec("PIL") is not None:
             console.print("  ✅ Image processing: PIL available")
             self.results["capabilities"]["image_processing"] = True
-        except ImportError:
+        else:
             console.print("  ❌ Image processing: PIL not available")
             self.results["capabilities"]["image_processing"] = False
-            self.results["recommendations"].append("Install Pillow for image processing: pip install pillow")
+            self.results["recommendations"].append(
+                "Install Pillow for image processing: pip install pillow"
+            )
 
     def check_connectivity(self):
         """Check connectivity to external services"""
         console.print("[cyan]Checking External Connectivity...[/cyan]")
+
+        import importlib.util
+
+        if importlib.util.find_spec("requests") is None:
+            console.print("  ❌ Requests library not available")
+            self.results["connectivity"]["audnexus"] = {"status": "library_missing"}
+            self.results["connectivity"]["musicbrainz"] = {"status": "library_missing"}
+            return
 
         import requests
 
@@ -133,50 +139,51 @@ class MetadataHealthChecker:
                 console.print("  ✅ Audnexus API: Reachable")
                 self.results["connectivity"]["audnexus"] = {
                     "status": "reachable",
-                    "response_time": response.elapsed.total_seconds()
+                    "response_time": response.elapsed.total_seconds(),
                 }
             elif response.status_code == 404:
                 # 404 is expected for root endpoint, try a sample book endpoint
-                sample_response = requests.get("https://api.audnex.us/books/B0F2B3RZ32?update=1", timeout=10)
+                sample_response = requests.get(
+                    "https://api.audnex.us/books/B0F2B3RZ32?update=1", timeout=10
+                )
                 if sample_response.status_code == 200:
                     console.print("  ✅ Audnexus API: Available (sample endpoint)")
                     self.results["connectivity"]["audnexus"] = {
                         "status": "available",
-                        "note": "Root endpoint returns 404 but API is functional"
+                        "note": "Root endpoint returns 404 but API is functional",
                     }
                 else:
                     console.print("  ⚠️  Audnexus API: Limited availability")
                     self.results["connectivity"]["audnexus"] = {
                         "status": "limited",
-                        "note": "API may be experiencing issues"
+                        "note": "API may be experiencing issues",
                     }
             else:
                 console.print(f"  ⚠️  Audnexus API: HTTP {response.status_code}")
                 self.results["connectivity"]["audnexus"] = {
                     "status": "error",
-                    "code": response.status_code
+                    "code": response.status_code,
                 }
         except Exception as e:
             console.print(f"  ❌ Audnexus API: {str(e)}")
             self.results["connectivity"]["audnexus"] = {
                 "status": "unreachable",
-                "error": str(e)
+                "error": str(e),
             }
 
         # MusicBrainz API
-        try:
-            import musicbrainzngs
+        if importlib.util.find_spec("musicbrainzngs") is not None:
             console.print("  ✅ MusicBrainz API: Library available")
-            self.results["connectivity"]["musicbrainz"] = {"status": "library_available"}
-        except ImportError:
+            self.results["connectivity"]["musicbrainz"] = {
+                "status": "library_available"
+            }
+        else:
             console.print("  ⚠️  MusicBrainz API: Library not installed")
             self.results["connectivity"]["musicbrainz"] = {"status": "library_missing"}
 
     def check_performance(self):
         """Check performance metrics"""
         console.print("[cyan]Checking Performance Metrics...[/cyan]")
-
-        import time
 
         # Test metadata extraction speed
         try:
@@ -189,7 +196,7 @@ class MetadataHealthChecker:
             test_file.write_text("dummy audio content")
 
             start_time = time.time()
-            result = engine.process_metadata([test_file])
+            engine.process_metadata([test_file])  # Test processing capability
             end_time = time.time()
 
             processing_time = end_time - start_time
@@ -202,7 +209,9 @@ class MetadataHealthChecker:
         except Exception as e:
             console.print(f"  ⚠️  Performance test failed: {str(e)}")
             self.results["performance"]["processing_speed"] = None
-            self.results["recommendations"].append("Performance testing requires working metadata engine")
+            self.results["recommendations"].append(
+                "Performance testing requires working metadata engine"
+            )
 
     def generate_report(self):
         """Generate comprehensive health report"""
@@ -257,7 +266,7 @@ def main():
 
         # Save results to file
         output_file = Path("metadata_health_report.json")
-        with open(output_file, 'w') as f:
+        with open(output_file, "w") as f:
             json.dump(results, f, indent=2, default=str)
 
         console.print(f"\n[green]Health report saved to: {output_file}[/green]")

@@ -1,3 +1,5 @@
+![CI](https://github.com/H2OKing89/mk_torrent/actions/workflows/ci.yml/badge.svg)
+
 # 🎯 MK Torrent - Interactive Torrent Creator
 
 [![Tests](https://img.shields.io/badge/Tests-122%20passing-brightgreen)](tests/)

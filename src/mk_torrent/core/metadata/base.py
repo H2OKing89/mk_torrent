@@ -6,7 +6,6 @@ metadata processors, sources, and services must implement.
 """
 
 from __future__ import annotations
-from abc import ABC, abstractmethod
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Protocol, Union
@@ -15,21 +14,22 @@ from typing import Any, Dict, List, Optional, Protocol, Union
 @dataclass
 class AudiobookMeta:
     """Canonical audiobook metadata container.
-    
+
     This is the primary data transfer object used throughout the metadata
     system. Uses dataclass for fast, zero-dependency operation with an
     optional pydantic mirror under schemas/ for strict validation.
     """
+
     title: str = ""
     author: str = ""
-    album: str = ""              # default: title
+    album: str = ""  # default: title
     series: str = ""
-    volume: str = ""             # e.g., "08"
+    volume: str = ""  # e.g., "08"
     year: Optional[int] = None
     narrator: str = ""
     duration_sec: Optional[int] = None
-    format: str = ""             # AAC/FLAC/MP3/etc
-    encoding: str = ""           # V0/CBR320/Lossless/etc
+    format: str = ""  # AAC/FLAC/MP3/etc
+    encoding: str = ""  # V0/CBR320/Lossless/etc
     asin: str = ""
     isbn: str = ""
     publisher: str = ""
@@ -51,23 +51,25 @@ class AudiobookMeta:
         """Create instance from dictionary data."""
         # Filter out unknown fields and convert Path objects
         valid_fields = {k: v for k, v in data.items() if k in cls.__dataclass_fields__}
-        
+
         # Convert string paths back to Path objects
-        if "source_path" in valid_fields and isinstance(valid_fields["source_path"], str):
+        if "source_path" in valid_fields and isinstance(
+            valid_fields["source_path"], str
+        ):
             valid_fields["source_path"] = Path(valid_fields["source_path"])
-        
+
         if "files" in valid_fields:
             valid_fields["files"] = [
-                Path(f) if isinstance(f, str) else f 
-                for f in valid_fields["files"]
+                Path(f) if isinstance(f, str) else f for f in valid_fields["files"]
             ]
-        
+
         return cls(**valid_fields)
 
 
 @dataclass
 class ValidationResult:
     """Result of metadata validation."""
+
     valid: bool
     errors: List[str] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
@@ -88,13 +90,13 @@ class ValidationResult:
             valid=self.valid and other.valid,
             errors=self.errors + other.errors,
             warnings=self.warnings + other.warnings,
-            completeness=min(self.completeness, other.completeness)
+            completeness=min(self.completeness, other.completeness),
         )
 
 
 class MetadataSource(Protocol):
     """Protocol for metadata extraction sources."""
-    
+
     def extract(self, source: Union[Path, str]) -> Dict[str, Any]:
         """Extract metadata from a source (file path, URL, etc.)."""
         ...
@@ -106,7 +108,7 @@ class MetadataSource(Protocol):
 
 class MetadataService(Protocol):
     """Protocol for metadata processing services."""
-    
+
     def process(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Process/transform metadata."""
         ...
@@ -114,15 +116,17 @@ class MetadataService(Protocol):
 
 class MetadataValidator(Protocol):
     """Protocol for metadata validation."""
-    
-    def validate(self, metadata: Union[AudiobookMeta, Dict[str, Any]]) -> ValidationResult:
+
+    def validate(
+        self, metadata: Union[AudiobookMeta, Dict[str, Any]]
+    ) -> ValidationResult:
         """Validate metadata and return detailed results."""
         ...
 
 
 class MetadataProcessor(Protocol):
     """Protocol for content-type specific metadata processors."""
-    
+
     def extract(self, source: Union[Path, str]) -> Dict[str, Any]:
         """Extract metadata from source using all available sources/services."""
         ...
@@ -138,7 +142,7 @@ class MetadataProcessor(Protocol):
 
 class MetadataMapper(Protocol):
     """Protocol for tracker-specific field mapping."""
-    
+
     def map_to_tracker(self, metadata: AudiobookMeta) -> Dict[str, Any]:
         """Map internal metadata model to tracker-specific format."""
         ...
@@ -151,4 +155,3 @@ class MetadataMapper(Protocol):
 # Type aliases for clarity
 Source = Union[Path, str]
 MetadataDict = Dict[str, Any]
-

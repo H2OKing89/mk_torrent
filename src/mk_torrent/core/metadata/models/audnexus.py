@@ -16,12 +16,14 @@ Region = Literal["au", "ca", "de", "es", "fr", "in", "it", "jp", "us", "uk"]
 
 class Person(BaseModel):
     """Person model (Author/Narrator)."""
+
     asin: Optional[str] = None
     name: str
 
 
 class Genre(BaseModel):
     """Genre/Tag model."""
+
     asin: str
     name: str
     type: str = Field(..., description="e.g., 'genre' or 'tag'")
@@ -29,13 +31,17 @@ class Genre(BaseModel):
 
 class Series(BaseModel):
     """Series model."""
+
     asin: Optional[str] = None
     name: str
-    position: Optional[str] = Field(None, description="Textual position marker like '1'")
+    position: Optional[str] = Field(
+        None, description="Textual position marker like '1'"
+    )
 
 
 class Book(BaseModel):
     """Book model representing an audiobook from Audnexus API."""
+
     asin: str
     title: str
     subtitle: Optional[str] = None
@@ -48,7 +54,9 @@ class Book(BaseModel):
     copyright: Optional[int] = None
     format_type: str = Field("", alias="formatType", description="e.g., 'unabridged'")
     language: str = ""
-    literature_type: Optional[Literal["fiction", "nonfiction"]] = Field(None, alias="literatureType")
+    literature_type: Optional[Literal["fiction", "nonfiction"]] = Field(
+        None, alias="literatureType"
+    )
     genres: Optional[List[Genre]] = Field(default_factory=list)
     rating: str = Field("", description="Note: this is a string in the API")
     region: Region = "us"
@@ -66,6 +74,7 @@ class Book(BaseModel):
 
 class ChapterItem(BaseModel):
     """Individual chapter item."""
+
     title: str
     start_offset_ms: int = Field(..., alias="startOffsetMs")
     start_offset_sec: int = Field(..., alias="startOffsetSec")
@@ -77,6 +86,7 @@ class ChapterItem(BaseModel):
 
 class Chapter(BaseModel):
     """Chapter response model."""
+
     asin: str
     brand_intro_duration_ms: int = Field(..., alias="brandIntroDurationMs")
     brand_outro_duration_ms: int = Field(..., alias="brandOutroDurationMs")
@@ -92,6 +102,7 @@ class Chapter(BaseModel):
 
 class Author(BaseModel):
     """Author model with rich metadata."""
+
     asin: str
     name: str
     description: str = ""
@@ -107,6 +118,7 @@ class Author(BaseModel):
 
 class ApiError(BaseModel):
     """API error response model."""
+
     status_code: int = Field(..., alias="statusCode")
     error: str
     message: str

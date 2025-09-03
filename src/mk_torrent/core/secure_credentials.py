@@ -2,9 +2,8 @@
 """Secure credential management for sensitive data"""
 
 from pathlib import Path
-from typing import Dict, Any, Optional, List
+from typing import Dict, Optional
 import json
-import os
 import base64
 import getpass
 from cryptography.fernet import Fernet
@@ -14,14 +13,9 @@ import keyring
 import secrets
 
 from rich.console import Console
-from rich.prompt import Prompt, Confirm
 
 console = Console()
 
-from rich.console import Console
-from rich.prompt import Prompt, Confirm
-
-console = Console()
 
 class SecureCredentialManager:
     """Secure credential storage using encryption and keyring"""
@@ -40,12 +34,12 @@ class SecureCredentialManager:
     def _generate_master_key(self) -> bytes:
         """Generate or load master encryption key"""
         if self.key_file.exists():
-            with open(self.key_file, 'rb') as f:
+            with open(self.key_file, "rb") as f:
                 return f.read()
 
         # Generate new key
         key = Fernet.generate_key()
-        with open(self.key_file, 'wb') as f:
+        with open(self.key_file, "wb") as f:
             f.write(key)
         self.key_file.chmod(0o600)
         return key
@@ -53,12 +47,12 @@ class SecureCredentialManager:
     def _get_salt(self) -> bytes:
         """Get or generate salt for key derivation"""
         if self.salt_file.exists():
-            with open(self.salt_file, 'rb') as f:
+            with open(self.salt_file, "rb") as f:
                 return f.read()
 
         # Generate new salt
         salt = secrets.token_bytes(16)
-        with open(self.salt_file, 'wb') as f:
+        with open(self.salt_file, "wb") as f:
             f.write(salt)
         self.salt_file.chmod(0o600)
         return salt
@@ -90,8 +84,12 @@ class SecureCredentialManager:
             console.print("[yellow]Master key already exists[/yellow]")
             return True
 
-        console.print("[dim]A master password will be used to encrypt sensitive data[/dim]")
-        console.print("[dim]This password will be required to access stored credentials[/dim]\n")
+        console.print(
+            "[dim]A master password will be used to encrypt sensitive data[/dim]"
+        )
+        console.print(
+            "[dim]This password will be required to access stored credentials[/dim]\n"
+        )
 
         while True:
             password = getpass.getpass("Enter master password: ")
@@ -106,14 +104,16 @@ class SecureCredentialManager:
 
             # Generate and save master key
             master_key = self._derive_key(password)
-            with open(self.key_file, 'wb') as f:
+            with open(self.key_file, "wb") as f:
                 f.write(master_key)
             self.key_file.chmod(0o600)
 
             console.print("[green]✅ Master password setup complete[/green]")
             return True
 
-    def store_qbittorrent_credentials(self, host: str, port: int, username: str, password: str):
+    def store_qbittorrent_credentials(
+        self, host: str, port: int, username: str, password: str
+    ):
         """Securely store qBittorrent credentials"""
         service_name = f"{self.app_name}_qbittorrent"
 
@@ -122,10 +122,16 @@ class SecureCredentialManager:
             keyring.set_password(service_name, f"{username}@{host}:{port}", password)
             console.print("[green]✅ qBittorrent password stored securely[/green]")
         except Exception as e:
-            console.print(f"[yellow]⚠️ Keyring not available, using encrypted storage: {e}[/yellow]")
-            self._store_encrypted_credential("qbittorrent", f"{username}@{host}:{port}", password)
+            console.print(
+                f"[yellow]⚠️ Keyring not available, using encrypted storage: {e}[/yellow]"
+            )
+            self._store_encrypted_credential(
+                "qbittorrent", f"{username}@{host}:{port}", password
+            )
 
-    def get_qbittorrent_password(self, host: str, port: int, username: str) -> Optional[str]:
+    def get_qbittorrent_password(
+        self, host: str, port: int, username: str
+    ) -> Optional[str]:
         """Retrieve qBittorrent password securely"""
         service_name = f"{self.app_name}_qbittorrent"
 
@@ -134,16 +140,19 @@ class SecureCredentialManager:
             password = keyring.get_password(service_name, f"{username}@{host}:{port}")
             if password:
                 return password
-        except:
+        except Exception:
             pass
 
         # Fallback to encrypted storage
-        return self._get_encrypted_credential("qbittorrent", f"{username}@{host}:{port}")
+        return self._get_encrypted_credential(
+            "qbittorrent", f"{username}@{host}:{port}"
+        )
 
     def store_tracker_passkey(self, tracker_url: str, passkey: str):
         """Store private tracker passkey securely"""
         # Extract tracker domain for identification
         from urllib.parse import urlparse
+
         domain = urlparse(tracker_url).netloc
 
         service_name = f"{self.app_name}_tracker_{domain}"
@@ -151,12 +160,15 @@ class SecureCredentialManager:
             keyring.set_password(service_name, "passkey", passkey)
             console.print(f"[green]✅ Passkey for {domain} stored securely[/green]")
         except Exception as e:
-            console.print(f"[yellow]⚠️ Keyring not available, using encrypted storage: {e}[/yellow]")
+            console.print(
+                f"[yellow]⚠️ Keyring not available, using encrypted storage: {e}[/yellow]"
+            )
             self._store_encrypted_credential(f"tracker_{domain}", "passkey", passkey)
 
     def get_tracker_passkey(self, tracker_url: str) -> Optional[str]:
         """Retrieve tracker passkey securely"""
         from urllib.parse import urlparse
+
         domain = urlparse(tracker_url).netloc
 
         service_name = f"{self.app_name}_tracker_{domain}"
@@ -164,7 +176,7 @@ class SecureCredentialManager:
             passkey = keyring.get_password(service_name, "passkey")
             if passkey:
                 return passkey
-        except:
+        except Exception:
             pass
 
         # Fallback to encrypted storage
@@ -194,7 +206,7 @@ class SecureCredentialManager:
             return {}
 
         try:
-            with open(self.secure_config_file, 'rb') as f:
+            with open(self.secure_config_file, "rb") as f:
                 encrypted_data = f.read()
 
             # Try with master key first
@@ -202,9 +214,11 @@ class SecureCredentialManager:
                 fernet = self._get_fernet()
                 decrypted_data = fernet.decrypt(encrypted_data)
                 return json.loads(decrypted_data.decode())
-            except:
+            except Exception:
                 # If master key fails, prompt for password
-                console.print("[yellow]Master password required to access encrypted credentials[/yellow]")
+                console.print(
+                    "[yellow]Master password required to access encrypted credentials[/yellow]"
+                )
                 password = getpass.getpass("Enter master password: ")
                 fernet = self._get_fernet(password)
                 decrypted_data = fernet.decrypt(encrypted_data)
@@ -220,7 +234,7 @@ class SecureCredentialManager:
             fernet = self._get_fernet()
             encrypted_data = fernet.encrypt(json.dumps(credentials).encode())
 
-            with open(self.secure_config_file, 'wb') as f:
+            with open(self.secure_config_file, "wb") as f:
                 f.write(encrypted_data)
             self.secure_config_file.chmod(0o600)
 
@@ -232,28 +246,30 @@ class SecureCredentialManager:
         if not config_file.exists():
             return
 
-        console.print("[cyan]🔄 Migrating plain text credentials to secure storage...[/cyan]")
+        console.print(
+            "[cyan]🔄 Migrating plain text credentials to secure storage...[/cyan]"
+        )
 
         try:
-            with open(config_file, 'r') as f:
+            with open(config_file, "r") as f:
                 config = json.load(f)
 
             # Migrate qBittorrent credentials
-            if 'qbit_password' in config and config['qbit_password']:
-                host = config.get('qbit_host', 'localhost')
-                port = config.get('qbit_port', 8080)
-                username = config.get('qbit_username', 'admin')
+            if "qbit_password" in config and config["qbit_password"]:
+                host = config.get("qbit_host", "localhost")
+                port = config.get("qbit_port", 8080)
+                username = config.get("qbit_username", "admin")
 
                 self.store_qbittorrent_credentials(
-                    host, port, username, config['qbit_password']
+                    host, port, username, config["qbit_password"]
                 )
 
                 # Remove plain text password
-                del config['qbit_password']
+                del config["qbit_password"]
                 console.print("[green]✅ qBittorrent password migrated[/green]")
 
             # Save updated config without passwords
-            with open(config_file, 'w') as f:
+            with open(config_file, "w") as f:
                 json.dump(config, f, indent=2)
 
         except Exception as e:
@@ -267,48 +283,52 @@ class SecureCredentialManager:
         console.print("[cyan]🔄 Migrating tracker passkeys to secure storage...[/cyan]")
 
         try:
-            with open(trackers_file, 'r') as f:
+            with open(trackers_file, "r") as f:
                 trackers = [line.strip() for line in f if line.strip()]
 
             migrated_trackers = []
             for tracker in trackers:
-                if '/announce' in tracker and len(tracker.split('/')) >= 4:
+                if "/announce" in tracker and len(tracker.split("/")) >= 4:
                     # Extract passkey from URL
-                    parts = tracker.split('/')
+                    parts = tracker.split("/")
                     if len(parts) >= 4 and parts[-2] and len(parts[-2]) > 10:
                         # More specific check: passkeys are typically 8-64 chars and don't contain dots
                         # (avoiding domain names which usually contain dots)
-                        if 8 <= len(parts[-2]) <= 64 and '.' not in parts[-2]:
+                        if 8 <= len(parts[-2]) <= 64 and "." not in parts[-2]:
                             passkey = parts[-2]
-                            base_url = '/'.join(parts[:-2]) + '/announce'
+                            base_url = "/".join(parts[:-2]) + "/announce"
 
                             self.store_tracker_passkey(base_url, passkey)
 
                             # Replace with placeholder
-                            migrated_trackers.append(f"{base_url}  # SECURE_PASSKEY_STORED")
-                            console.print(f"[green]✅ Passkey for {base_url} migrated[/green]")
+                            migrated_trackers.append(
+                                f"{base_url}  # SECURE_PASSKEY_STORED"
+                            )
+                            console.print(
+                                f"[green]✅ Passkey for {base_url} migrated[/green]"
+                            )
                     else:
                         migrated_trackers.append(tracker)
                 else:
                     migrated_trackers.append(tracker)
 
             # Save updated trackers file
-            with open(trackers_file, 'w') as f:
-                f.write('\n'.join(migrated_trackers) + '\n')
+            with open(trackers_file, "w") as f:
+                f.write("\n".join(migrated_trackers) + "\n")
 
         except Exception as e:
             console.print(f"[red]Error migrating tracker passkeys: {e}[/red]")
 
     def get_secure_tracker_url(self, tracker_url: str) -> str:
         """Get tracker URL with passkey inserted from secure storage"""
-        if 'SECURE_PASSKEY_STORED' in tracker_url:
+        if "SECURE_PASSKEY_STORED" in tracker_url:
             # Extract base URL
-            base_url = tracker_url.split('  #')[0].strip()
-            
+            base_url = tracker_url.split("  #")[0].strip()
+
             # Determine which tracker this is and get the appropriate passkey
-            if 'flacsfor.me' in base_url:
+            if "flacsfor.me" in base_url:
                 # RED tracker - use encrypted URL format with passkey in path
-                passkey = self.get_tracker_credential('RED', 'passkey')
+                passkey = self.get_tracker_credential("RED", "passkey")
                 if passkey:
                     # Construct proper RED encrypted URL: https://flacsfor.me/{passkey}/announce
                     return f"https://flacsfor.me/{passkey}/announce"
@@ -317,13 +337,15 @@ class SecureCredentialManager:
                 passkey = self.get_tracker_passkey(base_url)
                 if passkey:
                     # Ensure base_url ends with /announce for replacement
-                    if not base_url.endswith('/announce'):
-                        base_url = base_url.rstrip('/') + '/announce'
+                    if not base_url.endswith("/announce"):
+                        base_url = base_url.rstrip("/") + "/announce"
                     # Insert passkey back into URL (old format for compatibility)
-                    return base_url.replace('/announce', f'/{passkey}/announce')
+                    return base_url.replace("/announce", f"/{passkey}/announce")
         return tracker_url
 
-    def get_tracker_credential(self, tracker_name: str, credential_type: str) -> Optional[str]:
+    def get_tracker_credential(
+        self, tracker_name: str, credential_type: str
+    ) -> Optional[str]:
         """Public method to get tracker-specific credential from secure storage"""
         if not tracker_name or not tracker_name.strip():
             raise ValueError("Tracker name cannot be empty")
@@ -333,7 +355,9 @@ class SecureCredentialManager:
         service = f"torrent_creator_tracker_{tracker_name.strip()}"
         return self._get_encrypted_credential(service, credential_type.strip())
 
-    def store_tracker_credential(self, tracker_name: str, credential_type: str, value: str):
+    def store_tracker_credential(
+        self, tracker_name: str, credential_type: str, value: str
+    ):
         """Public method to store tracker-specific credential securely"""
         if not tracker_name or not tracker_name.strip():
             raise ValueError("Tracker name cannot be empty")
@@ -345,12 +369,15 @@ class SecureCredentialManager:
         service = f"torrent_creator_tracker_{tracker_name.strip()}"
         self._store_encrypted_credential(service, credential_type.strip(), value)
 
+
 # Global instance
 secure_manager = SecureCredentialManager()
+
 
 def setup_secure_storage():
     """Setup secure credential storage"""
     return secure_manager.setup_master_password()
+
 
 def migrate_to_secure_storage():
     """Migrate existing plain text credentials to secure storage"""
@@ -360,18 +387,28 @@ def migrate_to_secure_storage():
     secure_manager.migrate_plain_text_credentials(config_file)
     secure_manager.migrate_tracker_passkeys(trackers_file)
 
-def get_secure_qbittorrent_password(host: str, port: int, username: str) -> Optional[str]:
+
+def get_secure_qbittorrent_password(
+    host: str, port: int, username: str
+) -> Optional[str]:
     """Get qBittorrent password from secure storage"""
     return secure_manager.get_qbittorrent_password(host, port, username)
+
 
 def get_secure_tracker_url(tracker_url: str) -> str:
     """Get tracker URL with secure passkey"""
     return secure_manager.get_secure_tracker_url(tracker_url)
 
-def get_secure_tracker_credential(tracker_name: str, credential_type: str) -> Optional[str]:
+
+def get_secure_tracker_credential(
+    tracker_name: str, credential_type: str
+) -> Optional[str]:
     """Get tracker-specific credential from secure storage"""
     return secure_manager.get_tracker_credential(tracker_name, credential_type)
 
-def store_secure_tracker_credential(tracker_name: str, credential_type: str, value: str):
+
+def store_secure_tracker_credential(
+    tracker_name: str, credential_type: str, value: str
+):
     """Store tracker-specific credential securely"""
     secure_manager.store_tracker_credential(tracker_name, credential_type, value)

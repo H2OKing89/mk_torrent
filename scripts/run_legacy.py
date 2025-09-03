@@ -5,7 +5,6 @@ import sys
 from pathlib import Path
 
 from rich.console import Console
-from rich.panel import Panel
 
 console = Console()
 
@@ -14,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 try:
     from cli import main
-    
+
     if __name__ == "__main__":
         main()
 except ImportError as e:

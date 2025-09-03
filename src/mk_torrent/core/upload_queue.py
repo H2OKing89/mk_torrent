@@ -2,7 +2,7 @@
 """Upload Queue Management System"""
 
 from pathlib import Path
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 import json
 import uuid
@@ -12,12 +12,13 @@ from enum import Enum
 
 from rich.console import Console
 from rich.table import Table
-from rich.panel import Panel
 
 console = Console()
 
+
 class UploadStatus(Enum):
     """Upload status enumeration"""
+
     PENDING = "pending"
     UPLOADING = "uploading"
     SUCCESS = "success"
@@ -25,9 +26,11 @@ class UploadStatus(Enum):
     RETRYING = "retrying"
     CANCELLED = "cancelled"
 
+
 @dataclass
 class UploadJob:
     """Represents a single upload job"""
+
     job_id: str
     torrent_path: str
     trackers: List[str]
@@ -47,17 +50,17 @@ class UploadJob:
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization"""
         data = asdict(self)
-        data['status'] = self.status.value
-        data['created_at'] = self.created_at.isoformat()
-        data['updated_at'] = self.updated_at.isoformat()
+        data["status"] = self.status.value
+        data["created_at"] = self.created_at.isoformat()
+        data["updated_at"] = self.updated_at.isoformat()
         return data
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'UploadJob':
+    def from_dict(cls, data: Dict[str, Any]) -> "UploadJob":
         """Create from dictionary (JSON deserialization)"""
-        data['status'] = UploadStatus(data['status'])
-        data['created_at'] = datetime.fromisoformat(data['created_at'])
-        data['updated_at'] = datetime.fromisoformat(data['updated_at'])
+        data["status"] = UploadStatus(data["status"])
+        data["created_at"] = datetime.fromisoformat(data["created_at"])
+        data["updated_at"] = datetime.fromisoformat(data["updated_at"])
         return cls(**data)
 
     def is_expired(self, max_age_hours: int = 24) -> bool:
@@ -66,8 +69,9 @@ class UploadJob:
 
     def can_retry(self) -> bool:
         """Check if job can be retried"""
-        return (self.status == UploadStatus.FAILED and
-                self.retry_count < self.max_retries)
+        return (
+            self.status == UploadStatus.FAILED and self.retry_count < self.max_retries
+        )
 
     def mark_success(self, tracker: str):
         """Mark upload as successful for a tracker"""
@@ -95,6 +99,7 @@ class UploadJob:
         if len(self.results) == len(self.trackers) and not any(self.results.values()):
             self.status = UploadStatus.FAILED
 
+
 class UploadQueue:
     """Thread-safe upload queue management"""
 
@@ -115,15 +120,15 @@ class UploadQueue:
             return
 
         try:
-            with open(self.jobs_file, 'r') as f:
+            with open(self.jobs_file, "r") as f:
                 data = json.load(f)
-                for job_data in data.get('jobs', []):
+                for job_data in data.get("jobs", []):
                     job = UploadJob.from_dict(job_data)
                     self._jobs[job.job_id] = job
         except (json.JSONDecodeError, KeyError) as e:
             backup_file = None
             if self.jobs_file.exists():
-                backup_file = self.jobs_file.with_suffix('.bak')
+                backup_file = self.jobs_file.with_suffix(".bak")
                 self.jobs_file.rename(backup_file)
             console.print(
                 f"[yellow]Warning: Could not load upload jobs: {e}\n"
@@ -135,19 +140,20 @@ class UploadQueue:
     def _save_jobs(self):
         """Save jobs to persistent storage"""
         data = {
-            'version': '1.0',
-            'last_updated': datetime.now().isoformat(),
-            'jobs': [job.to_dict() for job in self._jobs.values()]
+            "version": "1.0",
+            "last_updated": datetime.now().isoformat(),
+            "jobs": [job.to_dict() for job in self._jobs.values()],
         }
 
         try:
-            with open(self.jobs_file, 'w') as f:
+            with open(self.jobs_file, "w") as f:
                 json.dump(data, f, indent=2)
         except Exception as e:
             console.print(f"[red]Error saving upload jobs: {e}[/red]")
 
-    def add_job(self, torrent_path: Path, trackers: List[str],
-                metadata: Dict[str, Any]) -> str:
+    def add_job(
+        self, torrent_path: Path, trackers: List[str], metadata: Dict[str, Any]
+    ) -> str:
         """Add a new upload job to the queue"""
         with self.lock:
             job_id = str(uuid.uuid4())
@@ -158,7 +164,7 @@ class UploadQueue:
                 metadata=metadata,
                 status=UploadStatus.PENDING,
                 created_at=datetime.now(),
-                updated_at=datetime.now()
+                updated_at=datetime.now(),
             )
             self._jobs[job_id] = job
             self._save_jobs()
@@ -172,17 +178,18 @@ class UploadQueue:
     def get_pending_jobs(self) -> List[UploadJob]:
         """Get all pending jobs"""
         with self.lock:
-            return [job for job in self._jobs.values()
-                   if job.status == UploadStatus.PENDING]
+            return [
+                job for job in self._jobs.values() if job.status == UploadStatus.PENDING
+            ]
 
     def get_failed_jobs(self) -> List[UploadJob]:
         """Get all failed jobs that can be retried"""
         with self.lock:
-            return [job for job in self._jobs.values()
-                   if job.can_retry()]
+            return [job for job in self._jobs.values() if job.can_retry()]
 
-    def update_job_status(self, job_id: str, status: UploadStatus,
-                         error_message: Optional[str] = None):
+    def update_job_status(
+        self, job_id: str, status: UploadStatus, error_message: Optional[str] = None
+    ):
         """Update job status"""
         with self.lock:
             if job_id in self._jobs:
@@ -250,19 +257,41 @@ class UploadQueue:
 
             if expired_jobs:
                 self._save_jobs()
-                job_info_str = ", ".join([f"{jid} (created_at: {ts})" for jid, ts in expired_job_infos])
-                console.print(f"[dim]Cleaned up {len(expired_jobs)} expired jobs: {job_info_str}[/dim]")
+                job_info_str = ", ".join(
+                    [f"{jid} (created_at: {ts})" for jid, ts in expired_job_infos]
+                )
+                console.print(
+                    f"[dim]Cleaned up {len(expired_jobs)} expired jobs: {job_info_str}[/dim]"
+                )
 
     def get_queue_stats(self) -> Dict[str, int]:
         """Get queue statistics"""
         with self.lock:
             stats = {
-                'total': len(self._jobs),
-                'pending': len([j for j in self._jobs.values() if j.status == UploadStatus.PENDING]),
-                'uploading': len([j for j in self._jobs.values() if j.status == UploadStatus.UPLOADING]),
-                'success': len([j for j in self._jobs.values() if j.status == UploadStatus.SUCCESS]),
-                'failed': len([j for j in self._jobs.values() if j.status == UploadStatus.FAILED]),
-                'retrying': len([j for j in self._jobs.values() if j.status == UploadStatus.RETRYING])
+                "total": len(self._jobs),
+                "pending": len(
+                    [j for j in self._jobs.values() if j.status == UploadStatus.PENDING]
+                ),
+                "uploading": len(
+                    [
+                        j
+                        for j in self._jobs.values()
+                        if j.status == UploadStatus.UPLOADING
+                    ]
+                ),
+                "success": len(
+                    [j for j in self._jobs.values() if j.status == UploadStatus.SUCCESS]
+                ),
+                "failed": len(
+                    [j for j in self._jobs.values() if j.status == UploadStatus.FAILED]
+                ),
+                "retrying": len(
+                    [
+                        j
+                        for j in self._jobs.values()
+                        if j.status == UploadStatus.RETRYING
+                    ]
+                ),
             }
             return stats
 
@@ -275,19 +304,19 @@ class UploadQueue:
         table.add_column("Count", style="magenta", justify="right")
 
         for status, count in stats.items():
-            if status != 'total':
+            if status != "total":
                 table.add_row(status.title(), str(count))
 
         table.add_row("", "")
-        table.add_row("Total", str(stats['total']), style="bold")
+        table.add_row("Total", str(stats["total"]), style="bold")
 
         console.print(table)
 
         # Show recent jobs
         if self._jobs:
-            recent_jobs = sorted(self._jobs.values(),
-                               key=lambda x: x.updated_at,
-                               reverse=True)[:5]
+            recent_jobs = sorted(
+                self._jobs.values(), key=lambda x: x.updated_at, reverse=True
+            )[:5]
 
             job_table = Table(title="🔄 Recent Jobs")
             job_table.add_column("Job ID", style="dim")
@@ -303,7 +332,7 @@ class UploadQueue:
                     job.job_id[:8],
                     job.status.value.title(),
                     trackers_str,
-                    job.updated_at.strftime("%H:%M:%S")
+                    job.updated_at.strftime("%H:%M:%S"),
                 )
 
             console.print(job_table)

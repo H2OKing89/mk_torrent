@@ -25,7 +25,6 @@ Requirements:
 import sys
 import os
 import requests
-from pathlib import Path
 from typing import Dict, List, Optional, Any
 
 # Import from our secure credentials system
@@ -39,14 +38,14 @@ UPLOAD_ENDPOINT = f"{RED_BASE_URL}/ajax.php?action=upload"
 # Audiobook category mapping
 AUDIOBOOK_CATEGORY = 3  # RED category for Audiobooks
 
+
 class AudiobookUploader:
     def __init__(self, api_key: str):
         self.api_key = api_key
         self.session = requests.Session()
-        self.session.headers.update({
-            'Authorization': api_key,
-            'User-Agent': 'mk_torrent/1.0'
-        })
+        self.session.headers.update(
+            {"Authorization": api_key, "User-Agent": "mk_torrent/1.0"}
+        )
 
     def upload_audiobook(
         self,
@@ -61,7 +60,7 @@ class AudiobookUploader:
         tags: str = "audiobook",
         description: str = "",
         other_bitrate: Optional[str] = None,
-        dryrun: bool = True
+        dryrun: bool = True,
     ) -> Dict:
         """
         Upload an audiobook torrent to RED tracker.
@@ -89,43 +88,47 @@ class AudiobookUploader:
 
         # Prepare multipart form data
         files = {
-            'file_input': ('torrent.torrent', open(torrent_path, 'rb'), 'application/x-bittorrent')
+            "file_input": (
+                "torrent.torrent",
+                open(torrent_path, "rb"),
+                "application/x-bittorrent",
+            )
         }
 
         # Prepare form data with audiobook-specific parameters
         data = {
-            'type': AUDIOBOOK_CATEGORY,  # Audiobooks category
-            'title': title,
-            'year': str(year),
-            'releasetype': str(releasetype),
-            'format': format_type,
-            'bitrate': bitrate,
-            'media': media,
-            'tags': tags,
-            'album_desc': description,
+            "type": AUDIOBOOK_CATEGORY,  # Audiobooks category
+            "title": title,
+            "year": str(year),
+            "releasetype": str(releasetype),
+            "format": format_type,
+            "bitrate": bitrate,
+            "media": media,
+            "tags": tags,
+            "album_desc": description,
         }
 
         # Add other_bitrate if specified (for bitrate='Other')
         if other_bitrate:
-            data['other_bitrate'] = other_bitrate
+            data["other_bitrate"] = other_bitrate
 
         # Add artists array (match curl example format)
         for i, artist in enumerate(artists):
-            data[f'artists[{i}]'] = artist
-            data[f'importance[{i}]'] = '1'  # Main artist
+            data[f"artists[{i}]"] = artist
+            data[f"importance[{i}]"] = "1"  # Main artist
 
         # Add dryrun parameter for testing
         if dryrun:
-            data['dryrun'] = '1'
+            data["dryrun"] = "1"
 
-        print(f"🚀 Uploading audiobook to RED...")
+        print("🚀 Uploading audiobook to RED...")
         print(f"   Title: {title}")
         print(f"   Artists: {', '.join(artists)}")
         print(f"   Year: {year}")
         print(f"   Dry Run: {'Yes' if dryrun else 'No'}")
         print(f"   Torrent: {os.path.basename(torrent_path)}")
 
-        print(f"📤 Request details:")
+        print("📤 Request details:")
         print(f"   URL: {UPLOAD_ENDPOINT}")
         print(f"   Headers: {dict(self.session.headers)}")
         print(f"   Files: {list(files.keys())}")
@@ -142,27 +145,30 @@ class AudiobookUploader:
             result = response.json()
 
             # Handle both regular success and dry run success
-            if result.get('status') in ['success', 'dry run success']:
+            if result.get("status") in ["success", "dry run success"]:
                 print("✅ Upload successful!")
                 if dryrun:
                     print("   (This was a dry run - no actual upload occurred)")
-                    print(f"   📊 Validation results: {result.get('data', {}).get('torrent', 'N/A')}")
+                    print(
+                        f"   📊 Validation results: {result.get('data', {}).get('torrent', 'N/A')}"
+                    )
                 return result
             else:
-                error_msg = result.get('error', result.get('data', 'Unknown error'))
+                error_msg = result.get("error", result.get("data", "Unknown error"))
                 print(f"❌ Upload failed: {error_msg}")
                 return result
 
         except requests.exceptions.RequestException as e:
             print(f"❌ Network error: {e}")
             # Print more details for debugging
-            if hasattr(e, 'response') and e.response:
+            if hasattr(e, "response") and e.response:
                 print(f"   Status Code: {e.response.status_code}")
                 print(f"   Response: {e.response.text[:500]}...")
-            return {'status': 'error', 'error': str(e)}
+            return {"status": "error", "error": str(e)}
         except ValueError as e:
             print(f"❌ JSON parsing error: {e}")
-            return {'status': 'error', 'error': str(e)}
+            return {"status": "error", "error": str(e)}
+
 
 def main():
     """Main workflow execution"""
@@ -174,9 +180,11 @@ def main():
 
     # Get RED API key from secure storage
     try:
-        api_key = get_secure_tracker_credential('red', 'api_key')
+        api_key = get_secure_tracker_credential("red", "api_key")
         if not api_key:
-            print("❌ RED API key not found. Please store it using secure_credentials.py")
+            print(
+                "❌ RED API key not found. Please store it using secure_credentials.py"
+            )
             sys.exit(1)
     except Exception as e:
         print(f"❌ Error retrieving API key: {e}")
@@ -188,14 +196,14 @@ def main():
     # Example audiobook metadata (in real usage, this could be extracted from torrent or prompted)
     # For demonstration, using sample data
     sample_metadata: Dict[str, Any] = {
-        'title': 'The Great Gatsby',
-        'artists': ['F. Scott Fitzgerald', 'Narrated by Jake Gyllenhaal'],
-        'year': 2023,
-        'format_type': 'MP3',
-        'bitrate': '320',
-        'media': 'WEB',
-        'tags': 'audiobook, fiction, classic',
-        'description': 'A classic American novel narrated by Jake Gyllenhaal'
+        "title": "The Great Gatsby",
+        "artists": ["F. Scott Fitzgerald", "Narrated by Jake Gyllenhaal"],
+        "year": 2023,
+        "format_type": "MP3",
+        "bitrate": "320",
+        "media": "WEB",
+        "tags": "audiobook, fiction, classic",
+        "description": "A classic American novel narrated by Jake Gyllenhaal",
     }
 
     print("📖 Audiobook Upload Workflow")
@@ -205,18 +213,18 @@ def main():
     print("\n🔍 Performing dry run test...")
     result = uploader.upload_audiobook(
         torrent_path=torrent_path,
-        title=sample_metadata['title'],
-        artists=sample_metadata['artists'],
-        year=sample_metadata['year'],
-        format_type=sample_metadata['format_type'],
-        bitrate=sample_metadata['bitrate'],
-        media=sample_metadata['media'],
-        tags=sample_metadata['tags'],
-        description=sample_metadata['description'],
-        dryrun=True
+        title=sample_metadata["title"],
+        artists=sample_metadata["artists"],
+        year=sample_metadata["year"],
+        format_type=sample_metadata["format_type"],
+        bitrate=sample_metadata["bitrate"],
+        media=sample_metadata["media"],
+        tags=sample_metadata["tags"],
+        description=sample_metadata["description"],
+        dryrun=True,
     )
 
-    if result.get('status') in ['success', 'dry run success']:
+    if result.get("status") in ["success", "dry run success"]:
         print("\n✅ Dry run successful! Ready for real upload.")
         print("   📊 RED validation passed - all metadata accepted!")
         print("\nTo perform actual upload, call with dryrun=False:")
@@ -230,8 +238,9 @@ def main():
         #     dryrun=False
         # )
     else:
-        print(f"\n❌ Dry run failed. Please check the error and try again.")
+        print("\n❌ Dry run failed. Please check the error and try again.")
         print(f"Error: {result.get('error', result.get('data', 'Unknown'))}")
+
 
 if __name__ == "__main__":
     main()

@@ -4,7 +4,7 @@
 
 ### Core Library Modules (NO rich dependency)
 - `src/mk_torrent/core/metadata/` - Metadata processors
-- `src/mk_torrent/core/torrent/` - Torrent creation 
+- `src/mk_torrent/core/torrent/` - Torrent creation
 - `src/mk_torrent/integrations/` - External API integrations
 - Use **standard Python logging** only
 
@@ -35,7 +35,7 @@
 
 1. **Core modules** should have minimal dependencies for:
    - Better testability
-   - Library reusability  
+   - Library reusability
    - Reduced dependency conflicts
    - Clear separation of concerns
 

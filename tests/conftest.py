@@ -20,6 +20,7 @@ def temp_workspace():
 
     # Cleanup after session
     import shutil
+
     shutil.rmtree(temp_path, ignore_errors=True)
 
 
@@ -31,6 +32,7 @@ def temp_dir():
 
     # Cleanup
     import shutil
+
     shutil.rmtree(temp_path, ignore_errors=True)
 
 
@@ -65,7 +67,7 @@ def sample_audiobook_metadata():
         "genres": [{"name": "Fiction", "type": "genre"}],
         "summary": "This is a test audiobook summary.",
         "rating": 4.5,
-        "isbn": "978-0123456789"
+        "isbn": "978-0123456789",
     }
 
 
@@ -85,7 +87,7 @@ def mock_mutagen_file():
         "ARTIST": "Test Artist",
         "ALBUM": "Test Album",
         "DATE": "2023",
-        "GENRE": "Rock"
+        "GENRE": "Rock",
     }.get(key, default)
 
     return mock_file
@@ -94,6 +96,7 @@ def mock_mutagen_file():
 @pytest.fixture
 def mock_requests_get():
     """Mock requests.get for API testing"""
+
     def _mock_get(url, **kwargs):
         mock_response = MagicMock()
         mock_response.raise_for_status.return_value = None
@@ -103,7 +106,7 @@ def mock_requests_get():
                 "asin": "B0123456789",
                 "title": "Mock Book Title",
                 "authors": [{"name": "Mock Author"}],
-                "summary": "Mock summary"
+                "summary": "Mock summary",
             }
         else:
             mock_response.json.return_value = {}
@@ -120,14 +123,18 @@ def mock_dependencies():
         # Mock optional dependencies
         m.setattr("src.mk_torrent.features.metadata_engine.NH3_AVAILABLE", True)
         m.setattr("src.mk_torrent.features.metadata_engine.MUTAGEN_AVAILABLE", True)
-        m.setattr("src.mk_torrent.features.metadata_engine.MUSICBRAINZ_AVAILABLE", False)
+        m.setattr(
+            "src.mk_torrent.features.metadata_engine.MUSICBRAINZ_AVAILABLE", False
+        )
         yield
 
 
 # Custom markers
 def pytest_configure(config):
     """Configure custom pytest markers"""
-    config.addinivalue_line("markers", "metadata: marks tests related to metadata processing")
+    config.addinivalue_line(
+        "markers", "metadata: marks tests related to metadata processing"
+    )
     config.addinivalue_line("markers", "health: marks tests related to health checks")
     config.addinivalue_line("markers", "integration: marks tests as integration tests")
     config.addinivalue_line("markers", "slow: marks tests as slow")
@@ -182,6 +189,7 @@ def engine():
     """Create a MetadataEngine instance for testing"""
     try:
         from src.mk_torrent.features.metadata_engine import MetadataEngine
+
         return MetadataEngine()
     except ImportError:
         pytest.skip("MetadataEngine not available")

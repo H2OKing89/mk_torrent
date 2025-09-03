@@ -31,18 +31,15 @@ __all__ = [
     # Core data models
     "AudiobookMeta",
     "ValidationResult",
-    
     # Protocols/interfaces
     "MetadataSource",
-    "MetadataService", 
+    "MetadataService",
     "MetadataValidator",
     "MetadataProcessor",
     "MetadataMapper",
-    
     # Main engine
     "MetadataEngine",
     "process_metadata",
-    
     # Exceptions
     "MetadataError",
     "SourceUnavailable",
@@ -51,7 +48,6 @@ __all__ = [
     "ProcessorNotFound",
     "ConfigurationError",
     "ExtractionError",
-    
     # Type aliases
     "Source",
     "MetadataDict",

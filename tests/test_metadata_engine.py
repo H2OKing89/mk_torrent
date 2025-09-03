@@ -5,19 +5,16 @@ import pytest
 import tempfile
 import shutil
 from pathlib import Path
-from unittest.mock import patch, MagicMock, mock_open
-from datetime import datetime
-import json
+from unittest.mock import patch, MagicMock
 
 from src.mk_torrent.features.metadata_engine import (
     MetadataEngine,
     HTMLCleaner,
     FormatDetector,
     AudnexusAPI,
-    ImageURLFinder,
     TagNormalizer,
     AlbumArtwork,
-    AudioFormat
+    AudioFormat,
 )
 
 
@@ -45,7 +42,7 @@ def sample_metadata():
         "channels": 2,
         "duration": 300.5,
         "files": [Path("/test/file.flac")],
-        "directory": Path("/test")
+        "directory": Path("/test"),
     }
 
 
@@ -64,7 +61,7 @@ def mock_audnexus_response():
         "runtimeLengthMin": 360,
         "genres": [{"name": "Fiction", "type": "genre"}],
         "rating": 4.5,
-        "isbn": "978-0123456789"
+        "isbn": "978-0123456789",
     }
 
 
@@ -107,10 +104,8 @@ class TestHTMLCleaner:
         metadata = {
             "title": "Test <b>Title</b>",
             "description": "Test &amp; description",
-            "nested": {
-                "html": "<i>nested</i> content"
-            },
-            "list": ["<b>item1</b>", "<i>item2</i>"]
+            "nested": {"html": "<i>nested</i> content"},
+            "list": ["<b>item1</b>", "<i>item2</i>"],
         }
         result = cleaner.sanitize(metadata)
 
@@ -132,14 +127,17 @@ class TestFormatDetector:
         assert detector.supported_formats[".mp3"] == "MP3"
         assert detector.supported_formats[".m4b"] == "AAC"
 
-    @pytest.mark.parametrize("file_ext,expected_format", [
-        (".flac", "FLAC"),
-        (".mp3", "MP3"),
-        (".m4a", "AAC"),
-        (".m4b", "AAC"),
-        (".ogg", "Vorbis"),
-        (".unknown", "Unknown")
-    ])
+    @pytest.mark.parametrize(
+        "file_ext,expected_format",
+        [
+            (".flac", "FLAC"),
+            (".mp3", "MP3"),
+            (".m4a", "AAC"),
+            (".m4b", "AAC"),
+            (".ogg", "Vorbis"),
+            (".unknown", "Unknown"),
+        ],
+    )
     def test_format_mapping(self, detector, file_ext, expected_format):
         """Test format mapping for different extensions"""
         assert detector.supported_formats.get(file_ext, "Unknown") == expected_format
@@ -152,7 +150,7 @@ class TestFormatDetector:
         flac_file.touch()
         mp3_file.touch()
 
-        with patch('src.mk_torrent.features.metadata_engine.MUTAGEN_AVAILABLE', False):
+        with patch("src.mk_torrent.features.metadata_engine.MUTAGEN_AVAILABLE", False):
             result = detector.analyze([flac_file, mp3_file])
 
         assert "format" in result
@@ -183,7 +181,7 @@ class TestAudnexusAPI:
             ("Test Book {ASIN.B012345678}.m4b", "B012345678"),
             ("{ASIN.B098765432} Test Book.mp3", "B098765432"),
             ("No ASIN here.txt", None),
-            ("{ASIN.B012345678} Multiple {ASIN.B098765432}", "B012345678")
+            ("{ASIN.B012345678} Multiple {ASIN.B098765432}", "B012345678"),
         ]
 
         for filename, expected in test_cases:
@@ -279,7 +277,7 @@ class TestMetadataEngine:
         audio_file = temp_dir / "test.flac"
         audio_file.touch()
 
-        with patch('src.mk_torrent.features.metadata_engine.MUTAGEN_AVAILABLE', False):
+        with patch("src.mk_torrent.features.metadata_engine.MUTAGEN_AVAILABLE", False):
             result = engine.process_metadata([audio_file])
 
         assert "validation" in result
@@ -314,8 +312,10 @@ class TestMetadataEngine:
         assert "Test Publisher" in result
         assert "6h 0m" in result
 
-    @patch('src.mk_torrent.features.metadata_engine.requests.Session.get')
-    def test_enrich_with_audnexus(self, mock_get, engine, temp_dir, mock_audnexus_response):
+    @patch("src.mk_torrent.features.metadata_engine.requests.Session.get")
+    def test_enrich_with_audnexus(
+        self, mock_get, engine, temp_dir, mock_audnexus_response
+    ):
         """Test Audnexus enrichment"""
         # Mock successful API response
         mock_response = MagicMock()
@@ -358,7 +358,7 @@ class TestAlbumArtwork:
             height=500,
             format="JPEG",
             source="audnexus_api",
-            confidence=0.9
+            confidence=0.9,
         )
 
         assert artwork.url == "https://example.com/cover.jpg"
@@ -391,7 +391,7 @@ class TestAudioFormat:
             channels=2,
             bit_depth=16,
             vbr=False,
-            lossless=True
+            lossless=True,
         )
 
         assert audio_format.codec == "FLAC"

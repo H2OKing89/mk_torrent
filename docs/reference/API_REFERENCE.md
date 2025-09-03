@@ -7,7 +7,7 @@
 ## 📋 **Table of Contents**
 
 - [Core APIs](#-core-apis)
-- [Feature APIs](#-feature-apis)  
+- [Feature APIs](#-feature-apis)
 - [Utility APIs](#-utility-apis)
 - [Workflow APIs](#-workflow-apis)
 - [External Integration APIs](#-external-integration-apis)
@@ -28,48 +28,48 @@ from mk_torrent.core.secure_credentials import SecureCredentialManager
 
 class SecureCredentialManager:
     """Secure credential storage and retrieval with encryption."""
-    
+
     def __init__(self, config: Dict[str, Any]) -> None:
         """
         Initialize credential manager.
-        
+
         Args:
             config: Configuration dictionary containing:
                 - encryption_key: Optional encryption key
                 - keyring_enabled: Enable system keyring (default: True)
         """
-    
+
     def store_credential(self, service: str, username: str, password: str) -> bool:
         """
         Store encrypted credential.
-        
+
         Args:
             service: Service identifier (e.g., 'qbittorrent', 'red')
             username: Username for the service
             password: Password to encrypt and store
-            
+
         Returns:
             bool: True if stored successfully
-            
+
         Raises:
             CredentialError: If encryption or storage fails
         """
-    
+
     def get_credential(self, service: str, username: str) -> Optional[str]:
         """
         Retrieve and decrypt credential.
-        
+
         Args:
             service: Service identifier
             username: Username for the service
-            
+
         Returns:
             Optional[str]: Decrypted password or None if not found
         """
-    
+
     def delete_credential(self, service: str, username: str) -> bool:
         """Delete stored credential."""
-    
+
     def list_services(self) -> List[str]:
         """List all stored service identifiers."""
 ```
@@ -93,17 +93,17 @@ from mk_torrent.core.base import BaseProcessor
 
 class BaseProcessor(ABC):
     """Abstract base class for all processors."""
-    
+
     def __init__(self, config: Dict[str, Any]) -> None:
         """Initialize processor with configuration."""
-        
+
     @abstractmethod
     def process(self, *args, **kwargs) -> Any:
         """Process input data (must be implemented by subclasses)."""
-    
+
     def validate_config(self) -> bool:
         """Validate processor configuration."""
-    
+
     def get_status(self) -> Dict[str, Any]:
         """Get current processor status."""
 ```
@@ -122,25 +122,25 @@ from mk_torrent.features.metadata_engine import MetadataEngine
 
 class MetadataEngine(BaseProcessor):
     """Audiobook metadata extraction and enhancement."""
-    
+
     def __init__(self, config: Dict[str, Any]) -> None:
         """
         Initialize metadata engine.
-        
+
         Args:
             config: Configuration dictionary containing:
                 - audnexus_api_url: Audnexus API base URL
                 - cache_enabled: Enable metadata caching
                 - validation_strict: Enable strict validation
         """
-    
+
     def extract_metadata(self, file_path: Path) -> Dict[str, Any]:
         """
         Extract metadata from audiobook file.
-        
+
         Args:
             file_path: Path to audiobook file
-            
+
         Returns:
             Dict containing:
                 - title: Book title
@@ -149,18 +149,18 @@ class MetadataEngine(BaseProcessor):
                 - duration: Total duration in seconds
                 - chapters: List of chapter information
                 - cover_art: Base64 encoded cover image
-                
+
         Raises:
             MetadataError: If extraction fails
         """
-    
+
     def enhance_metadata(self, metadata: Dict[str, Any]) -> Dict[str, Any]:
         """
         Enhance metadata using external APIs.
-        
+
         Args:
             metadata: Basic metadata dictionary
-            
+
         Returns:
             Enhanced metadata with additional fields:
                 - description: Book description
@@ -168,15 +168,15 @@ class MetadataEngine(BaseProcessor):
                 - publication_year: Year of publication
                 - isbn: ISBN if available
         """
-    
+
     def validate_metadata(self, metadata: Dict[str, Any]) -> List[str]:
         """
         Validate metadata completeness.
-        
+
         Returns:
             List of validation error messages (empty if valid)
         """
-    
+
     def get_supported_formats(self) -> List[str]:
         """Get list of supported audio formats."""
 ```
@@ -191,7 +191,7 @@ from mk_torrent.core.torrent_creator import TorrentCreator
 
 class TorrentCreator(BaseProcessor):
     """Create .torrent files with optimized settings."""
-    
+
     def create_torrent(
         self,
         source_path: Path,
@@ -202,24 +202,24 @@ class TorrentCreator(BaseProcessor):
     ) -> Path:
         """
         Create torrent file.
-        
+
         Args:
             source_path: Path to file or directory to create torrent from
             announce_urls: List of tracker URLs
             piece_size: Piece size in bytes (auto-calculated if None)
             private: Whether torrent is private
             comment: Optional comment for torrent
-            
+
         Returns:
             Path to created .torrent file
-            
+
         Raises:
             TorrentCreationError: If creation fails
         """
-    
+
     def calculate_optimal_piece_size(self, total_size: int) -> int:
         """Calculate optimal piece size for given total size."""
-    
+
     def validate_torrent(self, torrent_path: Path) -> Dict[str, Any]:
         """Validate created torrent file."""
 ```
@@ -241,16 +241,16 @@ from mk_torrent.utils.validation import (
 def validate_audiobook_structure(directory: Path) -> List[str]:
     """
     Validate audiobook directory structure.
-    
+
     Args:
         directory: Path to audiobook directory
-        
+
     Returns:
         List of validation errors (empty if valid)
     """
 
 def validate_metadata_completeness(
-    metadata: Dict[str, Any], 
+    metadata: Dict[str, Any],
     required_fields: Optional[List[str]] = None
 ) -> List[str]:
     """Validate metadata has all required fields."""
@@ -293,11 +293,11 @@ from mk_torrent.workflows.audiobook_complete import AudiobookCompleteWorkflow
 
 class AudiobookCompleteWorkflow:
     """Complete audiobook processing and upload workflow."""
-    
+
     def __init__(self, config: Dict[str, Any]) -> None:
         """
         Initialize workflow.
-        
+
         Args:
             config: Workflow configuration containing:
                 - source_directory: Source audiobook directory
@@ -305,11 +305,11 @@ class AudiobookCompleteWorkflow:
                 - tracker_config: Tracker-specific configuration
                 - qbittorrent_config: qBittorrent configuration
         """
-    
+
     def execute(self) -> WorkflowResult:
         """
         Execute complete workflow.
-        
+
         Returns:
             WorkflowResult containing:
                 - success: Whether workflow completed successfully
@@ -317,10 +317,10 @@ class AudiobookCompleteWorkflow:
                 - metadata: Extracted metadata
                 - errors: List of any errors encountered
         """
-    
+
     def get_progress(self) -> WorkflowProgress:
         """Get current workflow progress."""
-    
+
     def cancel(self) -> None:
         """Cancel running workflow."""
 ```
@@ -335,8 +335,8 @@ class WorkflowResult:
     metadata: Dict[str, Any]
     errors: List[str]
     execution_time: float
-    
-@dataclass 
+
+@dataclass
 class WorkflowProgress:
     """Current workflow progress."""
     current_step: str
@@ -356,11 +356,11 @@ from mk_torrent.api.qbittorrent import QBittorrentAPI
 
 class QBittorrentAPI:
     """qBittorrent Web API client."""
-    
+
     def __init__(self, config: Dict[str, Any]) -> None:
         """
         Initialize API client.
-        
+
         Args:
             config: Configuration containing:
                 - host: qBittorrent host (default: localhost)
@@ -368,10 +368,10 @@ class QBittorrentAPI:
                 - username: Login username
                 - use_https: Whether to use HTTPS
         """
-    
+
     def authenticate(self) -> bool:
         """Authenticate with qBittorrent."""
-    
+
     def add_torrent(
         self,
         torrent_path: Path,
@@ -381,24 +381,24 @@ class QBittorrentAPI:
     ) -> str:
         """
         Add torrent to qBittorrent.
-        
+
         Returns:
             Torrent hash
         """
-    
+
     def get_torrent_info(self, torrent_hash: str) -> Dict[str, Any]:
         """Get detailed torrent information."""
-    
+
     def set_torrent_location(self, torrent_hash: str, location: Path) -> bool:
         """Set torrent download location."""
-    
+
     def run_health_check(self) -> Dict[str, Any]:
         """Run comprehensive health check."""
 ```
 
 ### **REDIntegration** ⚠️ **DEPRECATED**
-*Location*: ~~`src/mk_torrent/api/red_integration.py`~~ → **REPLACED BY** `src/mk_torrent/api/trackers/red.py`  
-*Status*: **DEPRECATED as of Sep 2, 2025** - See RED_MODULES_REFACTOR.md  
+*Location*: ~~`src/mk_torrent/api/red_integration.py`~~ → **REPLACED BY** `src/mk_torrent/api/trackers/red.py`
+*Status*: **DEPRECATED as of Sep 2, 2025** - See RED_MODULES_REFACTOR.md
 
 **New Usage:**
 ```python
@@ -417,19 +417,19 @@ from mk_torrent.api.red_integration import REDIntegration
 
 class REDIntegration:
     """RED (Redacted) tracker API integration."""
-    
+
     def __init__(self, config: Dict[str, Any]) -> None:
         """Initialize RED API client."""
-    
+
     def authenticate(self) -> bool:
         """Authenticate with RED API."""
-    
+
     def search_existing(self, metadata: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Search for existing releases."""
-    
+
     def prepare_upload(self, torrent_data: Dict[str, Any]) -> Dict[str, Any]:
         """Prepare upload data for RED."""
-    
+
     def upload_torrent(self, upload_data: Dict[str, Any]) -> str:
         """Upload torrent to RED."""
 ```
@@ -445,7 +445,7 @@ config = {
     "working_directory": "/path/to/working/dir",
     "output_directory": "/path/to/output",
     "log_level": "INFO",  # DEBUG, INFO, WARNING, ERROR
-    
+
     # Metadata settings
     "metadata": {
         "audnexus_api_url": "https://api.audnex.us",
@@ -453,7 +453,7 @@ config = {
         "cache_ttl": 86400,  # 24 hours
         "validation_strict": True
     },
-    
+
     # Torrent creation
     "torrent": {
         "piece_size_auto": True,
@@ -464,7 +464,7 @@ config = {
             "https://tracker2.example.com/announce"
         ]
     },
-    
+
     # qBittorrent integration
     "qbittorrent": {
         "host": "localhost",
@@ -474,7 +474,7 @@ config = {
         "timeout": 30,
         "verify_ssl": True
     },
-    
+
     # Security settings
     "security": {
         "encryption_enabled": True,
@@ -533,7 +533,7 @@ class ErrorResponse:
     message: str
     details: Optional[Dict[str, Any]] = None
     timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
 ```
@@ -565,12 +565,12 @@ from mk_torrent.core.base import BaseProcessor
 
 class CustomProcessor(BaseProcessor):
     """Custom processor implementation."""
-    
+
     def process(self, input_data: Any) -> Any:
         """Implement custom processing logic."""
         # Your custom logic here
         return processed_data
-    
+
     def validate_config(self) -> bool:
         """Validate custom configuration."""
         required_keys = ["custom_setting_1", "custom_setting_2"]
@@ -582,15 +582,15 @@ class CustomProcessor(BaseProcessor):
 # Plugin interface (planned)
 class PluginInterface(ABC):
     """Interface for mk_torrent plugins."""
-    
+
     @abstractmethod
     def initialize(self, config: Dict[str, Any]) -> None:
         """Initialize plugin with configuration."""
-    
+
     @abstractmethod
     def process(self, data: Any) -> Any:
         """Process data through plugin."""
-    
+
     @abstractmethod
     def cleanup(self) -> None:
         """Cleanup plugin resources."""

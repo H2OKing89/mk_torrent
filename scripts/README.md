@@ -1,6 +1,6 @@
 # 📁 Scripts Directory Organization
 
-**Last Updated:** December 2024  
+**Last Updated:** December 2024
 **Status:** ✅ **REORGANIZED AND CLEAN**
 
 ## 📂 Directory Structure
@@ -47,7 +47,7 @@ scripts/
 
 ### **After (Organized)**
 - **6 RED test files** → `red/` subdirectory (consolidated duplicates)
-- **Main CLI tool** → `cli/` subdirectory  
+- **Main CLI tool** → `cli/` subdirectory
 - **Utility scripts** → `tools/` subdirectory
 - **Clear naming**: `run.py` (new), `run_legacy.py` (old)
 - **Documentation**: This README file
@@ -150,5 +150,5 @@ python scripts/cli/red_upload_cli.py /path/to/audiobook --dry-run
 
 ---
 
-**Reorganization completed:** September 2, 2025  
+**Reorganization completed:** September 2, 2025
 **Status:** ✅ Clean, organized, and fully functional

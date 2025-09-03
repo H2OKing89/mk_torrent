@@ -2,17 +2,14 @@
 """Comprehensive tests for qBittorrent API integration"""
 
 import unittest
-import json
-from unittest.mock import patch, MagicMock, Mock
-from pathlib import Path
-import tempfile
+from unittest.mock import patch, MagicMock
 
 from src.mk_torrent.api.qbittorrent import (
     QBittorrentAPI,
     run_health_check,
     check_docker_connectivity,
     validate_qbittorrent_config,
-    sync_qbittorrent_metadata
+    sync_qbittorrent_metadata,
 )
 
 
@@ -26,14 +23,14 @@ class TestQBittorrentAPI(unittest.TestCase):
             port=8080,
             username="admin",
             password="test_password",
-            use_https=False
+            use_https=False,
         )
         self.https_api_client = QBittorrentAPI(
             host="localhost",
             port=8080,
             username="admin",
             password="test_password",
-            use_https=True
+            use_https=True,
         )
 
     def test_initialization(self):
@@ -64,11 +61,13 @@ class TestQBittorrentAPI(unittest.TestCase):
 
         # Mock the session cookies to include SID
         mock_cookies = MagicMock()
-        mock_cookies.__contains__ = lambda self, key: key == 'SID'
-        mock_cookies.__getitem__ = lambda self, key: "test_session_id" if key == 'SID' else None
+        mock_cookies.__contains__ = lambda self, key: key == "SID"
+        mock_cookies.__getitem__ = lambda self, key: (
+            "test_session_id" if key == "SID" else None
+        )
 
-        with patch.object(self.api_client.session, 'post', return_value=mock_response):
-            with patch.object(self.api_client.session, 'cookies', mock_cookies):
+        with patch.object(self.api_client.session, "post", return_value=mock_response):
+            with patch.object(self.api_client.session, "cookies", mock_cookies):
                 result = self.api_client.login()
 
                 self.assertTrue(result)
@@ -81,7 +80,7 @@ class TestQBittorrentAPI(unittest.TestCase):
         mock_response.status_code = 200
         mock_response.text = "Fails."
 
-        with patch.object(self.api_client.session, 'post', return_value=mock_response):
+        with patch.object(self.api_client.session, "post", return_value=mock_response):
             result = self.api_client.login()
 
             self.assertFalse(result)
@@ -89,7 +88,9 @@ class TestQBittorrentAPI(unittest.TestCase):
 
     def test_login_connection_error(self):
         """Test login with connection error"""
-        with patch.object(self.api_client.session, 'post', side_effect=Exception("Connection refused")):
+        with patch.object(
+            self.api_client.session, "post", side_effect=Exception("Connection refused")
+        ):
             result = self.api_client.login()
 
             self.assertFalse(result)
@@ -101,7 +102,7 @@ class TestQBittorrentAPI(unittest.TestCase):
         mock_response.status_code = 200
         mock_response.text = "v4.4.0"
 
-        with patch.object(self.api_client.session, 'get', return_value=mock_response):
+        with patch.object(self.api_client.session, "get", return_value=mock_response):
             result = self.api_client._verify_login()
 
             self.assertTrue(result)
@@ -111,7 +112,7 @@ class TestQBittorrentAPI(unittest.TestCase):
         mock_response = MagicMock()
         mock_response.status_code = 403
 
-        with patch.object(self.api_client.session, 'get', return_value=mock_response):
+        with patch.object(self.api_client.session, "get", return_value=mock_response):
             result = self.api_client._verify_login()
 
             self.assertFalse(result)
@@ -122,7 +123,7 @@ class TestQBittorrentAPI(unittest.TestCase):
         mock_response.status_code = 200
         mock_response.text = "2.8.14"
 
-        with patch.object(self.api_client.session, 'get', return_value=mock_response):
+        with patch.object(self.api_client.session, "get", return_value=mock_response):
             success, message = self.api_client.test_connection()
 
             self.assertTrue(success)
@@ -134,7 +135,7 @@ class TestQBittorrentAPI(unittest.TestCase):
         mock_response = MagicMock()
         mock_response.status_code = 500
 
-        with patch.object(self.api_client.session, 'get', return_value=mock_response):
+        with patch.object(self.api_client.session, "get", return_value=mock_response):
             success, message = self.api_client.test_connection()
 
             self.assertFalse(success)
@@ -142,17 +143,14 @@ class TestQBittorrentAPI(unittest.TestCase):
 
     def test_get_preferences_success(self):
         """Test successful preferences retrieval"""
-        mock_prefs = {
-            "save_path": "/downloads",
-            "web_ui_domain_list": "localhost"
-        }
+        mock_prefs = {"save_path": "/downloads", "web_ui_domain_list": "localhost"}
 
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.json.return_value = mock_prefs
 
-        with patch.object(self.api_client.session, 'get', return_value=mock_response):
-            with patch.object(self.api_client, 'login', return_value=True):
+        with patch.object(self.api_client.session, "get", return_value=mock_response):
+            with patch.object(self.api_client, "login", return_value=True):
                 result = self.api_client.get_preferences()
 
                 self.assertEqual(result, mock_prefs)
@@ -161,21 +159,21 @@ class TestQBittorrentAPI(unittest.TestCase):
         """Test default save path retrieval"""
         mock_prefs = {"save_path": "/downloads"}
 
-        with patch.object(self.api_client, 'get_preferences', return_value=mock_prefs):
+        with patch.object(self.api_client, "get_preferences", return_value=mock_prefs):
             result = self.api_client.get_default_save_path()
 
             self.assertEqual(result, "/downloads")
 
     def test_get_default_save_path_no_prefs(self):
         """Test default save path when preferences unavailable"""
-        with patch.object(self.api_client, 'get_preferences', return_value=None):
+        with patch.object(self.api_client, "get_preferences", return_value=None):
             result = self.api_client.get_default_save_path()
 
             self.assertIsNone(result)
 
     def test_create_torrent_not_supported(self):
         """Test torrent creation (not supported via Web API)"""
-        with patch.object(self.api_client, 'login', return_value=True):
+        with patch.object(self.api_client, "login", return_value=True):
             success, data = self.api_client.create_torrent("/path/to/file")
 
             self.assertFalse(success)
@@ -183,7 +181,11 @@ class TestQBittorrentAPI(unittest.TestCase):
 
     def test_health_check_connection_failure(self):
         """Test health check with connection failure"""
-        with patch.object(self.api_client, 'test_connection', return_value=(False, "Connection refused")):
+        with patch.object(
+            self.api_client,
+            "test_connection",
+            return_value=(False, "Connection refused"),
+        ):
             result = self.api_client.health_check()
 
             self.assertFalse(result["connection"])
@@ -192,9 +194,15 @@ class TestQBittorrentAPI(unittest.TestCase):
     def test_health_check_full_success(self):
         """Test comprehensive health check success"""
         # Mock all successful responses
-        with patch.object(self.api_client, 'test_connection', return_value=(True, "Connected")):
-            with patch.object(self.api_client, 'login', return_value=True):
-                with patch.object(self.api_client, 'get_preferences', return_value={"save_path": "/downloads"}):
+        with patch.object(
+            self.api_client, "test_connection", return_value=(True, "Connected")
+        ):
+            with patch.object(self.api_client, "login", return_value=True):
+                with patch.object(
+                    self.api_client,
+                    "get_preferences",
+                    return_value={"save_path": "/downloads"},
+                ):
                     result = self.api_client.health_check()
 
                     self.assertTrue(result["connection"])
@@ -207,15 +215,15 @@ class TestQBittorrentAPI(unittest.TestCase):
         """Test successful categories retrieval"""
         mock_categories = {
             "audiobooks": {"savePath": "/downloads/audiobooks"},
-            "music": {"savePath": "/downloads/music"}
+            "music": {"savePath": "/downloads/music"},
         }
 
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.json.return_value = mock_categories
 
-        with patch.object(self.api_client.session, 'get', return_value=mock_response):
-            with patch.object(self.api_client, 'login', return_value=True):
+        with patch.object(self.api_client.session, "get", return_value=mock_response):
+            with patch.object(self.api_client, "login", return_value=True):
                 result = self.api_client.get_categories()
 
                 self.assertEqual(result, mock_categories)
@@ -225,9 +233,11 @@ class TestQBittorrentAPI(unittest.TestCase):
         mock_response = MagicMock()
         mock_response.status_code = 200
 
-        with patch.object(self.api_client.session, 'post', return_value=mock_response):
-            with patch.object(self.api_client, 'login', return_value=True):
-                result = self.api_client.create_category("test_category", "/downloads/test")
+        with patch.object(self.api_client.session, "post", return_value=mock_response):
+            with patch.object(self.api_client, "login", return_value=True):
+                result = self.api_client.create_category(
+                    "test_category", "/downloads/test"
+                )
 
                 self.assertTrue(result)
 
@@ -239,8 +249,8 @@ class TestQBittorrentAPI(unittest.TestCase):
         mock_response.status_code = 200
         mock_response.json.return_value = mock_tags
 
-        with patch.object(self.api_client.session, 'get', return_value=mock_response):
-            with patch.object(self.api_client, 'login', return_value=True):
+        with patch.object(self.api_client.session, "get", return_value=mock_response):
+            with patch.object(self.api_client, "login", return_value=True):
                 result = self.api_client.get_tags()
 
                 self.assertEqual(result, mock_tags)
@@ -250,8 +260,8 @@ class TestQBittorrentAPI(unittest.TestCase):
         mock_response = MagicMock()
         mock_response.status_code = 200
 
-        with patch.object(self.api_client.session, 'post', return_value=mock_response):
-            with patch.object(self.api_client, 'login', return_value=True):
+        with patch.object(self.api_client.session, "post", return_value=mock_response):
+            with patch.object(self.api_client, "login", return_value=True):
                 result = self.api_client.create_tags(["tag1", "tag2"])
 
                 self.assertTrue(result)
@@ -261,8 +271,8 @@ class TestQBittorrentAPI(unittest.TestCase):
         # For empty list, the method should return True without making HTTP calls
         # This tests the early return logic
         self.api_client.logged_in = True  # Ensure we're logged in
-        
-        with patch.object(self.api_client.session, 'post') as mock_post:
+
+        with patch.object(self.api_client.session, "post") as mock_post:
             result = self.api_client.create_tags([])
 
             # Should return True for empty list without making any HTTP calls
@@ -273,30 +283,30 @@ class TestQBittorrentAPI(unittest.TestCase):
         """Test synchronization of categories and tags"""
         config = {
             "categories": ["audiobooks", "music"],
-            "common_tags": ["flac", "lossless", "new_tag"]
+            "common_tags": ["flac", "lossless", "new_tag"],
         }
 
         # Mock existing data
-        with patch.object(self.api_client, 'get_categories', return_value={"existing": {}}):
-            with patch.object(self.api_client, 'create_category', return_value=True):
-                with patch.object(self.api_client, 'get_tags', return_value=["flac"]):
-                    with patch.object(self.api_client, 'create_tags', return_value=True):
+        with patch.object(
+            self.api_client, "get_categories", return_value={"existing": {}}
+        ):
+            with patch.object(self.api_client, "create_category", return_value=True):
+                with patch.object(self.api_client, "get_tags", return_value=["flac"]):
+                    with patch.object(
+                        self.api_client, "create_tags", return_value=True
+                    ):
                         self.api_client.sync_categories_and_tags(config)
 
 
 class TestGlobalFunctions(unittest.TestCase):
     """Test global utility functions"""
 
-    @patch('src.mk_torrent.api.qbittorrent.QBittorrentAPI')
-    @patch('src.mk_torrent.api.qbittorrent.get_qbittorrent_password')
+    @patch("src.mk_torrent.api.qbittorrent.QBittorrentAPI")
+    @patch("src.mk_torrent.api.qbittorrent.get_qbittorrent_password")
     def test_run_health_check_success(self, mock_get_password, mock_api_class):
         """Test successful health check run"""
         # Mock config
-        config = {
-            "qbit_host": "localhost",
-            "qbit_port": 8080,
-            "qbit_username": "admin"
-        }
+        config = {"qbit_host": "localhost", "qbit_port": 8080, "qbit_username": "admin"}
 
         # Mock password retrieval
         mock_get_password.return_value = "test_password"
@@ -311,7 +321,7 @@ class TestGlobalFunctions(unittest.TestCase):
             "preferences_accessible": True,
             "default_save_path": "/downloads",
             "errors": [],
-            "warnings": []
+            "warnings": [],
         }
         mock_api_class.return_value = mock_api
 
@@ -320,20 +330,16 @@ class TestGlobalFunctions(unittest.TestCase):
         self.assertTrue(result)
         mock_api.health_check.assert_called_once()
 
-    @patch('src.mk_torrent.api.qbittorrent.get_qbittorrent_password', return_value=None)
+    @patch("src.mk_torrent.api.qbittorrent.get_qbittorrent_password", return_value=None)
     def test_run_health_check_no_password(self, mock_get_password):
         """Test health check with no stored password"""
-        config = {
-            "qbit_host": "localhost",
-            "qbit_port": 8080,
-            "qbit_username": "admin"
-        }
+        config = {"qbit_host": "localhost", "qbit_port": 8080, "qbit_username": "admin"}
 
         result = run_health_check(config)
 
         self.assertFalse(result)
 
-    @patch('subprocess.run')
+    @patch("subprocess.run")
     def test_test_docker_connectivity_success(self, mock_subprocess):
         """Test successful Docker connectivity"""
         # Mock container running
@@ -351,7 +357,7 @@ class TestGlobalFunctions(unittest.TestCase):
 
         self.assertTrue(result)
 
-    @patch('subprocess.run')
+    @patch("subprocess.run")
     def test_test_docker_connectivity_container_not_running(self, mock_subprocess):
         """Test Docker connectivity when container not running"""
         # Mock container not running
@@ -369,21 +375,21 @@ class TestGlobalFunctions(unittest.TestCase):
 
         self.assertFalse(result)
 
-    @patch('subprocess.run', side_effect=FileNotFoundError)
+    @patch("subprocess.run", side_effect=FileNotFoundError)
     def test_test_docker_connectivity_docker_not_found(self, mock_subprocess):
         """Test Docker connectivity when Docker not installed"""
         result = check_docker_connectivity("qbittorrent_container")
 
         self.assertFalse(result)
 
-    @patch('src.mk_torrent.api.qbittorrent.Client')
+    @patch("src.mk_torrent.api.qbittorrent.Client")
     def test_validate_qbittorrent_config_success(self, mock_client_class):
         """Test successful qBittorrent config validation"""
         config = {
             "qbit_host": "localhost",
             "qbit_port": 8080,
             "qbit_username": "admin",
-            "qbit_password": "test_password"
+            "qbit_password": "test_password",
         }
 
         mock_client = MagicMock()
@@ -391,19 +397,22 @@ class TestGlobalFunctions(unittest.TestCase):
         mock_client_class.return_value = mock_client
 
         # Mock the get_qbittorrent_password function
-        with patch('src.mk_torrent.api.qbittorrent.get_qbittorrent_password', return_value="test_password"):
+        with patch(
+            "src.mk_torrent.api.qbittorrent.get_qbittorrent_password",
+            return_value="test_password",
+        ):
             result = validate_qbittorrent_config(config)
 
             self.assertTrue(result)
 
-    @patch('src.mk_torrent.api.qbittorrent.Client')
+    @patch("src.mk_torrent.api.qbittorrent.Client")
     def test_validate_qbittorrent_config_failure(self, mock_client_class):
         """Test qBittorrent config validation failure"""
         config = {
             "qbit_host": "localhost",
             "qbit_port": 8080,
             "qbit_username": "admin",
-            "qbit_password": "wrong_password"
+            "qbit_password": "wrong_password",
         }
 
         mock_client_class.side_effect = Exception("Connection failed")
@@ -412,7 +421,7 @@ class TestGlobalFunctions(unittest.TestCase):
 
         self.assertFalse(result)
 
-    @patch('src.mk_torrent.api.qbittorrent.Client')
+    @patch("src.mk_torrent.api.qbittorrent.Client")
     def test_sync_qbittorrent_metadata_success(self, mock_client_class):
         """Test successful metadata synchronization"""
         config = {
@@ -421,7 +430,7 @@ class TestGlobalFunctions(unittest.TestCase):
             "qbit_username": "admin",
             "qbit_password": "test_password",
             "default_category": "audiobooks",
-            "default_tags": ["flac", "lossless", "new_tag"]
+            "default_tags": ["flac", "lossless", "new_tag"],
         }
 
         mock_client = MagicMock()
@@ -435,16 +444,18 @@ class TestGlobalFunctions(unittest.TestCase):
         mock_client.torrents_create_category.assert_called_once_with("audiobooks")
 
         # Verify tag creation
-        mock_client.torrents_create_tags.assert_called_once_with(["lossless", "new_tag"])
+        mock_client.torrents_create_tags.assert_called_once_with(
+            ["lossless", "new_tag"]
+        )
 
-    @patch('src.mk_torrent.api.qbittorrent.Client')
+    @patch("src.mk_torrent.api.qbittorrent.Client")
     def test_sync_qbittorrent_metadata_failure(self, mock_client_class):
         """Test metadata synchronization failure"""
         config = {
             "qbit_host": "localhost",
             "qbit_port": 8080,
             "qbit_username": "admin",
-            "qbit_password": "test_password"
+            "qbit_password": "test_password",
         }
 
         mock_client_class.side_effect = Exception("Connection failed")
@@ -463,12 +474,12 @@ class TestErrorHandling(unittest.TestCase):
             port=8080,
             username="admin",
             password="test_password",
-            use_https=False
+            use_https=False,
         )
 
     def test_login_with_invalid_response(self):
         """Test login with unexpected response"""
-        with patch.object(self.api_client.session, 'post') as mock_post:
+        with patch.object(self.api_client.session, "post") as mock_post:
             mock_response = MagicMock()
             mock_response.status_code = 200
             mock_response.text = "Unexpected response"
@@ -481,7 +492,9 @@ class TestErrorHandling(unittest.TestCase):
     def test_health_check_with_malformed_results(self):
         """Test health check with malformed results structure"""
         # This tests the defensive programming in health_check method
-        with patch.object(self.api_client, 'test_connection', return_value=(False, "Failed")):
+        with patch.object(
+            self.api_client, "test_connection", return_value=(False, "Failed")
+        ):
             result = self.api_client.health_check()
 
             # Should handle the case gracefully even if results structure is unexpected
@@ -500,8 +513,12 @@ class TestErrorHandling(unittest.TestCase):
         mock_response_200.status_code = 200
         mock_response_200.json.return_value = {"save_path": "/downloads"}
 
-        with patch.object(self.api_client.session, 'get', side_effect=[mock_response_403, mock_response_200]):
-            with patch.object(self.api_client, 'login', return_value=True):
+        with patch.object(
+            self.api_client.session,
+            "get",
+            side_effect=[mock_response_403, mock_response_200],
+        ):
+            with patch.object(self.api_client, "login", return_value=True):
                 result = self.api_client.get_preferences()
 
                 self.assertEqual(result, {"save_path": "/downloads"})
@@ -522,5 +539,5 @@ class TestErrorHandling(unittest.TestCase):
         self.assertEqual(api.base_url, f"http://{long_host}:8080")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

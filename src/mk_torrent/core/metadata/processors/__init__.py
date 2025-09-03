@@ -7,7 +7,7 @@ a particular type of content (audiobook, music, video, etc.).
 
 # Re-export when processors are implemented
 # from .audiobook import AudiobookProcessor
-# from .music import MusicProcessor  
+# from .music import MusicProcessor
 # from .video import VideoProcessor
 
 __all__ = [

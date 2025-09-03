@@ -6,9 +6,9 @@ import tempfile
 import shutil
 from pathlib import Path
 from datetime import datetime, timedelta
-from unittest.mock import patch, MagicMock
 
 from src.mk_torrent.core.upload_queue import UploadQueue, UploadJob, UploadStatus
+
 
 class TestUploadJob(unittest.TestCase):
     """Test cases for UploadJob class"""
@@ -28,7 +28,7 @@ class TestUploadJob(unittest.TestCase):
             metadata={"title": "Test Torrent"},
             status=UploadStatus.PENDING,
             created_at=datetime.now(),
-            updated_at=datetime.now()
+            updated_at=datetime.now(),
         )
 
         self.assertEqual(job.job_id, "test-job-1")
@@ -46,7 +46,7 @@ class TestUploadJob(unittest.TestCase):
             metadata={"title": "Test Torrent"},
             status=UploadStatus.PENDING,
             created_at=datetime.now(),
-            updated_at=datetime.now()
+            updated_at=datetime.now(),
         )
 
         # Serialize to dict
@@ -69,7 +69,7 @@ class TestUploadJob(unittest.TestCase):
             metadata={},
             status=UploadStatus.PENDING,
             created_at=datetime.now(),
-            updated_at=datetime.now()
+            updated_at=datetime.now(),
         )
 
         # Mark success for one tracker
@@ -95,7 +95,7 @@ class TestUploadJob(unittest.TestCase):
             metadata={},
             status=UploadStatus.PENDING,
             created_at=datetime.now(),
-            updated_at=datetime.now()
+            updated_at=datetime.now(),
         )
 
         # Mark failed
@@ -117,7 +117,7 @@ class TestUploadJob(unittest.TestCase):
             created_at=datetime.now(),
             updated_at=datetime.now(),
             retry_count=0,
-            max_retries=3
+            max_retries=3,
         )
 
         # Should be able to retry
@@ -139,7 +139,7 @@ class TestUploadJob(unittest.TestCase):
             metadata={},
             status=UploadStatus.PENDING,
             created_at=recent_time,
-            updated_at=recent_time
+            updated_at=recent_time,
         )
 
         old_job = UploadJob(
@@ -149,11 +149,12 @@ class TestUploadJob(unittest.TestCase):
             metadata={},
             status=UploadStatus.PENDING,
             created_at=old_time,
-            updated_at=old_time
+            updated_at=old_time,
         )
 
         self.assertFalse(recent_job.is_expired(24))
         self.assertTrue(old_job.is_expired(24))
+
 
 class TestUploadQueue(unittest.TestCase):
     """Test cases for UploadQueue class"""
@@ -180,7 +181,7 @@ class TestUploadQueue(unittest.TestCase):
         job_id = self.queue.add_job(
             torrent_path=Path("/path/to/test.torrent"),
             trackers=["red", "ops"],
-            metadata={"title": "Test Torrent"}
+            metadata={"title": "Test Torrent"},
         )
 
         self.assertIsInstance(job_id, str)
@@ -196,7 +197,7 @@ class TestUploadQueue(unittest.TestCase):
         job_id = self.queue.add_job(
             torrent_path=Path("/path/to/test.torrent"),
             trackers=["red"],
-            metadata={"title": "Test Torrent"}
+            metadata={"title": "Test Torrent"},
         )
 
         job = self.queue.get_job(job_id)
@@ -214,14 +215,14 @@ class TestUploadQueue(unittest.TestCase):
         job_id1 = self.queue.add_job(
             torrent_path=Path("/path/to/test1.torrent"),
             trackers=["red"],
-            metadata={"title": "Test 1"}
+            metadata={"title": "Test 1"},
         )
 
         # Add completed job
         job_id2 = self.queue.add_job(
             torrent_path=Path("/path/to/test2.torrent"),
             trackers=["red"],
-            metadata={"title": "Test 2"}
+            metadata={"title": "Test 2"},
         )
         self.queue.update_job_status(job_id2, UploadStatus.SUCCESS)
 
@@ -235,7 +236,7 @@ class TestUploadQueue(unittest.TestCase):
         job_id1 = self.queue.add_job(
             torrent_path=Path("/path/to/test1.torrent"),
             trackers=["red"],
-            metadata={"title": "Test 1"}
+            metadata={"title": "Test 1"},
         )
         self.queue.update_job_status(job_id1, UploadStatus.FAILED)
 
@@ -243,7 +244,7 @@ class TestUploadQueue(unittest.TestCase):
         job_id2 = self.queue.add_job(
             torrent_path=Path("/path/to/test2.torrent"),
             trackers=["red"],
-            metadata={"title": "Test 2"}
+            metadata={"title": "Test 2"},
         )
         self.queue._jobs[job_id2].retry_count = 3  # Max retries
         self.queue.update_job_status(job_id2, UploadStatus.FAILED)
@@ -257,7 +258,7 @@ class TestUploadQueue(unittest.TestCase):
         job_id = self.queue.add_job(
             torrent_path=Path("/path/to/test.torrent"),
             trackers=["red"],
-            metadata={"title": "Test"}
+            metadata={"title": "Test"},
         )
 
         self.queue.update_job_status(job_id, UploadStatus.UPLOADING, "Starting upload")
@@ -272,7 +273,7 @@ class TestUploadQueue(unittest.TestCase):
         job_id = self.queue.add_job(
             torrent_path=Path("/path/to/test.torrent"),
             trackers=["red", "ops"],
-            metadata={"title": "Test"}
+            metadata={"title": "Test"},
         )
 
         self.queue.mark_job_success(job_id, "red")
@@ -293,7 +294,7 @@ class TestUploadQueue(unittest.TestCase):
         job_id = self.queue.add_job(
             torrent_path=Path("/path/to/test.torrent"),
             trackers=["red"],
-            metadata={"title": "Test"}
+            metadata={"title": "Test"},
         )
 
         self.queue.mark_job_failed(job_id, "red", "Network error")
@@ -309,7 +310,7 @@ class TestUploadQueue(unittest.TestCase):
         job_id = self.queue.add_job(
             torrent_path=Path("/path/to/test.torrent"),
             trackers=["red"],
-            metadata={"title": "Test"}
+            metadata={"title": "Test"},
         )
 
         # Mark as failed first
@@ -335,7 +336,7 @@ class TestUploadQueue(unittest.TestCase):
         job_id = self.queue.add_job(
             torrent_path=Path("/path/to/test.torrent"),
             trackers=["red"],
-            metadata={"title": "Test"}
+            metadata={"title": "Test"},
         )
 
         self.assertIn(job_id, self.queue._jobs)
@@ -359,7 +360,7 @@ class TestUploadQueue(unittest.TestCase):
             metadata={"title": "Old Job"},
             status=UploadStatus.PENDING,
             created_at=old_time,
-            updated_at=old_time
+            updated_at=old_time,
         )
         self.queue._jobs[job_id] = job
 
@@ -367,7 +368,7 @@ class TestUploadQueue(unittest.TestCase):
         recent_job_id = self.queue.add_job(
             torrent_path=Path("/path/to/recent.torrent"),
             trackers=["red"],
-            metadata={"title": "Recent Job"}
+            metadata={"title": "Recent Job"},
         )
 
         # Cleanup should remove old job but keep recent one
@@ -380,18 +381,18 @@ class TestUploadQueue(unittest.TestCase):
         # Add jobs in different states
         job1 = self.queue.add_job(Path("/path/to/test1.torrent"), ["red"], {})
         job2 = self.queue.add_job(Path("/path/to/test2.torrent"), ["red"], {})
-        job3 = self.queue.add_job(Path("/path/to/test3.torrent"), ["red"], {})
+        _job3 = self.queue.add_job(Path("/path/to/test3.torrent"), ["red"], {})
 
         self.queue.update_job_status(job1, UploadStatus.SUCCESS)
         self.queue.update_job_status(job2, UploadStatus.FAILED)
         # job3 remains PENDING
 
         stats = self.queue.get_queue_stats()
-        self.assertEqual(stats['total'], 3)
-        self.assertEqual(stats['pending'], 1)
-        self.assertEqual(stats['success'], 1)
-        self.assertEqual(stats['failed'], 1)
-        self.assertEqual(stats['uploading'], 0)
+        self.assertEqual(stats["total"], 3)
+        self.assertEqual(stats["pending"], 1)
+        self.assertEqual(stats["success"], 1)
+        self.assertEqual(stats["failed"], 1)
+        self.assertEqual(stats["uploading"], 0)
 
     def test_persistence(self):
         """Test job persistence across queue instances"""
@@ -399,7 +400,7 @@ class TestUploadQueue(unittest.TestCase):
         job_id = self.queue.add_job(
             torrent_path=Path("/path/to/test.torrent"),
             trackers=["red"],
-            metadata={"title": "Test"}
+            metadata={"title": "Test"},
         )
 
         # Create new queue instance (simulating restart)
@@ -411,5 +412,6 @@ class TestUploadQueue(unittest.TestCase):
         if job is not None:
             self.assertEqual(job.job_id, job_id)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

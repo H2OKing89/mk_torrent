@@ -1,7 +1,7 @@
 # 🏗️ Project Structure Reference
 
-**Package Layout**: src/ (modern Python packaging standard)  
-**Organization**: Domain-driven module structure  
+**Package Layout**: src/ (modern Python packaging standard)
+**Organization**: Domain-driven module structure
 **Status**: ✅ Fully implemented and tested
 
 ---
@@ -11,7 +11,7 @@
 ```
 mk_torrent/                    # 🎯 Clean, professional project root
 ├── 📄 LICENSE                # MIT License
-├── 📄 README.md              # Project overview and quick start  
+├── 📄 README.md              # Project overview and quick start
 ├── 📄 pyproject.toml         # Modern Python project configuration
 ├── 📄 requirements.txt       # Python dependencies
 ├── 📄 test_runner.py         # Test management script
@@ -24,11 +24,11 @@ mk_torrent/                    # 🎯 Clean, professional project root
 ├── 📁 examples/             # 💡 Example usage files
 ├── 📁 scripts/              # 🔧 Utility scripts
 │   ├── run_new.py          # ✅ Main entry point (working!)
-│   ├── run.py              # Legacy entry point  
+│   ├── run.py              # Legacy entry point
 │   └── test_metadata.py    # Metadata testing tools
 ├── 📁 src/mk_torrent/       # 🐍 Main source code package
 │   ├── __init__.py         # Package initialization
-│   ├── __main__.py         # Module execution entry point  
+│   ├── __main__.py         # Module execution entry point
 │   ├── cli.py              # Command line interface
 │   ├── config.py           # Configuration management
 │   ├── 📁 api/             # External service integrations
@@ -184,7 +184,7 @@ from .module_name import ClassName
 from ..core.torrent_creator import TorrentCreator
 from ..api.qbittorrent import QBittorrentAPI
 
-# Cross-package (absolute) 
+# Cross-package (absolute)
 from mk_torrent.features.metadata_engine import MetadataEngine
 ```
 

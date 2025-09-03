@@ -72,7 +72,7 @@ python -m mk_torrent --config-test
   "output_directory": "~/torrents",
   "log_level": "INFO",
   "log_file": "~/logs/mk_torrent.log",
-  
+
   "metadata": {
     "audnexus_api_url": "https://api.audnex.us",
     "cache_enabled": true,
@@ -82,12 +82,12 @@ python -m mk_torrent --config-test
     "auto_enhance": true,
     "required_fields": [
       "title",
-      "author", 
+      "author",
       "narrator",
       "duration"
     ]
   },
-  
+
   "torrent": {
     "piece_size_auto": true,
     "piece_size_manual": null,
@@ -100,7 +100,7 @@ python -m mk_torrent --config-test
     "comment_template": "Audiobook: {title} by {author}",
     "created_by": "mk_torrent"
   },
-  
+
   "qbittorrent": {
     "enabled": true,
     "host": "localhost",
@@ -114,7 +114,7 @@ python -m mk_torrent --config-test
     "default_tags": ["audiobook", "automated"],
     "pause_after_add": false
   },
-  
+
   "red": {
     "enabled": false,
     "api_url": "https://redacted.ch",
@@ -124,7 +124,7 @@ python -m mk_torrent --config-test
     "media": "WEB",
     "description_template": "High-quality audiobook rip"
   },
-  
+
   "security": {
     "encryption_enabled": true,
     "keyring_enabled": true,
@@ -132,7 +132,7 @@ python -m mk_torrent --config-test
     "credential_timeout": 3600,
     "auto_logout": true
   },
-  
+
   "validation": {
     "structure_check": true,
     "file_integrity": true,
@@ -141,7 +141,7 @@ python -m mk_torrent --config-test
     "minimum_duration": 300,
     "maximum_file_size": "10GB"
   },
-  
+
   "processing": {
     "parallel_processing": true,
     "max_workers": 4,
@@ -265,7 +265,7 @@ python -c "import keyring; print(keyring.get_keyring())"
     "compress_temp_files": false,
     "use_memory_mapping": true
   },
-  
+
   "caching": {
     "metadata_cache_size": "100MB",
     "api_response_cache": true,
@@ -328,7 +328,7 @@ python -c "import keyring; print(keyring.get_keyring())"
       "verify_ssl": false,
       "timeout": 30
     },
-    
+
     "behavior": {
       "auto_add": true,
       "pause_after_add": false,
@@ -336,7 +336,7 @@ python -c "import keyring; print(keyring.get_keyring())"
       "sequential_download": false,
       "first_last_piece_priority": false
     },
-    
+
     "organization": {
       "default_category": "audiobooks",
       "category_by_genre": true,
@@ -344,7 +344,7 @@ python -c "import keyring; print(keyring.get_keyring())"
       "tag_by_source": true,
       "save_path": "/downloads/audiobooks"
     },
-    
+
     "health_check": {
       "enabled": true,
       "check_connection": true,
@@ -366,7 +366,7 @@ python -c "import keyring; print(keyring.get_keyring())"
       "rate_limit_window": 10,
       "retry_on_rate_limit": true
     },
-    
+
     "upload": {
       "enabled": false,
       "auto_upload": false,
@@ -376,7 +376,7 @@ python -c "import keyring; print(keyring.get_keyring())"
       "tags": ["audiobook"],
       "scene": false
     },
-    
+
     "search": {
       "auto_check_duplicates": true,
       "similarity_threshold": 0.9,
@@ -405,7 +405,7 @@ python -c "import keyring; print(keyring.get_keyring())"
         "formats": ["m4b", "mp3", "flac"]
       }
     },
-    
+
     "enhancement": {
       "auto_enhance": true,
       "fetch_cover_art": true,
@@ -413,7 +413,7 @@ python -c "import keyring; print(keyring.get_keyring())"
       "normalize_fields": true,
       "validate_isbn": true
     },
-    
+
     "validation": {
       "required_fields": [
         "title",
@@ -443,7 +443,7 @@ python -c "import keyring; print(keyring.get_keyring())"
   "working_directory": "~/mk_torrent/work",
   "output_directory": "~/torrents",
   "log_level": "INFO",
-  
+
   "qbittorrent": {
     "host": "localhost",
     "port": 8080,
@@ -451,12 +451,12 @@ python -c "import keyring; print(keyring.get_keyring())"
     "auto_add": true,
     "default_category": "audiobooks"
   },
-  
+
   "torrent": {
     "private": true,
     "announce_urls": ["https://your-tracker.com/announce"]
   },
-  
+
   "security": {
     "encryption_enabled": true,
     "keyring_enabled": true
@@ -471,7 +471,7 @@ python -c "import keyring; print(keyring.get_keyring())"
   "output_directory": "/var/lib/mk_torrent/output",
   "log_level": "WARNING",
   "log_file": "/var/log/mk_torrent.log",
-  
+
   "qbittorrent": {
     "host": "127.0.0.1",
     "port": 8080,
@@ -479,13 +479,13 @@ python -c "import keyring; print(keyring.get_keyring())"
     "auto_add": true,
     "pause_after_add": true
   },
-  
+
   "processing": {
     "parallel_processing": true,
     "max_workers": 2,
     "memory_limit": "1GB"
   },
-  
+
   "security": {
     "encryption_enabled": true,
     "keyring_enabled": false,
@@ -500,20 +500,20 @@ python -c "import keyring; print(keyring.get_keyring())"
   "working_directory": "./dev_work",
   "output_directory": "./dev_output",
   "log_level": "DEBUG",
-  
+
   "qbittorrent": {
     "enabled": false
   },
-  
+
   "metadata": {
     "cache_enabled": false,
     "validation_strict": false
   },
-  
+
   "red": {
     "enabled": false
   },
-  
+
   "validation": {
     "structure_check": false,
     "file_integrity": false
