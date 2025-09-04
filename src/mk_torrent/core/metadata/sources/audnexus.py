@@ -86,8 +86,8 @@ class AudnexusSource:
         except ImportError:
             logger.warning("aiolimiter not available, running without rate limiting")
 
-        # Initialize HTML cleaner
-        self._html_cleaner = HTMLCleaner(preserve_formatting=False)
+        # Initialize HTML cleaner with paragraph preservation
+        self._html_cleaner = HTMLCleaner(preserve_formatting=True)
 
         # Initialize HTTP client
         self._init_client()

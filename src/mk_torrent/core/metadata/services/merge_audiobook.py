@@ -53,10 +53,15 @@ DEFAULT_PRECEDENCE: dict[str, list[str]] = {
     "profile": ["embedded"],  # Only embedded has this
     "channel_layout": ["embedded"],  # Only embedded has this
     "has_embedded_cover": ["embedded"],  # Only embedded has this
+    "has_cover_art": ["embedded"],  # Alias for has_embedded_cover
     "cover_codec": ["embedded"],  # Only embedded has this
     "cover_dimensions": ["embedded"],  # Only embedded has this
-    "chapter_count": ["embedded", "api", "path"],  # Embedded count > API chapters
-    "has_chapters": ["embedded", "api", "path"],  # Embedded detection > API
+    "chapter_count": [
+        "api",
+        "embedded",
+        "path",
+    ],  # API count > embedded (which often returns 0)
+    "has_chapters": ["api", "embedded", "path"],  # API detection > embedded
     "source": ["embedded"],  # Technical source info
     # Hybrid fields
     "album": ["embedded", "api", "path"],  # Embedded album tag > API fallback
