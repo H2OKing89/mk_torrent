@@ -10,7 +10,7 @@ Tests cover:
 """
 
 import pytest
-from src.mk_torrent.core.metadata.services.merge import (
+from src.mk_torrent.core.metadata.services.merge_audiobook import (
     FieldMerger,
     merge_metadata,
     DEFAULT_PRECEDENCE,
@@ -487,7 +487,7 @@ class TestEdgeCases:
 
         # Test adding list fields
         merger.add_list_field("custom_list")
-        from src.mk_torrent.core.metadata.services.merge import LIST_FIELDS
+        from src.mk_torrent.core.metadata.services.merge_audiobook import LIST_FIELDS
 
         assert "custom_list" in LIST_FIELDS
 

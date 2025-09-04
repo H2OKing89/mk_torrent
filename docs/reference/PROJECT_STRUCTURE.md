@@ -22,6 +22,10 @@ mk_torrent/                    # 🎯 Clean, professional project root
 │   ├── 📁 archive/          # Completed/historical docs
 │   └── 📁 reference/        # Stable reference materials
 ├── 📁 examples/             # 💡 Example usage files
+│   ├── 📁 integration_tests/  # 🔗 API integration demonstrations
+│   │   ├── test_audiobook_processor.py  # Audiobook processor demo
+│   │   ├── test_audnexus_integration.py # Audnexus API testing
+│   │   └── README.md          # Integration test documentation
 ├── 📁 scripts/              # 🔧 Utility scripts
 │   ├── run_new.py          # ✅ Main entry point (working!)
 │   ├── run.py              # Legacy entry point

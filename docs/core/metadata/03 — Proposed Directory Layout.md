@@ -21,7 +21,7 @@ src/mk_torrent/core/metadata/
     html_cleaner.py       # nh3/bs4-based sanitizer (plain-text output)
     format_detector.py    # Comprehensive audio format detection & quality scoring
     tag_normalizer.py     # genres/tags normalization (lowercasing, dedupe)
-    merge.py              # precedence-based field merger (declarative)
+    merge_audiobook.py    # precedence-based field merger (declarative)
   validators/
     __init__.py
     common.py             # basic schemas/rules

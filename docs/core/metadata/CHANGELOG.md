@@ -5,6 +5,55 @@
 
 ---
 
+## 2025-09-03 - Major Architectural Refactoring Complete
+
+### AudiobookProcessor & Merge Service Redesign
+
+#### Eliminated Architectural Overlap
+**Files affected:** `audiobook.py`, `merge.py` → `merge_audiobook.py`, `test_merge_audiobook.py`, integration examples, documentation
+
+**MAJOR REFACTORING**: Complete redesign of audiobook processing to eliminate primitive merging logic and architectural overlap.
+
+**Key Changes:**
+
+**AudiobookProcessor Transformation:**
+- **BEFORE**: Used primitive `metadata.update()` merging with hard-coded logic
+- **AFTER**: Orchestrates three-source extraction and delegates to sophisticated merger service
+- **New Architecture**: `extract()` → source orchestration → `merge_audiobook.merge_metadata()` → `enhance()`
+
+**Merge Service Specialization:**
+- **RENAMED**: `merge.py` → `merge_audiobook.py` for audiobook-specific focus
+- **ENHANCED**: Sophisticated three-source merging with declarative precedence rules
+- **ARCHITECTURE**: Prepared for future `merge_music.py` and `merge_video.py` modules
+
+**Implementation Highlights:**
+```python
+# NEW: AudiobookProcessor.extract() - Source Orchestration
+api_metadata = AudnexusSource.extract(audiobook_path)
+embedded_metadata = EmbeddedSource.extract(audiobook_path)
+path_metadata = PathInfoSource.extract(audiobook_path)
+
+# NEW: Intelligent merging via specialized service
+merged = merge_audiobook.merge_metadata([api_metadata, embedded_metadata, path_metadata])
+
+# ENHANCED: Field normalization in processor
+return processor.enhance(merged)
+```
+
+**Test Coverage Results:**
+- 40 merge-specific tests: 100% passing
+- 267 total tests: 100% passing
+- Real audiobook validation: Working end-to-end
+- Integration examples: Updated and functional
+
+**Documentation Updates:**
+- All references updated from `merge.py` to `merge_audiobook.py`
+- Architecture diagrams reflect new three-source orchestration
+- Implementation status marked as "COMPLETE" across all docs
+- Future expansion notes added for music/video support
+
+---
+
 ## 2025-09-03 - Architectural Optimizations & Service Enhancements
 
 ### Major Architectural Simplifications
@@ -45,7 +94,7 @@
 # ALREADY HANDLED BY EXISTING COMPONENTS:
 # ✅ API cover URLs: audnexus.py extracts artwork_url
 # ✅ Embedded detection: embedded.py has has_embedded_cover
-# ✅ Precedence: merge.py handles artwork_url priority
+# ✅ Precedence: merge_audiobook.py handles artwork_url priority
 # ❌ Sidecar files: Not needed for tracker uploads
 ```
 
@@ -109,7 +158,7 @@ def _calculate_quality_score(self, audio_format: AudioFormat) -> float:
 ```
 
 #### Type System Compatibility Fixes
-**Files affected:** `services/merge.py`, Python compatibility improvements
+**Files affected:** `services/merge_audiobook.py`, Python compatibility improvements
 
 **BUG FIX**: Updated type annotations for Python < 3.10 compatibility.
 
@@ -276,7 +325,7 @@ def extract(self, source):
 ```
 
 #### Field Merger Strategy Overhaul
-**Files affected:** `services/merge.py`, `docs/07.5 — Audiobook Metadata Field Merger.md`
+**Files affected:** `services/merge_audiobook.py`, `docs/07.5 — Audiobook Metadata Field Merger.md`
 
 **BREAKING CHANGE**: Complete revision of field precedence rules to support three-source strategy with technical/descriptive separation.
 

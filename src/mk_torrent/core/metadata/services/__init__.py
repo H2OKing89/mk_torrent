@@ -14,7 +14,7 @@ Services provide reusable utilities for:
 # from .format_detector import FormatDetector
 # from .image_finder import ImageFinder
 # from .tag_normalizer import TagNormalizer
-# from .merge import FieldMerger
+# from .merge_audiobook import FieldMerger
 
 __all__ = [
     # Will be populated as services are implemented

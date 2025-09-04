@@ -118,7 +118,7 @@ class EmbeddedSource:
     def detect_chapters(self, file_path: Path) -> List[Dict[str, Any]]: ...
 ```
 
-### 7.6 Field Merger (`services/merge.py`)
+### 7.6 Field Merger (`services/merge_audiobook.py`)
 
 **[📖 Dedicated Specification](./7.5%20—%20Audiobook%20Metadata%20Field%20Merger.md)**
 

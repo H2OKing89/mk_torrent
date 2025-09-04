@@ -4,6 +4,10 @@ Audiobook Metadata Field Merger - Declarative precedence-based merging.
 Combines multiple metadata sources (path, embedded, API) into a single,
 deterministic record using smart precedence rules and list union logic.
 
+This module is specifically designed for audiobook metadata processing.
+For future music or video support, create separate merge_music.py or
+merge_video.py modules with media-specific precedence rules.
+
 Features:
 - Declarative per-field precedence configuration
 - Smart list union for genres/tags with case-insensitive deduplication

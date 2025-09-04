@@ -14,7 +14,10 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-from mk_torrent.core.metadata.services.merge import FieldMerger, merge_metadata
+from mk_torrent.core.metadata.services.merge_audiobook import (
+    FieldMerger,
+    merge_metadata,
+)
 
 
 def demo_realistic_audiobook_merge():

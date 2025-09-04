@@ -110,7 +110,7 @@ src/mk_torrent/core/metadata/
 ├── engine.py               # ✅ Main orchestration with dependency injection
 ├── exceptions.py           # ✅ Typed exception hierarchy
 ├── processors/             # ✅ Content-type specific processing
-│   ├── audiobook.py        # ✅ Implemented
+│   ├── audiobook.py        # ✅ **REFACTORED** - Three-source orchestration with intelligent merging
 │   ├── music.py           # ✅ Placeholder created
 │   └── video.py           # ✅ Placeholder created
 ├── sources/                # ✅ Data extraction sources
@@ -120,7 +120,7 @@ src/mk_torrent/core/metadata/
 ├── services/               # ✅ Utility services
 │   ├── format_detector.py  # ✅ **ENHANCED** - Fully spec-compliant (NEW!)
 │   ├── html_cleaner.py    # ✅ Implemented (linting fixed)
-│   ├── merge.py           # ✅ **ENHANCED** - Declarative precedence system
+│   ├── merge_audiobook.py # ✅ **ENHANCED** - Declarative precedence system
 │   └── tag_normalizer.py  # ❌ Stub - needs implementation
 ├── validators/             # ✅ Validation logic
 │   ├── common.py          # ✅ Basic validation primitives

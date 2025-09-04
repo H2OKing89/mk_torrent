@@ -63,7 +63,7 @@ This document serves as the conductor for the metadata architecture refactor. Ea
 - ✅ Validation system (audiobook_validator.py) - completed and lint-compliant
 - ✅ Architecture cleanup - legacy code removed, modern structure in place
 - ✅ Documentation organization - detailed specifications created
-- 🎯 **Next Priority**: Implement field merger (`services/merge.py`) per [dedicated specification](./7.5%20—%20Audiobook%20Metadata%20Field%20Merger.md)
+- 🎯 ~~**Next Priority**: Implement field merger (`services/merge_audiobook.py`) per [dedicated specification](./7.5%20—%20Audiobook%20Metadata%20Field%20Merger.md)~~ **COMPLETE**
 
 ### Key Architectural Decisions
 - **Primary Data Model**: Dataclass (fast, zero deps) with optional Pydantic mirror
@@ -326,7 +326,7 @@ src/mk_torrent/core/metadata/
     html_cleaner.py       # nh3/bs4-based sanitizer (plain-text output)
     format_detector.py    # Comprehensive audio format detection & quality scoring
     tag_normalizer.py     # genres/tags normalization (lowercasing, dedupe)
-    merge.py              # precedence-based field merger (declarative)
+    merge_audiobook.py    # precedence-based field merger (declarative)
   validators/
     __init__.py
     common.py             # basic schemas/rules
@@ -476,7 +476,7 @@ self.processors["audiobook"] = AudiobookMetadata(
 * Parse your canonical: `Title - vol_XX (YYYY) (Author) {ASIN.ABC} [Uploader]`.
 * Returns a small dict; no I/O, deterministic & heavily unit-tested.
 
-### 7.5 Merge (`services/merge.py`)
+### 7.5 Merge (`services/merge_audiobook.py`)
 
 **See dedicated specification:** [`7.5 — Audiobook Metadata Field Merger.md`](./7.5%20—%20Audiobook%20Metadata%20Field%20Merger.md)
 
@@ -650,7 +650,7 @@ tests/
 1. **Introduce `core/metadata/base.py`** and switch both `engine.py` & `audiobook.py` to import the single Protocol/dataclass.
 2. **Extract services & sources** from `features/metadata_engine.py` into `core/metadata/services/*` and `sources/*`.
 3. **Wire DI** in `core/metadata/engine.py` and register `audiobook` with these services.
-4. **Implement `services/merge.py`** and move any hard-coded precedence to config.
+4. ~~**Implement `services/merge_audiobook.py`** and move any hard-coded precedence to config~~ **COMPLETE**
 5. **Add mappers/red.py**; update `api/trackers/red.py` to consume mapped payloads.
 6. **Refactor tests**: split current monolithic test into unit suites; keep integration test for e2e sanity.
 7. **Compatibility shim**: if needed, re-export `MetadataEngine` from `features/__init__.py` for one release.
@@ -724,10 +724,10 @@ class AudiobookMetadata:
 
 * [ ] Create `core/metadata/base.py` and port both engine & audiobook to it.
 * [ ] Extract `HTMLCleaner`, `FormatDetector`, `PathInfo`, `Audnexus` into `services/` & `sources/`.
-* [ ] Implement `services/merge.py` + `validators/audiobook_validator.py`.
+* [x] ~~Implement `services/merge_audiobook.py` + `validators/audiobook_validator.py`~~ **COMPLETE**
 * [ ] Add `mappers/red.py` and flip `api/trackers/red.py` to consume it.
 * [ ] Split tests as per structure; keep one e2e.
-* [ ] Remove dead code & typos in existing `audiobook.py`.
+* [x] ~~Remove dead code & typos in existing `audiobook.py`~~ **COMPLETE - Major refactoring completed**
 
 ---
 

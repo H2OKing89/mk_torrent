@@ -19,7 +19,7 @@ from src.mk_torrent.core.metadata.base import AudiobookMeta
 from src.mk_torrent.core.metadata.sources.pathinfo import PathInfoSource
 from src.mk_torrent.core.metadata.sources.embedded import EmbeddedSource
 from src.mk_torrent.core.metadata.sources.audnexus import AudnexusSource
-from src.mk_torrent.core.metadata.services.merge import FieldMerger
+from src.mk_torrent.core.metadata.services.merge_audiobook import FieldMerger
 
 
 class TestRealFileDataValidation:

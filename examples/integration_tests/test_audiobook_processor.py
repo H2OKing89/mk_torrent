@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 # Add src to path
-sys.path.insert(0, str(Path(__file__).parent / "src"))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from mk_torrent.core.metadata import MetadataEngine, AudiobookMeta
 from mk_torrent.core.metadata.processors.audiobook import AudiobookProcessor
@@ -29,10 +29,14 @@ def test_audiobook_processor():
         "tests/samples/audiobook/How a Realist Hero Rebuilt the Kingdom - vol_03 (2023) (Dojyomaru) {ASIN.B0C8ZW5N6Y} [H2OKing]/How a Realist Hero Rebuilt the Kingdom - vol_03 (2023) (Dojyomaru) {ASIN.B0C8ZW5N6Y}.m4b"
     )
 
+    # If relative path doesn't work, try absolute path from script location
     if not sample_file.exists():
-        print(f"❌ Sample file not found: {sample_file}")
-        print("Using filename string instead...")
-        sample_file = "How a Realist Hero Rebuilt the Kingdom - vol_03 (2023) (Dojyomaru) {ASIN.B0C8ZW5N6Y} [H2OKing].m4b"
+        script_dir = Path(__file__).parent
+        sample_file = script_dir / sample_file
+        if not sample_file.exists():
+            print(f"❌ Sample file not found: {sample_file}")
+            print("Using filename string instead...")
+            sample_file = "How a Realist Hero Rebuilt the Kingdom - vol_03 (2023) (Dojyomaru) {ASIN.B0C8ZW5N6Y} [H2OKing].m4b"
 
     print(f"📂 Processing: {sample_file}")
 
@@ -82,10 +86,12 @@ def test_audiobook_processor():
         # Test direct processor methods
         print("\n4️⃣ Testing processor methods directly...")
 
-        # Test filename extraction fallback
-        filename_only = "Test Author - Test Book Title.m4b"
-        filename_metadata = processor._extract_from_filename(Path(filename_only))
-        print(f"   Filename parsing test: {filename_metadata}")
+        # Test direct extraction with a simple filename
+        simple_filename = "Test Author - Test Book Title.m4b"
+        simple_metadata = processor.extract(simple_filename)
+        print(
+            f"   Simple filename test: {simple_metadata.get('title', 'N/A')} by {simple_metadata.get('author', 'N/A')}"
+        )
 
         # Test validation
         test_metadata = {"title": "Test", "author": "Test Author", "year": 2023}

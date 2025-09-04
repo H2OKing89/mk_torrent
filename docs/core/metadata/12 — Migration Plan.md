@@ -27,7 +27,7 @@
 - Update processor constructors
 
 ### 4. Merge Implementation
-**Implement `services/merge.py`** and move any hard-coded precedence to config.
+~~**Implement `services/merge_audiobook.py`** and move any hard-coded precedence to config~~ **COMPLETE**
 
 - Create declarative merger
 - Implement precedence rules

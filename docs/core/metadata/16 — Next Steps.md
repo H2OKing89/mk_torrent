@@ -5,12 +5,12 @@
 ### Phase 1: Foundation
 * [ ] Create `core/metadata/base.py` and port both engine & audiobook to it.
 * [ ] Extract `HTMLCleaner`, `FormatDetector`, `PathInfo`, `Audnexus` into `services/` & `sources/`.
-* [ ] Implement `services/merge.py` + `validators/audiobook_validator.py`.
+* [x] ~~Implement `services/merge_audiobook.py` + `validators/audiobook_validator.py`~~ **COMPLETE**
 
 ### Phase 2: Integration
 * [ ] Add `mappers/red.py` and flip `api/trackers/red.py` to consume it.
 * [ ] Split tests as per structure; keep one e2e.
-* [ ] Remove dead code & typos in existing `audiobook.py`.
+* [x] ~~Remove dead code & typos in existing `audiobook.py`~~ **COMPLETE - Major refactoring completed**
 
 ### Phase 3: Enhancement
 * [ ] Add configuration system for precedence rules
@@ -20,7 +20,7 @@
 
 ## Current Priority
 
-**Immediate Focus**: Implement field merger (`services/merge.py`) following the detailed specification in [`7.5 — Audiobook Metadata Field Merger.md`](./7.5%20—%20Audiobook%20Metadata%20Field%20Merger.md)
+**Immediate Focus**: ~~Implement field merger (`services/merge_audiobook.py`) following the detailed specification in [`7.5 — Audiobook Metadata Field Merger.md`](./7.5%20—%20Audiobook%20Metadata%20Field%20Merger.md)~~ **COMPLETE**
 
 This is the next critical component needed to complete the metadata pipeline.
 
