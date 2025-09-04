@@ -1,12 +1,22 @@
 """
-Path Info Source - Canonical Filename Parsing.
+Path Info Source - Core Modular Metadata System (Canonical Filename Parsing).
+
+Part of the new modular metadata architecture providing compliance-focused
+metadata extraction from standardized audiobook filenames and directory structures
+as one of three sources in the intelligent merging strategy.
 
 Extracts metadata from standardized audiobook filenames and directory structures.
 Zero I/O design for fast, deterministic parsing.
 
+Architecture Documentation:
+- Source Specification: docs/core/metadata/07.4 — Path Info Source.md
+- Three-Source Strategy: docs/core/metadata/06 — Engine Pipeline.md
+- Services Overview: docs/core/metadata/07 — Services Details.md (Section 7.4)
+
 Format: Title - vol_XX (YYYY) (Author) {ASIN.ABC} [Uploader]
 """
 
+from __future__ import annotations
 import re
 import unicodedata
 from pathlib import Path

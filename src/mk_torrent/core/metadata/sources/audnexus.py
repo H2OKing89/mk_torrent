@@ -1,8 +1,17 @@
 """
-Audnexus API source for audiobook metadata.
+Audnexus API source - Core Modular Metadata System.
+
+Part of the new modular metadata architecture providing authoritative descriptive
+metadata from api.audnex.us as the primary source for book information in the
+three-source extraction strategy.
 
 Implements the MetadataSource protocol to fetch data from api.audnex.us
 following the official API documentation (v1.8.0).
+
+Architecture Documentation:
+- Source Specification: docs/core/metadata/07.3 — Audnexus Source.md
+- Three-Source Strategy: docs/core/metadata/06 — Engine Pipeline.md
+- Services Overview: docs/core/metadata/07 — Services Details.md (Section 7.3)
 
 Features:
 - Direct dict-based data handling for optimal performance

@@ -1,8 +1,17 @@
 """
-Core protocols, interfaces, and data models for the metadata system.
+Core protocols, interfaces, and data models - Core Modular Metadata System.
+
+Foundation of the new modular metadata architecture providing type-safe interfaces
+and canonical data structures that replace ad-hoc data handling with structured,
+validated entity models.
 
 This module defines the canonical data structures and interfaces that all
 metadata processors, sources, and services must implement.
+
+Architecture Documentation:
+- Protocol Design: docs/core/metadata/05 — Protocol & Entity Design.md
+- Entity Models: docs/core/metadata/04 — Comprehensive Entity Model.md
+- Base Architecture: docs/core/metadata/03 — Foundation Architecture.md
 """
 
 from __future__ import annotations

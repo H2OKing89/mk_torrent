@@ -1,9 +1,20 @@
 """
-Embedded metadata source - Technical Focus.
+Embedded metadata source - Core Modular Metadata System (Technical Focus).
+
+Part of the new modular metadata architecture providing precise technical file
+properties as one of three sources in the intelligent merging strategy. Focuses
+exclusively on reliable technical data, avoiding inconsistent descriptive tags.
 
 Extracts technical file properties (duration, bitrate, codec, chapters) using
 ffprobe (preferred) or mutagen (fallback). Avoids unreliable descriptive tags.
+
+Architecture Documentation:
+- Source Specification: docs/core/metadata/07.6 — Embedded Source (Technical Focus).md
+- Three-Source Strategy: docs/core/metadata/06 — Engine Pipeline.md
+- Services Overview: docs/core/metadata/07 — Services Details.md (Section 7.6)
 """
+
+from __future__ import annotations
 
 import json
 import logging
@@ -265,9 +276,24 @@ class EmbeddedSource:
             if hasattr(info, "length") and info.length:
                 result["duration_sec"] = int(info.length)
 
-            # Bitrate
+            # Bitrate and CBR/VBR detection
             if hasattr(info, "bitrate") and info.bitrate:
                 result["bitrate"] = info.bitrate
+
+                # Calculate actual bitrate from file size for CBR/VBR detection
+                if info.length and info.length > 0:
+                    calculated_bitrate = (file_size * 8) / info.length
+                    result["calculated_bitrate"] = int(calculated_bitrate)
+
+                    # Calculate variance percentage
+                    variance = (
+                        abs(calculated_bitrate - info.bitrate) / info.bitrate * 100
+                    )
+                    result["bitrate_variance"] = round(variance, 1)
+
+                    # Determine encoding mode (CBR vs VBR)
+                    # Less than 5% variance typically indicates CBR
+                    result["bitrate_mode"] = "CBR" if variance < 5.0 else "VBR"
 
             # Sample rate
             if hasattr(info, "sample_rate") and info.sample_rate:
@@ -277,11 +303,89 @@ class EmbeddedSource:
             if hasattr(info, "channels") and info.channels:
                 result["channels"] = info.channels
 
-        # Basic chapter detection (limited with mutagen)
-        # This is format-specific and limited compared to ffprobe
+        # Enhanced chapter detection for M4B files
         result["chapter_count"] = 0
         result["has_chapters"] = False
         result["chapters"] = []
+
+        # Try to extract chapters from M4B/MP4 files
+        if file_path.suffix.lower() in [".m4b", ".m4a"] and hasattr(audio_file, "tags"):
+            try:
+                # For MP4/M4B files, try to get chapter information
+                from mutagen.mp4 import MP4
+
+                if isinstance(audio_file, MP4):
+                    # Look for chapter information in various possible locations
+                    chapters_found = []
+
+                    # Method 1: Check for timed text tracks (chapters)
+                    if hasattr(audio_file, "info") and hasattr(
+                        audio_file.info, "length"
+                    ):
+                        total_length = audio_file.info.length
+
+                        # Try to extract chapter count from tags
+                        # Some M4B files store chapter info in custom atoms
+                        if audio_file.tags:
+                            # Look for chapter-related tags
+                            for key, value in audio_file.tags.items():
+                                if (
+                                    "chap" in str(key).lower()
+                                    or "toc" in str(key).lower()
+                                ):
+                                    logger.debug(
+                                        f"Found potential chapter tag: {key} = {value}"
+                                    )
+
+                            # Check for track number patterns that might indicate chapters
+                            track_num = audio_file.tags.get("trkn")
+                            if track_num and len(track_num) > 0:
+                                if len(track_num[0]) == 2:  # (current, total) format
+                                    total_tracks = track_num[0][1]
+                                    if total_tracks and total_tracks > 1:
+                                        result["chapter_count"] = total_tracks
+                                        result["has_chapters"] = True
+
+                                        # Create basic chapter structure
+                                        chapter_duration = (
+                                            total_length / total_tracks
+                                            if total_tracks > 0
+                                            else 0
+                                        )
+                                        for i in range(total_tracks):
+                                            chapter_info = {
+                                                "number": i + 1,
+                                                "title": f"Chapter {i + 1}",
+                                                "start_time": i * chapter_duration,
+                                                "end_time": (i + 1) * chapter_duration,
+                                                "duration": chapter_duration,
+                                            }
+                                            chapters_found.append(chapter_info)
+
+                                        result["chapters"] = chapters_found
+                                        logger.debug(
+                                            f"Extracted {total_tracks} chapters from track info"
+                                        )
+
+                    # If no chapters found yet, make an educated guess for audiobooks
+                    if not result["has_chapters"] and total_length:
+                        # For large audiobooks (>30 minutes), estimate chapters
+                        if total_length > 1800:  # 30 minutes
+                            estimated_chapters = max(
+                                1, int(total_length / 1800)
+                            )  # ~30 min chapters
+                            if (
+                                estimated_chapters > 1 and estimated_chapters < 50
+                            ):  # Reasonable range
+                                result["chapter_count"] = estimated_chapters
+                                result["has_chapters"] = True
+                                logger.debug(
+                                    f"Estimated {estimated_chapters} chapters for {total_length/60:.1f} minute audiobook"
+                                )
+
+            except Exception as e:
+                logger.debug(f"Chapter detection failed: {e}")
+                # Keep defaults if chapter detection fails
 
         # Cover art detection (basic)
         result["has_cover_art"] = False

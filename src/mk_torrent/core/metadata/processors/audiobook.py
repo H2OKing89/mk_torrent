@@ -1,9 +1,17 @@
 """
-Audiobook metadata processor.
+Audiobook metadata processor - Core Modular Metadata System.
+
+Part of the new modular metadata architecture that replaces legacy monolithic
+processing with a clean three-source extraction and intelligent merging strategy.
 
 Orchestrates metadata extraction from multiple sources (Audnexus API, embedded
 metadata, filename parsing) and uses sophisticated merging to combine them into
 a comprehensive audiobook metadata record.
+
+Architecture Documentation:
+- Overview: docs/core/metadata/06 — Engine Pipeline.md
+- Processor Details: docs/core/metadata/07 — Services Details.md (Section 7.0)
+- Three-Source Strategy: docs/core/metadata/07.5 — Audiobook Metadata Field Merger.md
 """
 
 import logging

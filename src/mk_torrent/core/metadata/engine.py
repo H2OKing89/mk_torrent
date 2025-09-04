@@ -1,10 +1,22 @@
 """
-The main metadata engine - orchestrates processors, sources, and services.
+The main metadata engine - Core Modular Metadata System.
+
+Central orchestrator that replaces legacy monolithic processing with a clean,
+extensible architecture supporting multiple content types and processing strategies.
+
+Orchestrates processors, sources, and services through dependency injection and
+registry patterns for maximum flexibility and testability.
 
 This is the "one true engine" that provides a clean interface for extracting,
 validating, and mapping metadata across different content types.
+
+Architecture Documentation:
+- Engine Pipeline: docs/core/metadata/06 — Engine Pipeline.md
+- Services Overview: docs/core/metadata/07 — Services Details.md
+- Base Protocols: docs/core/metadata/05 — Protocol & Entity Design.md
 """
 
+from __future__ import annotations
 import logging
 from pathlib import Path
 from typing import Any

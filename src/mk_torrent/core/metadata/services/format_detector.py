@@ -1,11 +1,15 @@
 """
-Audio format detection and analysis service.
+Audio format detection and analysis service - Core Modular Metadata System.
+
+Part of the new modular metadata architecture providing detailed audio format
+information using Mutagen (preferred) with fallback detection methods.
 
 Provides detailed audio format information using Mutagen (preferred) with
 fallback detection methods following the recommended packages specification.
 
-Specification: docs/core/metadata/07.2 — Format Detector Service.md
-Architecture: docs/core/metadata/07 — Services Details.md (Section 7.2)
+Architecture Documentation:
+- Service Specification: docs/core/metadata/07.2 — Format Detector Service.md
+- Services Overview: docs/core/metadata/07 — Services Details.md (Section 7.2)
 """
 
 from __future__ import annotations

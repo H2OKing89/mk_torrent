@@ -1,9 +1,18 @@
 """
-Custom exceptions for the metadata system.
+Custom exceptions for the metadata system - Core Modular Metadata System.
+
+Part of the new modular metadata architecture providing typed error classes
+for better error handling, debugging, and system reliability across all
+components of the modular system.
 
 Provides typed error classes for better error handling and debugging.
+
+Architecture Documentation:
+- Error Handling: docs/core/metadata/03 — Foundation Architecture.md
+- System Design: docs/core/metadata/07 — Services Details.md
 """
 
+from __future__ import annotations
 from typing import Any
 
 

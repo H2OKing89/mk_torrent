@@ -194,17 +194,28 @@ def test_audiobook_processor():
     processor = AudiobookProcessor(region="us")
     engine.register_processor("audiobook", processor)
 
-    # Sample file setup
-    sample_file = Path(
-        "tests/samples/audiobook/How a Realist Hero Rebuilt the Kingdom - vol_03 (2023) (Dojyomaru) {ASIN.B0C8ZW5N6Y} [H2OKing]/How a Realist Hero Rebuilt the Kingdom - vol_03 (2023) (Dojyomaru) {ASIN.B0C8ZW5N6Y}.m4b"
+    # Sample file setup - find the correct path relative to project root
+    project_root = Path(
+        __file__
+    ).parent.parent.parent  # Go up from examples/integration_tests/ to project root
+    sample_file = (
+        project_root
+        / "tests/samples/audiobook/How a Realist Hero Rebuilt the Kingdom - vol_03 (2023) (Dojyomaru) {ASIN.B0C8ZW5N6Y} [H2OKing]/How a Realist Hero Rebuilt the Kingdom - vol_03 (2023) (Dojyomaru) {ASIN.B0C8ZW5N6Y}.m4b"
     )
 
     if not sample_file.exists():
-        script_dir = Path(__file__).parent
-        sample_file = script_dir / sample_file
-        if not sample_file.exists():
-            rich_print(f"❌ Sample file not found: {sample_file}", "red")
-            sample_file = "How a Realist Hero Rebuilt the Kingdom - vol_03 (2023) (Dojyomaru) {ASIN.B0C8ZW5N6Y} [H2OKing].m4b"
+        rich_print(f"❌ Sample file not found: {sample_file}", "red")
+        rich_print("📂 Looking for alternative samples...", "yellow")
+        # Try to find any .m4b file in the samples directory
+        samples_dir = project_root / "tests/samples/audiobook"
+        if samples_dir.exists():
+            for potential_file in samples_dir.rglob("*.m4b"):
+                sample_file = potential_file
+                rich_print(f"📂 Found alternative sample: {sample_file}", "green")
+                break
+        else:
+            rich_print("❌ No sample files available for testing", "red")
+            return
 
     rich_print(f"📂 Processing: {sample_file}", "cyan")
 

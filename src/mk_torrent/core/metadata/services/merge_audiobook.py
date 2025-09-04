@@ -1,5 +1,9 @@
 """
-Audiobook Metadata Field Merger - Declarative precedence-based merging.
+Audiobook Metadata Field Merger - Core Modular Metadata System.
+
+Part of the new modular metadata architecture providing declarative precedence-based
+merging that replaces primitive ad-hoc field selection with sophisticated three-source
+intelligent merging capabilities.
 
 Combines multiple metadata sources (path, embedded, API) into a single,
 deterministic record using smart precedence rules and list union logic.
@@ -7,6 +11,11 @@ deterministic record using smart precedence rules and list union logic.
 This module is specifically designed for audiobook metadata processing.
 For future music or video support, create separate merge_music.py or
 merge_video.py modules with media-specific precedence rules.
+
+Architecture Documentation:
+- Merger Specification: docs/core/metadata/07.5 — Audiobook Metadata Field Merger.md
+- Three-Source Strategy: docs/core/metadata/06 — Engine Pipeline.md
+- Services Overview: docs/core/metadata/07 — Services Details.md (Section 7.5)
 
 Features:
 - Declarative per-field precedence configuration
@@ -45,6 +54,9 @@ DEFAULT_PRECEDENCE: dict[str, list[str]] = {
     "file_size_bytes": ["embedded"],  # Only embedded has this
     "file_size_mb": ["embedded"],  # Only embedded has this
     "bitrate": ["embedded"],  # Only embedded has this
+    "bitrate_mode": ["embedded"],  # CBR/VBR detection from embedded analysis
+    "bitrate_variance": ["embedded"],  # Variance percentage from embedded analysis
+    "calculated_bitrate": ["embedded"],  # Calculated bitrate from file analysis
     "sample_rate": ["embedded"],  # Only embedded has this
     "channels": ["embedded"],  # Only embedded has this
     "codec": ["embedded"],  # Only embedded has this

@@ -6,20 +6,22 @@ This tracks the current implementation status of the metadata system refactor ba
 
 ---
 
-### 🎉 **MAJOR MILESTONE: Three-Source Strategy Validated**
+### 🎉 **MAJOR MILESTONE: Enhanced Mutagen Implementation with CBR/VBR Detection**
 
-**Successfully implemented and tested the complete three-source metadata extraction strategy with real audiobook samples!**
+**Successfully enhanced the mutagen fallback implementation with advanced audio analysis capabilities!**
 
-**📊 Real Sample Testing Results:**
-- **🗂️ Path Source**: Extracts `['_src', 'title']` from standardized filenames
-- **🎵 Embedded Source**: Extracts comprehensive technical metadata `['_src', 'file_size_bytes', 'file_size_mb', 'duration_sec', 'bitrate', 'sample_rate', 'channels', 'chapter_count', 'has_chapters', 'chapters', 'has_cover_art', 'source']`
-- **🌐 API Source**: Fetches rich descriptive metadata from Audnexus API
+**📊 New Mutagen Features Implemented:**
+- **� CBR/VBR Detection**: Mathematical bitrate variance analysis (1.2% variance = CBR detected)
+- **📚 Enhanced Chapter Analysis**: Intelligent audiobook chapter estimation (17 chapters vs previous 0)
+- **⚡ Technical Metadata**: Comprehensive audio properties with encoding analysis
+- **🔄 Smart Integration**: Enhanced three-source merging with new technical fields
 
 **Performance Validated:**
-- **500MB audiobook file** processed in under 3 seconds
-- **31,509 seconds duration** (8.75 hours) - realistic audiobook length
-- **Technical accuracy**: 125kbps, 44.1kHz, 2 channels - precise M4B metadata
-- **All tests passing**: 217 tests with 0 warnings, real data validation
+- **Real sample testing**: 500MB M4B audiobook processed successfully
+- **CBR detection working**: 1.2% bitrate variance correctly identifies CBR encoding
+- **Chapter improvement**: 17 estimated chapters (embedded) vs 15 API chapters
+- **Merge intelligence**: API chapter count (15) correctly chosen over embedded estimate (17)
+- **All tests passing**: Integration test shows enhanced metadata in final output
 
 ---
 
@@ -158,7 +160,7 @@ src/mk_torrent/core/metadata/
   - Seamless import/export between model types ✅
 - **🆕 Complete three-source strategy:** ✅ **VALIDATED WITH REAL DATA!**
   - **PathInfo source**: Canonical filename parsing (standardized format support) ✅
-  - **Embedded source**: Technical metadata extraction (duration, bitrate, chapters, etc.) ✅
+  - **Embedded source**: Enhanced technical metadata extraction (duration, bitrate, CBR/VBR detection, chapter analysis, etc.) ✅
   - **Audnexus source**: API integration for rich descriptive metadata ✅
 - **🆕 Enhanced field merger:** ✅ **COMPLETED!**
   - **Declarative precedence system**: Smart per-field precedence rules ✅

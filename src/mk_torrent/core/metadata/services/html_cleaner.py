@@ -1,8 +1,15 @@
 """
-HTML content sanitization service.
+HTML content sanitization service - Core Modular Metadata System.
+
+Part of the new modular metadata architecture providing secure HTML cleaning
+and text extraction services used by multiple sources and processors.
 
 Provides HTML cleaning and text extraction using nh3 (preferred) or
 BeautifulSoup4 (fallback) following the recommended packages specification.
+
+Architecture Documentation:
+- Service Specification: docs/core/metadata/07.1 — HTML Cleaner Service.md
+- Services Overview: docs/core/metadata/07 — Services Details.md (Section 7.1)
 """
 
 import logging

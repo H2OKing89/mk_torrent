@@ -1,9 +1,17 @@
 """
-Rich entity model for comprehensive metadata representation.
+Rich entity model for comprehensive metadata representation - Core Modular Metadata System.
+
+Part of the new modular metadata architecture providing enhanced type safety
+and structured data modeling beyond the basic AudiobookMeta dataclass.
 
 This module defines detailed entity classes that provide enhanced type safety
 and structured data modeling beyond the basic AudiobookMeta dataclass.
 These entities represent the future comprehensive model outlined in Document #04.
+
+Architecture Documentation:
+- Entity Design: docs/core/metadata/04 — Comprehensive Entity Model.md
+- Protocol Design: docs/core/metadata/05 — Protocol & Entity Design.md
+- Base Architecture: docs/core/metadata/03 — Foundation Architecture.md
 """
 
 from __future__ import annotations
