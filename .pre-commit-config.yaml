@@ -6,11 +6,6 @@ repos:
         args: [--fix]
       - id: ruff-format
 
-  - repo: https://github.com/psf/black
-    rev: 24.8.0
-    hooks:
-      - id: black
-
   # Python code modernization
   - repo: https://github.com/asottile/pyupgrade
     rev: v3.17.0
