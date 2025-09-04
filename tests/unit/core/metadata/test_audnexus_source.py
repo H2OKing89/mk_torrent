@@ -82,12 +82,12 @@ class TestAudnexusSource:
         assert normalized["series"] == "Test Series"
         assert normalized["volume"] == "3"
         assert normalized["publisher"] == "Test Publisher"
-        assert normalized["year"] == 2023
+        assert normalized["year"] == "2023"
         assert normalized["narrator"] == "Test Narrator"
         assert normalized["duration_seconds"] == 524 * 60
-        assert normalized["genres"] == ["Fiction"]
-        assert normalized["tags"] == ["Fantasy"]
-        assert normalized["rating"] == 4.5
+        assert normalized["genres"] == "Fiction"
+        assert normalized["tags"] == "Fantasy"
+        assert normalized["rating"] == "4.5"
         assert normalized["artwork_url"] == "https://example.com/cover.jpg"
 
         # Check HTML cleaning

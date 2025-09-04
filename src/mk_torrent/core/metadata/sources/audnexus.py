@@ -402,14 +402,15 @@ class AudnexusSource:
         Returns:
             Normalized metadata dict
         """
-        normalized = {}
+        normalized = {"_src": "audnexus"}
 
         # Basic fields
         normalized["title"] = data.get("title", "")
         normalized["author"] = self._extract_primary_author(data.get("authors", []))
-        normalized["authors"] = [
+        authors_list = [
             a.get("name", "") for a in data.get("authors", []) if a.get("name")
         ]
+        normalized["authors"] = ", ".join(authors_list) if authors_list else ""
 
         # Subtitle handling
         subtitle = data.get("subtitle", "")
@@ -445,22 +446,19 @@ class AudnexusSource:
                 release_date = datetime.fromisoformat(
                     data["releaseDate"].replace("Z", "+00:00")
                 )
-                normalized["year"] = release_date.year
+                normalized["year"] = str(release_date.year)
                 normalized["release_date"] = release_date.strftime("%Y-%m-%d")
             except Exception:
-                pass
+                normalized["year"] = str(data.get("copyright", ""))
         elif data.get("copyright"):
-            normalized["year"] = data["copyright"]
+            normalized["year"] = str(data["copyright"])
 
         # Narrators
         narrators = data.get("narrators", [])
         if narrators:
-            normalized["narrator"] = ", ".join(
-                n.get("name", "") for n in narrators if n.get("name")
-            )
-            normalized["narrators"] = [
-                n.get("name", "") for n in narrators if n.get("name")
-            ]
+            narrator_names = [n.get("name", "") for n in narrators if n.get("name")]
+            normalized["narrator"] = ", ".join(narrator_names)
+            normalized["narrators"] = ", ".join(narrator_names)
 
         # Runtime
         runtime_min = data.get("runtimeLengthMin")
@@ -485,11 +483,11 @@ class AudnexusSource:
             ]
 
             if genre_names:
-                normalized["genres"] = genre_names
+                normalized["genres"] = ", ".join(genre_names)
                 normalized["genre"] = genre_names[0]  # Primary genre
 
             if tag_names:
-                normalized["tags"] = tag_names
+                normalized["tags"] = ", ".join(tag_names)
 
         # Format and content info
         normalized["format"] = data.get("formatType", "")  # unabridged/abridged
@@ -501,9 +499,9 @@ class AudnexusSource:
         # Rating and artwork
         if data.get("rating"):
             try:
-                normalized["rating"] = float(data["rating"])
+                normalized["rating"] = str(float(data["rating"]))
             except (ValueError, TypeError):
-                normalized["rating"] = data["rating"]
+                normalized["rating"] = str(data["rating"])
 
         normalized["artwork_url"] = data.get("image", "")
 
