@@ -11,13 +11,18 @@ Architecture Documentation:
 from __future__ import annotations
 
 from typing import Any
+import logging
 
+# Check for rapidfuzz availability
 try:
     from rapidfuzz import fuzz
 
-    RAPIDFUZZ_AVAILABLE = True
+    rapidfuzz_available = True
 except ImportError:
-    RAPIDFUZZ_AVAILABLE = False
+    fuzz = None  # type: ignore
+    rapidfuzz_available = False
+
+logger = logging.getLogger(__name__)
 
 
 class TagNormalizer:
@@ -82,7 +87,7 @@ class TagNormalizer:
             return self._genre_map[tag_lower]
 
         # Check fuzzy matching for close variants if rapidfuzz available
-        if RAPIDFUZZ_AVAILABLE:
+        if rapidfuzz_available:
             for known_tag, canonical in self._genre_map.items():
                 if fuzz.ratio(tag_lower, known_tag) >= 90:  # 90% similarity
                     return canonical

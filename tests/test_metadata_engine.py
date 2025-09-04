@@ -6,6 +6,7 @@ import tempfile
 import shutil
 from pathlib import Path
 from unittest.mock import patch, MagicMock
+from typing import Dict, Any
 
 from src.mk_torrent.features.metadata_engine import (
     MetadataEngine,
@@ -69,10 +70,10 @@ class TestHTMLCleaner:
     """Test HTML cleaning functionality"""
 
     @pytest.fixture
-    def cleaner(self):
+    def cleaner(self) -> HTMLCleaner:
         return HTMLCleaner()
 
-    def test_clean_html_string_basic(self, cleaner):
+    def test_clean_html_string_basic(self, cleaner: HTMLCleaner) -> None:
         """Test basic HTML cleaning"""
         html_text = "This is <b>bold</b> and <i>italic</i> text."
         result = cleaner.clean_html_string(html_text)
@@ -81,7 +82,7 @@ class TestHTMLCleaner:
         assert "bold" in result
         assert "italic" in result
 
-    def test_clean_html_string_entities(self, cleaner):
+    def test_clean_html_string_entities(self, cleaner: HTMLCleaner) -> None:
         """Test HTML entity cleaning"""
         html_text = "Price: &amp; &lt; &gt; &quot;test&quot;"
         result = cleaner.clean_html_string(html_text)
@@ -91,7 +92,7 @@ class TestHTMLCleaner:
         assert "&quot;" not in result
         assert 'Price: & < > "test"' == result
 
-    def test_clean_html_string_with_nh3(self, cleaner):
+    def test_clean_html_string_with_nh3(self, cleaner: HTMLCleaner) -> None:
         """Test HTML cleaning with nh3 sanitizer"""
         html_text = '<script>alert("xss")</script><p>Safe content</p>'
         result = cleaner.clean_html_string(html_text)
@@ -99,7 +100,7 @@ class TestHTMLCleaner:
         assert "alert" not in result
         assert "Safe content" in result
 
-    def test_sanitize_metadata_dict(self, cleaner):
+    def test_sanitize_metadata_dict(self, cleaner: HTMLCleaner) -> None:
         """Test sanitizing entire metadata dictionary"""
         metadata = {
             "title": "Test <b>Title</b>",
@@ -118,10 +119,10 @@ class TestFormatDetector:
     """Test audio format detection"""
 
     @pytest.fixture
-    def detector(self):
+    def detector(self) -> FormatDetector:
         return FormatDetector()
 
-    def test_supported_formats(self, detector):
+    def test_supported_formats(self, detector: FormatDetector) -> None:
         """Test format detection for supported file types"""
         assert detector.supported_formats[".flac"] == "FLAC"
         assert detector.supported_formats[".mp3"] == "MP3"
@@ -138,11 +139,15 @@ class TestFormatDetector:
             (".unknown", "Unknown"),
         ],
     )
-    def test_format_mapping(self, detector, file_ext, expected_format):
+    def test_format_mapping(
+        self, detector: FormatDetector, file_ext: str, expected_format: str
+    ) -> None:
         """Test format mapping for different extensions"""
         assert detector.supported_formats.get(file_ext, "Unknown") == expected_format
 
-    def test_basic_format_detection_without_mutagen(self, detector, temp_dir):
+    def test_basic_format_detection_without_mutagen(
+        self, detector: FormatDetector, temp_dir: Path
+    ) -> None:
         """Test basic format detection when mutagen is not available"""
         # Create test files
         flac_file = temp_dir / "test.flac"
@@ -156,7 +161,7 @@ class TestFormatDetector:
         assert "format" in result
         assert result["format"] in ["FLAC", "MP3", "FLAC, MP3"]
 
-    def test_mp3_quality_classification(self, detector):
+    def test_mp3_quality_classification(self, detector: FormatDetector) -> None:
         """Test MP3 quality classification"""
         # CBR tests
         assert detector._classify_mp3_quality(320000, 0) == "MP3 320k"
@@ -172,10 +177,10 @@ class TestAudnexusAPI:
     """Test Audnexus API integration"""
 
     @pytest.fixture
-    def api(self):
+    def api(self) -> AudnexusAPI:
         return AudnexusAPI()
 
-    def test_extract_asin_from_filename(self, api):
+    def test_extract_asin_from_filename(self, api: AudnexusAPI) -> None:
         """Test ASIN extraction from filenames"""
         test_cases = [
             ("Test Book {ASIN.B012345678}.m4b", "B012345678"),
@@ -189,12 +194,14 @@ class TestAudnexusAPI:
             assert result == expected
 
     @pytest.mark.integration
-    def test_get_book_metadata_real_api(self, api):
+    def test_get_book_metadata_real_api(self, api: AudnexusAPI) -> None:
         """Test real API call (requires internet)"""
         # This would be a real API test
         pass
 
-    def test_normalize_audnexus_data(self, api, mock_audnexus_response):
+    def test_normalize_audnexus_data(
+        self, api: AudnexusAPI, mock_audnexus_response: Dict[str, Any]
+    ) -> None:
         """Test normalization of Audnexus API response"""
         result = api._normalize_audnexus_data(mock_audnexus_response)
 
@@ -208,7 +215,7 @@ class TestAudnexusAPI:
         assert result["year"] == "2023"
         assert result["runtime_formatted"] == "6h 0m"
 
-    def test_clean_html_summary(self, api):
+    def test_clean_html_summary(self, api: AudnexusAPI) -> None:
         """Test HTML cleaning in summary"""
         summary = 'Test <b>bold</b> and <script>alert("xss")</script>safe content.'
         result = api._clean_html_summary(summary)
@@ -224,10 +231,10 @@ class TestTagNormalizer:
     """Test tag normalization"""
 
     @pytest.fixture
-    def normalizer(self):
+    def normalizer(self) -> TagNormalizer:
         return TagNormalizer()
 
-    def test_normalize_basic_tags(self, normalizer):
+    def test_normalize_basic_tags(self, normalizer: TagNormalizer) -> None:
         """Test basic tag normalization"""
         tags = ["rap", "hiphop", "hip hop", "rnb", "rhythm and blues"]
         result = normalizer.normalize(tags)
@@ -237,7 +244,7 @@ class TestTagNormalizer:
         assert "rap" not in result
         assert "hiphop" not in result
 
-    def test_normalize_case_insensitive(self, normalizer):
+    def test_normalize_case_insensitive(self, normalizer: TagNormalizer) -> None:
         """Test case-insensitive normalization"""
         tags = ["RAP", "HipHop", "R&B"]
         result = normalizer.normalize(tags)
@@ -245,7 +252,7 @@ class TestTagNormalizer:
         assert "Hip-Hop" in result
         assert "R&B" in result
 
-    def test_remove_duplicates(self, normalizer):
+    def test_remove_duplicates(self, normalizer: TagNormalizer) -> None:
         """Test duplicate removal"""
         tags = ["rock", "Rock", "ROCK"]
         result = normalizer.normalize(tags)
@@ -253,7 +260,7 @@ class TestTagNormalizer:
         assert len(result) == 1
         assert result[0] == "Rock"
 
-    def test_red_genre_filtering(self, normalizer):
+    def test_red_genre_filtering(self, normalizer: TagNormalizer) -> None:
         """Test RED genre filtering"""
         tags = ["rock", "unknown_genre", "pop", "invalid"]
         result = normalizer.normalize(tags)
@@ -268,10 +275,12 @@ class TestMetadataEngine:
     """Test the main metadata engine"""
 
     @pytest.fixture
-    def engine(self):
+    def engine(self) -> MetadataEngine:
         return MetadataEngine()
 
-    def test_process_metadata_basic(self, engine, temp_dir):
+    def test_process_metadata_basic(
+        self, engine: MetadataEngine, temp_dir: Path
+    ) -> None:
         """Test basic metadata processing"""
         # Create a mock audio file
         audio_file = temp_dir / "test.flac"
@@ -284,7 +293,9 @@ class TestMetadataEngine:
         assert "format" in result
         assert "artwork" in result
 
-    def test_validate_red_compliance(self, engine, sample_metadata):
+    def test_validate_red_compliance(
+        self, engine: MetadataEngine, sample_metadata: Dict[str, Any]
+    ) -> None:
         """Test RED compliance validation"""
         result = engine._validate_red_compliance(sample_metadata)
 
@@ -292,7 +303,9 @@ class TestMetadataEngine:
         assert len(result["errors"]) == 0
         assert result["score"] == 100
 
-    def test_validate_red_compliance_missing_fields(self, engine):
+    def test_validate_red_compliance_missing_fields(
+        self, engine: MetadataEngine
+    ) -> None:
         """Test validation with missing required fields"""
         incomplete_metadata = {"title": "Test"}
         result = engine._validate_red_compliance(incomplete_metadata)
@@ -302,7 +315,9 @@ class TestMetadataEngine:
         assert any("artist" in error for error in result["errors"])
         assert any("album" in error for error in result["errors"])
 
-    def test_build_enhanced_description(self, engine, mock_audnexus_response):
+    def test_build_enhanced_description(
+        self, engine: MetadataEngine, mock_audnexus_response: Dict[str, Any]
+    ) -> None:
         """Test building enhanced description"""
         result = engine._build_enhanced_description(mock_audnexus_response)
 
@@ -314,8 +329,12 @@ class TestMetadataEngine:
 
     @patch("src.mk_torrent.features.metadata_engine.requests.Session.get")
     def test_enrich_with_audnexus(
-        self, mock_get, engine, temp_dir, mock_audnexus_response
-    ):
+        self,
+        mock_get: MagicMock,
+        engine: MetadataEngine,
+        temp_dir: Path,
+        mock_audnexus_response: Dict[str, Any],
+    ) -> None:
         """Test Audnexus enrichment"""
         # Mock successful API response
         mock_response = MagicMock()
@@ -334,7 +353,9 @@ class TestMetadataEngine:
         assert "authors" in result
         assert "Test Author" in result["authors"]
 
-    def test_basic_metadata_extraction(self, engine, temp_dir):
+    def test_basic_metadata_extraction(
+        self, engine: MetadataEngine, temp_dir: Path
+    ) -> None:
         """Test basic metadata extraction from folder names"""
         # Create test directory with pattern: "Artist - Album (Year)"
         test_dir = temp_dir / "Test Artist - Test Album (2023)"
@@ -350,7 +371,7 @@ class TestMetadataEngine:
 class TestAlbumArtwork:
     """Test AlbumArtwork dataclass"""
 
-    def test_artwork_creation(self):
+    def test_artwork_creation(self) -> None:
         """Test creating AlbumArtwork instance"""
         artwork = AlbumArtwork(
             url="https://example.com/cover.jpg",
@@ -368,7 +389,7 @@ class TestAlbumArtwork:
         assert artwork.source == "audnexus_api"
         assert artwork.confidence == 0.9
 
-    def test_artwork_defaults(self):
+    def test_artwork_defaults(self) -> None:
         """Test AlbumArtwork default values"""
         artwork = AlbumArtwork(url="https://example.com/cover.jpg")
 
@@ -382,7 +403,7 @@ class TestAlbumArtwork:
 class TestAudioFormat:
     """Test AudioFormat dataclass"""
 
-    def test_audio_format_creation(self):
+    def test_audio_format_creation(self) -> None:
         """Test creating AudioFormat instance"""
         audio_format = AudioFormat(
             codec="FLAC",
@@ -402,7 +423,7 @@ class TestAudioFormat:
         assert audio_format.vbr is False
         assert audio_format.lossless is True
 
-    def test_audio_format_defaults(self):
+    def test_audio_format_defaults(self) -> None:
         """Test AudioFormat default values"""
         audio_format = AudioFormat(codec="MP3")
 
@@ -419,12 +440,14 @@ class TestAudioFormat:
 class TestMetadataIntegration:
     """Integration tests for metadata processing"""
 
-    def test_full_metadata_pipeline(self, engine, temp_dir):
+    def test_full_metadata_pipeline(
+        self, engine: MetadataEngine, temp_dir: Path
+    ) -> None:
         """Test complete metadata processing pipeline"""
         # This would test the full pipeline with real files
         pass
 
-    def test_audnexus_api_integration(self, engine):
+    def test_audnexus_api_integration(self, engine: MetadataEngine) -> None:
         """Test real Audnexus API integration"""
         # This would test actual API calls
         pass
