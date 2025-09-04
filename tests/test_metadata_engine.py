@@ -12,10 +12,10 @@ from src.mk_torrent.features.metadata_engine import (
     HTMLCleaner,
     FormatDetector,
     AudnexusAPI,
-    TagNormalizer,
     AlbumArtwork,
     AudioFormat,
 )
+from src.mk_torrent.core.metadata.services.tag_normalizer import TagNormalizer
 
 
 @pytest.fixture
