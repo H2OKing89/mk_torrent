@@ -58,7 +58,11 @@ class TestThreeSourceIntegration:
     @pytest.fixture
     def audnexus_source(self):
         """Create AudnexusSource instance."""
-        return AudnexusSource()
+        source = AudnexusSource()
+        yield source
+        # Clean up HTTP client connections
+        if hasattr(source, "close"):
+            source.close()
 
     def test_sample_exists(self):
         """Verify our sample files exist."""
@@ -92,7 +96,6 @@ class TestThreeSourceIntegration:
         assert path_result.get("uploader") == "H2OKing"
 
         print(f"✅ Path extraction: {path_result}")
-        return path_result
 
     def test_embedded_extraction(self, embedded_source):
         """Test embedded metadata extraction."""
@@ -122,7 +125,6 @@ class TestThreeSourceIntegration:
             assert 3600 <= duration <= 43200  # Reasonable audiobook length
 
         print(f"✅ Embedded extraction: {embedded_result}")
-        return embedded_result
 
     def test_audnexus_extraction(self, audnexus_source):
         """Test Audnexus API extraction."""
@@ -148,7 +150,6 @@ class TestThreeSourceIntegration:
         assert len(found_fields) >= 2, f"Too few fields extracted: {found_fields}"
 
         print(f"✅ Audnexus extraction: {api_result}")
-        return api_result
 
     def test_three_source_complementarity(
         self, pathinfo_source, embedded_source, audnexus_source
@@ -218,8 +219,6 @@ class TestThreeSourceIntegration:
             len(embedded_coverage) >= 2
         ), f"Embedded source should extract technical data: {embedded_coverage}"
         # API coverage is optional (may fail due to network/rate limits)
-
-        return path_result, embedded_result, api_result
 
     def test_source_precedence_strategy(
         self, pathinfo_source, embedded_source, audnexus_source

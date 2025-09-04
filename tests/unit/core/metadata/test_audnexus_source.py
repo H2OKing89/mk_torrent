@@ -16,6 +16,11 @@ class TestAudnexusSource:
         """Set up test environment."""
         self.source = AudnexusSource()
 
+    def teardown_method(self):
+        """Clean up test environment."""
+        if hasattr(self.source, "close"):
+            self.source.close()
+
     def test_asin_extraction(self):
         """Test ASIN extraction from various patterns."""
         test_cases = [

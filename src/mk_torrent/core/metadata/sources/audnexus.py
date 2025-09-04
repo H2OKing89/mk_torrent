@@ -90,6 +90,14 @@ class AudnexusSource:
         # Initialize HTTP client
         self._init_client()
 
+    def __del__(self):
+        """Clean up resources when object is destroyed."""
+        try:
+            self.close()
+        except Exception:
+            # Ignore exceptions during cleanup
+            pass
+
     def _init_client(self):
         """Initialize HTTP client (httpx preferred, requests fallback)."""
         try:
