@@ -9,7 +9,7 @@ import unicodedata
 import os
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 from dataclasses import dataclass
 import logging
 
@@ -27,10 +27,10 @@ class ComplianceConfig:
 
     max_full_path: int = 180  # Updated to correct RED limit
     file_first: bool = True
-    priority_order_keep: list[int] | None = None  # [0, 1, 2, 3, 4, 5]
-    edit_order_apply: list[int] | None = None  # [5, 4, 3, 2, 1, 0]
+    priority_order_keep: Optional["list[int]"] = None  # [0, 1, 2, 3, 4, 5]
+    edit_order_apply: Optional["list[int]"] = None  # [5, 4, 3, 2, 1, 0]
 
-    title_alias_map: dict[str, str] | None = None
+    title_alias_map: Optional["dict[str, str]"] = None
     title_truncation_enable: bool = True
     title_reserve_chars: int = 12  # room for " - vNN" + extension
     title_ellipsis: str = "…"
@@ -38,7 +38,7 @@ class ComplianceConfig:
 
     zero_pad_volume: bool = True
     unicode_nfc: bool = True
-    punct_strip: list[str] | None = None  # [":", ";", ",", "!", "?"]
+    punct_strip: Optional["list[str]"] = None  # [":", ";", ",", "!", "?"]
     space_collapse: bool = True
 
     dry_run: bool = True
@@ -76,7 +76,7 @@ class ComplianceLog:
 class PathFixer:
     """Fixes paths to meet tracker compliance requirements"""
 
-    def __init__(self, tracker: str = "red", config: ComplianceConfig | None = None):
+    def __init__(self, tracker: str = "red", config: Optional[ComplianceConfig] = None):
         self.tracker = tracker.lower()
         self.validator = PathValidator(tracker)
 
@@ -95,8 +95,8 @@ class PathFixer:
         self.log: list[ComplianceLog] = []
 
     def fix_path(
-        self, folder_abs_path: str, filenames: list[str], apply_changes: bool = False
-    ) -> tuple[str, list[str], list[ComplianceLog]]:
+        self, folder_abs_path: str, filenames: "list[str]", apply_changes: bool = False
+    ) -> "tuple[str, list[str], list[ComplianceLog]]":
         """Fix paths to meet compliance requirements"""
         self.log = []
         abs_dir = Path(folder_abs_path).resolve()
@@ -236,14 +236,14 @@ class PathFixer:
 
         return folder_after_edits, final_files, self.log
 
-    def _is_compliant(self, folder: str, filenames: list[str]) -> bool:
+    def _is_compliant(self, folder: str, filenames: "list[str]") -> bool:
         """Check if all paths are compliant"""
         return all(
             len(f"{folder}/{filename}") <= self.config.max_full_path
             for filename in filenames
         )
 
-    def normalize_text(self, text: str) -> tuple[str, list[str]]:
+    def normalize_text(self, text: str) -> "tuple[str, list[str]]":
         """Normalize text for consistent processing"""
         changes = []
 
@@ -317,7 +317,7 @@ class PathFixer:
             return text[: last_paren.start()].strip() + text[last_paren.end() :]
         return text
 
-    def _shorten_folder_stepwise(self, folder: str, filenames: list[str]) -> str:
+    def _shorten_folder_stepwise(self, folder: str, filenames: "list[str]") -> str:
         """Apply folder shortening following priority order 5→0"""
         current_folder = self._strip_volume_word(folder)  # NEW
 
@@ -393,14 +393,14 @@ class PathFixer:
         return current_filename
 
     def _detect_hard_links(
-        self, folder_path: str, filenames: list[str]
-    ) -> dict[str, set[str]]:
+        self, folder_path: str, filenames: "list[str]"
+    ) -> "dict[int, set[str]]":
         """Detect hard links within the folder and external hard links
 
         Returns:
             Dictionary mapping inode numbers to sets of file paths that share that inode
         """
-        hard_link_groups = {}
+        hard_link_groups: "dict[int, set[str]]" = {}
         folder = Path(folder_path)
 
         for filename in filenames:
@@ -423,7 +423,7 @@ class PathFixer:
 
     def _find_external_hard_links(
         self, file_path: Path, max_search_time: float = 0.5
-    ) -> list[str]:
+    ) -> "list[str]":
         """Find other hard links to this file outside the current directory
 
         This is a best-effort search with a time limit to prevent performance issues.
@@ -484,9 +484,9 @@ class PathFixer:
     def _validate_hard_links_preserved(
         self,
         original_folder: str,
-        original_files: list[str],
+        original_files: "list[str]",
         new_folder: str,
-        new_files: list[str],
+        new_files: "list[str]",
     ) -> bool:
         """Validate that hard links are preserved after renaming
 
@@ -508,7 +508,7 @@ class PathFixer:
 
         # For each original hard link group, verify a corresponding group exists
         for orig_inode, orig_paths in original_hard_links.items():
-            found_corresponding_group = False
+            found_corresponding_group: bool = False
 
             for new_inode, new_paths in new_hard_links.items():
                 if len(orig_paths) == len(new_paths):
@@ -593,9 +593,9 @@ class PathFixer:
     def _apply_filesystem_renames(
         self,
         abs_dir: Path,
-        original_files: list[str],
+        original_files: "list[str]",
         new_folder_name: str,
-        new_files: list[str],
+        new_files: "list[str]",
     ) -> bool:
         """Apply the calculated renames to the filesystem with hard link preservation"""
         try:
@@ -623,8 +623,8 @@ class PathFixer:
             # Two-phase rename to avoid collisions: temp -> final
             tmp_suffix = ".__tmp__ren__"
             # 1) plan -> detect collisions
-            planned = {}
-            seen_targets = set()
+            planned: "dict[Path, Path]" = {}
+            seen_targets: "set[str]" = set()
             for orig, new in zip(original_files, new_files):
                 if orig == new:
                     continue
@@ -647,7 +647,7 @@ class PathFixer:
                 planned[src] = dst
 
             # 2) temp hop (avoid A->B while B->A race)
-            temp_map = {}
+            temp_map: "dict[Path, Path]" = {}
             for src, dst in planned.items():
                 if not src.exists():
                     logger.warning(f"Missing source {src}, skipping")
@@ -667,7 +667,7 @@ class PathFixer:
             logger.error(f"Failed to apply filesystem renames: {e}")
             return False
 
-    def get_compliance_report(self) -> dict[str, Any]:
+    def get_compliance_report(self) -> "dict[str, Any]":
         """Get detailed compliance report from last fix operation"""
         return {
             "tracker": self.tracker,
