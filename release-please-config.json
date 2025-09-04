@@ -1,0 +1,13 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "bootstrap-sha": "",
+  "plugins": ["node-workspace"],
+  "packages": {
+    ".": {
+      "release-type": "python",
+      "package-name": "mk-torrent",
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": true
+    }
+  }
+}

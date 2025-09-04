@@ -1,0 +1,19 @@
+# Be strict by default, but allow known-safe patterns in this repo.
+# Docs: https://bandit.readthedocs.io/
+
+exclude_dirs:
+  - tests
+  - docs
+  - scripts
+
+# Skip known-safe patterns for this torrent application
+skips:
+  - B101  # assert used (we allow asserts in tests)
+  - B107  # hardcoded password default (qBittorrent default admin/admin is expected)
+  - B108  # hardcoded tmp directory (using /tmp is standard on Linux)
+  - B110  # try/except pass (legitimate for cleanup operations)
+  - B112  # try/except continue (legitimate for iteration error handling)
+  - B324  # weak SHA1 hash (SHA1 is required by BitTorrent protocol for info hashes)
+  - B404  # subprocess module import (used in controlled wrappers)
+  - B603  # subprocess without shell=True (we audit call sites)
+  - B607  # subprocess with partial path (docker, ffprobe are system tools)

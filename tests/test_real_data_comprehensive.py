@@ -194,8 +194,8 @@ class TestRealFileDataValidation:
         all_three_result = results["all_three"]
         for scenario_name, result in results.items():
             if scenario_name != "all_three":
-                assert len(all_three_result) >= len(
-                    result
+                assert (
+                    len(all_three_result) >= len(result)
                 ), f"All-three merge should have most fields, but {scenario_name} has {len(result)} vs {len(all_three_result)}"
 
         print("Merge scenario field counts:")

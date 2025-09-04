@@ -381,7 +381,9 @@ class TestRealisticAudiobookExample:
                     ):
                         # List union - should contain winning source's values
                         if winning_value:  # Non-empty list
-                            assert set(winning_value).issubset(
+                            assert set(
+                                winning_value
+                            ).issubset(
                                 set(actual_value)
                             ), f"Field '{field_name}' list union failed: {winning_value} not subset of {actual_value}"
                     else:
