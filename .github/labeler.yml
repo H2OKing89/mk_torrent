@@ -1,0 +1,79 @@
+# Auto-labeling rules for PRs
+# Helps organize PRs by type and area for better project management
+
+# Type-based labels
+type/feature:
+  - "src/**"
+  - "examples/**"
+  - "scripts/**"
+
+type/refactor:
+  - "src/mk_torrent/core/**"
+  - changed-files:
+    - any-glob-to-any-file: ["src/**"]
+
+type/tests:
+  - "tests/**"
+  - "**/test_*.py"
+  - "test_*.py"
+
+type/docs:
+  - "docs/**"
+  - "*.md"
+  - "README*"
+
+type/ci:
+  - ".github/**"
+  - ".pre-commit-config.yaml"
+  - "pyproject.toml"
+  - "requirements*.txt"
+
+# Area-based labels (specific to your project structure)
+area/metadata:
+  - "src/mk_torrent/core/metadata/**"
+  - "tests/**/metadata/**"
+  - "docs/core/metadata/**"
+
+area/trackers:
+  - "src/mk_torrent/api/trackers/**"
+  - "src/mk_torrent/api/red/**"
+  - "tests/**/trackers/**"
+  - "tests/**/red/**"
+
+area/qbittorrent:
+  - "src/mk_torrent/api/qbittorrent/**"
+  - "tests/**/qbittorrent/**"
+
+area/utils:
+  - "src/mk_torrent/utils/**"
+  - "tests/**/utils/**"
+
+area/cli:
+  - "src/mk_torrent/cli/**"
+  - "tests/**/cli/**"
+
+# Size indicators (helpful for reviewers)
+size/XS:
+  - changed-files:
+    - any-glob-to-any-file: "*"
+    - count: "1..5"
+
+size/S:
+  - changed-files:
+    - any-glob-to-any-file: "*"
+    - count: "6..15"
+
+size/M:
+  - changed-files:
+    - any-glob-to-any-file: "*"
+    - count: "16..30"
+
+size/L:
+  - changed-files:
+    - any-glob-to-any-file: "*"
+    - count: "31..60"
+
+size/XL:
+  - changed-files:
+    - any-glob-to-any-file: "*"
+    - count: "61..*"

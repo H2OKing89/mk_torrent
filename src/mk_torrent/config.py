@@ -2,7 +2,7 @@
 """Configuration management for torrent creator"""
 
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Any
 import json
 import getpass
 
@@ -33,7 +33,7 @@ CONFIG_FILE = CONFIG_DIR / "config.json"
 TRACKERS_FILE = CONFIG_DIR / "trackers.txt"
 
 
-def load_config() -> Dict[str, Any]:
+def load_config() -> dict[str, Any]:
     """Load configuration from file"""
     if CONFIG_FILE.exists():
         with open(CONFIG_FILE) as f:
@@ -41,7 +41,7 @@ def load_config() -> Dict[str, Any]:
     return get_default_config()
 
 
-def save_config(config: Dict[str, Any]):
+def save_config(config: dict[str, Any]):
     """Save configuration to file"""
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
     with open(CONFIG_FILE, "w") as f:
@@ -50,14 +50,14 @@ def save_config(config: Dict[str, Any]):
     CONFIG_FILE.chmod(0o600)
 
 
-def load_trackers() -> List[str]:
+def load_trackers() -> list[str]:
     """Load trackers from file with secure passkeys"""
     if not TRACKERS_FILE.exists():
         return []
 
     trackers = []
     try:
-        with open(TRACKERS_FILE, "r") as f:
+        with open(TRACKERS_FILE) as f:
             for line in f:
                 line = line.strip()
                 if not line or line.startswith("#"):
@@ -97,7 +97,7 @@ def load_trackers() -> List[str]:
     return trackers
 
 
-def save_trackers(trackers: List[str]):
+def save_trackers(trackers: list[str]):
     """Save trackers to file"""
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
     with open(TRACKERS_FILE, "w") as f:
@@ -106,7 +106,7 @@ def save_trackers(trackers: List[str]):
     TRACKERS_FILE.chmod(0o600)
 
 
-def get_qbittorrent_password(config: Dict[str, Any]) -> Optional[str]:
+def get_qbittorrent_password(config: dict[str, Any]) -> str | None:
     """Get qBittorrent password from secure storage"""
     if not SECURE_STORAGE_AVAILABLE:
         # Fallback to plain text if secure storage not available
@@ -119,7 +119,7 @@ def get_qbittorrent_password(config: Dict[str, Any]) -> Optional[str]:
     return get_secure_qbittorrent_password(host, port, username)
 
 
-def store_qbittorrent_password(config: Dict[str, Any], password: str):
+def store_qbittorrent_password(config: dict[str, Any], password: str):
     """Store qBittorrent password securely"""
     if not SECURE_STORAGE_AVAILABLE:
         # Fallback to plain text storage
@@ -136,7 +136,7 @@ def store_qbittorrent_password(config: Dict[str, Any], password: str):
     secure_manager.store_qbittorrent_credentials(host, port, username, password)
 
 
-def get_default_config() -> Dict[str, Any]:
+def get_default_config() -> dict[str, Any]:
     """Get default configuration"""
     return {
         "qbit_host": "localhost",
@@ -538,7 +538,7 @@ def edit_config():
         console.print("[green]✅ Settings saved[/green]")
 
 
-def edit_qbit_connection(config: Dict[str, Any]):
+def edit_qbit_connection(config: dict[str, Any]):
     """Edit qBittorrent connection settings"""
     console.print("\n[cyan]qBittorrent Connection Settings[/cyan]")
 
@@ -560,7 +560,7 @@ def edit_qbit_connection(config: Dict[str, Any]):
     )
 
 
-def edit_docker_settings(config: Dict[str, Any]):
+def edit_docker_settings(config: dict[str, Any]):
     """Edit Docker settings"""
     console.print("\n[cyan]Docker Settings[/cyan]")
 
@@ -578,7 +578,7 @@ def edit_docker_settings(config: Dict[str, Any]):
         # test_docker_connectivity(config["docker_container"])
 
 
-def edit_path_mappings(config: Dict[str, Any]):
+def edit_path_mappings(config: dict[str, Any]):
     """Edit Docker path mappings"""
     if not config.get("docker_mode"):
         console.print("[yellow]Docker mode is disabled[/yellow]")
@@ -622,7 +622,7 @@ def edit_path_mappings(config: Dict[str, Any]):
     config["docker_mappings"] = mappings
 
 
-def edit_directories(config: Dict[str, Any]):
+def edit_directories(config: dict[str, Any]):
     """Edit default directories"""
     console.print("\n[cyan]Default Directories[/cyan]")
 
@@ -634,7 +634,7 @@ def edit_directories(config: Dict[str, Any]):
     Path(config["output_directory"]).mkdir(parents=True, exist_ok=True)
 
 
-def edit_categories_tags(config: Dict[str, Any]):
+def edit_categories_tags(config: dict[str, Any]):
     """Edit categories and tags"""
     console.print("\n[cyan]Categories & Tags[/cyan]")
 
@@ -728,7 +728,7 @@ def edit_trackers():
         f.write("\n".join(trackers))
 
 
-def edit_behavior(config: Dict[str, Any]):
+def edit_behavior(config: dict[str, Any]):
     """Edit default behavior settings"""
     console.print("\n[cyan]Default Behavior[/cyan]")
 

@@ -1,12 +1,22 @@
-![CI](https://github.com/H2OKing89/mk_torrent/actions/workflows/ci.yml/badge.svg)
-
 # 🎯 MK Torrent - Interactive Torrent Creator
 
-[![Tests](https://img.shields.io/badge/Tests-122%20passing-brightgreen)](tests/)
-[![Security](https://img.shields.io/badge/Security-Enterprise-green.svg)](docs/SECURITY.md)
-[![Encryption](https://img.shields.io/badge/Encryption-AES--256-blue.svg)](docs/SECURITY.md)
-[![Python](https://img.shields.io/badge/Python-3.8%2B-blue)](https://www.python.org/)
+<!-- Status Badges -->
+[![CI](https://github.com/H2OKing89/mk_torrent/actions/workflows/ci.yml/badge.svg)](https://github.com/H2OKing89/mk_torrent/actions/workflows/ci.yml)
+[![Security](https://github.com/H2OKing89/mk_torrent/actions/workflows/security.yml/badge.svg)](https://github.com/H2OKing89/mk_torrent/actions/workflows/security.yml)
+[![CodeQL](https://github.com/H2OKing89/mk_torrent/actions/workflows/codeql.yml/badge.svg)](https://github.com/H2OKing89/mk_torrent/actions/workflows/codeql.yml)
+[![Documentation](https://github.com/H2OKing89/mk_torrent/actions/workflows/docs.yml/badge.svg)](https://github.com/H2OKing89/mk_torrent/actions/workflows/docs.yml)
+
+<!-- Quality Badges -->
+[![Tests](https://img.shields.io/badge/Tests-217%20passing-brightgreen)](tests/)
+[![Coverage](https://img.shields.io/badge/Coverage-70%25+-brightgreen)](https://codecov.io/gh/H2OKing89/mk_torrent)
+[![Code Quality](https://img.shields.io/badge/Ruff-0%20issues-brightgreen)](https://github.com/astral-sh/ruff)
+[![Security](https://img.shields.io/badge/Bandit-0%20issues-brightgreen)](https://bandit.readthedocs.io/)
+
+<!-- Project Badges -->
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org/)
+[![Release](https://img.shields.io/github/v/release/H2OKing89/mk_torrent)](https://github.com/H2OKing89/mk_torrent/releases)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 
 **A professional torrent creation toolkit with enterprise-grade security, RED tracker support, and beautiful CLI interface.**
 

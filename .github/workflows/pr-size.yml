@@ -1,0 +1,32 @@
+name: PR Size Labeler
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  size:
+    name: Label PR by size
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Add size label
+        uses: codelytv/pr-size-labeler@v1
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          xs_max_size: "10"
+          s_max_size: "50"
+          m_max_size: "200"
+          l_max_size: "500"
+          # Files to exclude from size calculation
+          files_to_ignore: |
+            *.md
+            *.txt
+            *.json
+            docs/**
+            htmlcov/**
+            test_results/**

@@ -6,8 +6,10 @@ metadata core architecture. Legacy imports will continue to work while
 we transition to the new system.
 """
 
+from __future__ import annotations
+
 import warnings
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 from pathlib import Path
 
 # Import new core metadata system
@@ -59,9 +61,9 @@ class MetadataEngine:
 
     def process_metadata(
         self,
-        source_files: Union[Path, List[Path]],
-        external_sources: Optional[Dict] = None,
-    ) -> Dict[str, Any]:
+        source_files: Path | list[Path],
+        external_sources: dict | None = None,
+    ) -> dict[str, Any]:
         """Process metadata with backward compatibility."""
         # Try new engine first
         try:
@@ -105,8 +107,8 @@ class MetadataEngine:
 
 # Legacy function compatibility
 def process_metadata(
-    source: Union[Path, List[Path]], content_type: Optional[str] = None
-) -> Dict[str, Any]:
+    source: Path | list[Path], content_type: str | None = None
+) -> dict[str, Any]:
     """
     Legacy process_metadata function for backward compatibility.
 

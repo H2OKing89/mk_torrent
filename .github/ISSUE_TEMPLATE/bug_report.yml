@@ -1,0 +1,79 @@
+name: 🐛 Bug Report
+description: Something isn't working as expected
+labels: [bug, needs-triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please fill out the sections below.
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: What version of mk_torrent are you using?
+      placeholder: "git SHA, tag, or branch name"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      description: Which part of mk_torrent is affected?
+      options:
+        - Metadata extraction
+        - RED tracker integration
+        - qBittorrent integration
+        - CLI interface
+        - Torrent creation
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug description
+      description: A clear description of what the bug is
+      placeholder: Describe what happened vs what you expected
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: How can we reproduce this issue?
+      placeholder: |
+        1. Run command...
+        2. With these files...
+        3. See error...
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error logs or traceback
+      description: Include any error messages, stack traces, or debug output
+      render: shell
+      placeholder: Paste error logs here...
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Your system information
+      placeholder: |
+        - OS: (e.g., Ubuntu 22.04, Windows 11, macOS 13.0)
+        - Python version: (e.g., 3.11.5)
+        - Installation method: (pip, git clone, etc.)
+      render: markdown
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Any other context about the problem
+      placeholder: Screenshots, related issues, attempted fixes, etc.

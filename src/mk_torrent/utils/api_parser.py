@@ -5,7 +5,7 @@ Helper script to extract key information from tracker API documentation
 """
 
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any
 
 from rich.console import Console
 from rich.panel import Panel
@@ -13,7 +13,7 @@ from rich.panel import Panel
 console = Console()
 
 
-def extract_api_endpoints(docs_text: str) -> Dict[str, Any]:
+def extract_api_endpoints(docs_text: str) -> dict[str, Any]:
     """Extract API endpoints from documentation text"""
     endpoints = {}
 
@@ -53,12 +53,12 @@ def extract_api_endpoints(docs_text: str) -> Dict[str, Any]:
     return endpoints
 
 
-def create_api_summary(docs_file: Path) -> Dict[str, Any]:
+def create_api_summary(docs_file: Path) -> dict[str, Any]:
     """Create a summary of the API documentation"""
     if not docs_file.exists():
         return {"error": "Documentation file not found"}
 
-    with open(docs_file, "r") as f:
+    with open(docs_file) as f:
         content = f.read()
 
     # Extract basic information

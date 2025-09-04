@@ -2,7 +2,6 @@
 """Interactive wizard for common torrent creation tasks"""
 
 from pathlib import Path
-from typing import List
 
 from rich.console import Console
 from rich.panel import Panel
@@ -272,7 +271,7 @@ def wizard_music_collection():
                 + list(folder.glob("*.flac"))
                 + list(folder.glob("*.m4a"))
             )
-            formats = set([t.suffix[1:].upper() for t in tracks])
+            formats = {t.suffix[1:].upper() for t in tracks}
             table.add_row(folder.name, str(len(tracks)), ", ".join(formats))
 
         console.print(table)
@@ -330,7 +329,7 @@ def format_size(size_bytes: int) -> str:
     return f"{size:.2f} PB"
 
 
-def get_public_trackers() -> List[str]:
+def get_public_trackers() -> list[str]:
     """Get list of reliable public trackers"""
     return [
         "udp://tracker.opentrackr.org:1337/announce",
@@ -390,7 +389,7 @@ def show_tutorial():
 
 
 # Helper functions for batch operations
-def create_tv_torrents(base_dir: Path, folders: List[Path], strategy: str):
+def create_tv_torrents(base_dir: Path, folders: list[Path], strategy: str):
     """Create torrents for TV content"""
     from ..core.torrent_creator import TorrentCreator
     from ..config import load_config
@@ -436,13 +435,13 @@ def create_tv_torrents(base_dir: Path, folders: List[Path], strategy: str):
             console.print("[red]✗ Failed to create series torrent[/red]")
 
 
-def create_music_torrents(base_dir: Path, folders: List[Path], strategy: str):
+def create_music_torrents(base_dir: Path, folders: list[Path], strategy: str):
     """Create torrents for music content"""
     # Implementation for music torrent creation
     pass
 
 
-def create_episode_torrents(episodes: List[Path]):
+def create_episode_torrents(episodes: list[Path]):
     """Create individual torrents for episodes"""
     # Implementation for episode torrent creation
     pass
@@ -642,7 +641,7 @@ def wizard_multiple_folders():
         console.print(f"  [red]Failed: {failed}[/red]")
 
 
-def parse_number_selection(selection: str, max_num: int) -> List[int]:
+def parse_number_selection(selection: str, max_num: int) -> list[int]:
     """Parse number selection like '1-5,7,9-12' into list of indices"""
     indices = set()
 

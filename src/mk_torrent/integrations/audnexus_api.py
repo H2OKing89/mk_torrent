@@ -3,7 +3,7 @@ Audnexus API integration module
 Handles communication with https://api.audnex.us for audiobook metadata
 """
 
-from typing import Dict, Any, List, Optional, Union
+from typing import Any
 from pathlib import Path
 import logging
 import re
@@ -43,17 +43,17 @@ class AudnexusResponse:
 
     asin: str
     title: str
-    authors: List[AudnexusAuthor]
+    authors: list[AudnexusAuthor]
     copyright: int
     description: str
     formatType: str  # 'unabridged' or 'abridged'
-    genres: List[AudnexusGenre]
+    genres: list[AudnexusGenre]
     image: str
     isAdult: bool
     isbn: str
     language: str
     literatureType: str  # 'fiction' or 'non-fiction'
-    narrators: List[AudnexusNarrator]
+    narrators: list[AudnexusNarrator]
     publisherName: str
     rating: str
     region: str
@@ -62,8 +62,8 @@ class AudnexusResponse:
     summary: str
 
     # Optional fields that may not always be present
-    subtitle: Optional[str] = None
-    seriesPrimary: Optional[Dict[str, Any]] = None
+    subtitle: str | None = None
+    seriesPrimary: dict[str, Any] | None = None
 
 
 @dataclass
@@ -111,13 +111,13 @@ class AudnexusClient:
                 logger.error("Neither HTTPX nor requests available for API calls")
                 self.session = None
 
-    def extract_asin_from_path(self, path: Union[str, Path]) -> Optional[str]:
+    def extract_asin_from_path(self, path: str | Path) -> str | None:
         """Extract ASIN from filename or path pattern {ASIN.B0C8ZW5N6Y}"""
         asin_pattern = r"\{ASIN\.([A-Z0-9]{10,12})\}"
         match = re.search(asin_pattern, str(path))
         return match.group(1) if match else None
 
-    async def get_book_metadata_async(self, asin: str) -> Optional[Dict[str, Any]]:
+    async def get_book_metadata_async(self, asin: str) -> dict[str, Any] | None:
         """Fetch book metadata asynchronously (if httpx is available)"""
         if not self.session:
             return None
@@ -142,7 +142,7 @@ class AudnexusClient:
         # Fallback to sync
         return self.get_book_metadata(asin)
 
-    def get_book_metadata(self, asin: str) -> Optional[Dict[str, Any]]:
+    def get_book_metadata(self, asin: str) -> dict[str, Any] | None:
         """Fetch book metadata from Audnexus API"""
         if not self.session:
             logger.error("No HTTP client available")
@@ -159,7 +159,7 @@ class AudnexusClient:
             logger.warning(f"Failed to fetch Audnexus metadata for {asin}: {e}")
             return None
 
-    def _process_response(self, response) -> Optional[Dict[str, Any]]:
+    def _process_response(self, response) -> dict[str, Any] | None:
         """Process HTTP response from Audnexus API"""
         try:
             if response.status_code == 200:
@@ -183,7 +183,7 @@ class AudnexusClient:
             logger.error(f"Failed to process Audnexus response: {e}")
             return None
 
-    def _normalize_response(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _normalize_response(self, data: dict[str, Any]) -> dict[str, Any]:
         """Normalize and enhance Audnexus API response"""
         try:
             # Start with all raw API data
@@ -341,7 +341,7 @@ class AudnexusClient:
                 clean_text = clean_text.replace(entity, replacement)
             return re.sub(r"\s+", " ", clean_text.strip())
 
-    def validate_response(self, data: Dict[str, Any]) -> bool:
+    def validate_response(self, data: dict[str, Any]) -> bool:
         """Validate that API response has required fields"""
         required_fields = ["asin", "title"]
         return all(data.get(field) for field in required_fields)
@@ -365,13 +365,13 @@ def get_audnexus_client() -> AudnexusClient:
     return _audnexus_client
 
 
-def fetch_metadata_by_asin(asin: str) -> Optional[Dict[str, Any]]:
+def fetch_metadata_by_asin(asin: str) -> dict[str, Any] | None:
     """Convenience function to fetch metadata by ASIN"""
     client = get_audnexus_client()
     return client.get_book_metadata(asin)
 
 
-def extract_asin_from_path(path: Union[str, Path]) -> Optional[str]:
+def extract_asin_from_path(path: str | Path) -> str | None:
     """Convenience function to extract ASIN from path"""
     client = get_audnexus_client()
     return client.extract_asin_from_path(path)

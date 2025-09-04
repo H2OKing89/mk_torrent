@@ -2,7 +2,7 @@
 Audnexus API integration module
 """
 
-from typing import Dict, Any, Optional
+from typing import Any
 import logging
 from datetime import datetime
 
@@ -30,7 +30,7 @@ class AudnexusAPI:
         self.base_url = base_url
         self.user_agent = "mk_torrent/1.0 (RED metadata processor)"
 
-    async def fetch_book_metadata(self, asin: str) -> Optional[Dict[str, Any]]:
+    async def fetch_book_metadata(self, asin: str) -> dict[str, Any] | None:
         """Fetch book metadata from Audnexus API using async httpx"""
         if not HTTPX_AVAILABLE:
             logger.warning("HTTPX not available, cannot fetch API data")
@@ -71,7 +71,7 @@ class AudnexusAPI:
             logger.warning(f"Error fetching from Audnexus API: {e}")
             return None
 
-    def fetch_book_metadata_sync(self, asin: str) -> Optional[Dict[str, Any]]:
+    def fetch_book_metadata_sync(self, asin: str) -> dict[str, Any] | None:
         """Synchronous version for backwards compatibility"""
         if not HTTPX_AVAILABLE:
             logger.warning("HTTPX not available, cannot fetch API data")
@@ -110,7 +110,7 @@ class AudnexusAPI:
             logger.warning(f"Error fetching from Audnexus API: {e}")
             return None
 
-    def normalize_api_response(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def normalize_api_response(self, data: dict[str, Any]) -> dict[str, Any]:
         """Normalize Audnexus API response to metadata format"""
         # Start with ALL raw API data to preserve everything
         metadata = dict(data)
@@ -243,13 +243,13 @@ class AudnexusAPI:
 
 
 # Convenience functions
-def get_audnexus_metadata(asin: str) -> Optional[Dict[str, Any]]:
+def get_audnexus_metadata(asin: str) -> dict[str, Any] | None:
     """Convenience function to get metadata synchronously"""
     api = AudnexusAPI()
     return api.fetch_book_metadata_sync(asin)
 
 
-async def get_audnexus_metadata_async(asin: str) -> Optional[Dict[str, Any]]:
+async def get_audnexus_metadata_async(asin: str) -> dict[str, Any] | None:
     """Convenience function to get metadata asynchronously"""
     api = AudnexusAPI()
     return await api.fetch_book_metadata(asin)

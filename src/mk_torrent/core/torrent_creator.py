@@ -6,7 +6,7 @@ Uses qBittorrent Web API v2.10.4+ for native torrent creation
 
 import time
 from pathlib import Path
-from typing import Optional, List, Dict, Any, Literal
+from typing import Any, Literal
 from enum import Enum
 
 import qbittorrentapi
@@ -31,8 +31,8 @@ class TorrentCreator:
     def __init__(
         self,
         mode: QBitMode = QBitMode.LOCAL,
-        container_name: Optional[str] = None,
-        config: Optional[Dict[str, Any]] = None,
+        container_name: str | None = None,
+        config: dict[str, Any] | None = None,
     ):
         self.mode = mode
         self.container_name = container_name
@@ -416,7 +416,7 @@ class TorrentCreator:
 
     def create_torrent_for_upload(
         self, source_path: Path, tracker_config: dict
-    ) -> Optional[Path]:
+    ) -> Path | None:
         """Create a torrent specifically for uploading to a tracker
 
         This method is called by the uploader to create a properly formatted torrent
@@ -503,7 +503,7 @@ class TorrentCreator:
 
         return None
 
-    def _convert_to_docker_path(self, host_path: str) -> Optional[str]:
+    def _convert_to_docker_path(self, host_path: str) -> str | None:
         """Convert host path to Docker container path using configured mappings"""
         if not self.config.get("docker_mode", False):
             return None
@@ -525,7 +525,7 @@ class TorrentCreator:
 
         return None
 
-    def _find_torrent_by_path(self, source_path: str) -> Optional[str]:
+    def _find_torrent_by_path(self, source_path: str) -> str | None:
         """Find a torrent by its content path, handling Docker path mapping"""
         try:
             # Fix: Check if client exists
@@ -775,7 +775,7 @@ class TorrentCreator:
         else:
             console.print("[red]✗ Failed to create torrent[/red]")
 
-    def _get_available_categories(self) -> List[str]:
+    def _get_available_categories(self) -> list[str]:
         """Get list of available categories from qBittorrent"""
         if not self.client:
             return []
@@ -785,7 +785,7 @@ class TorrentCreator:
         except Exception:
             return []
 
-    def _get_available_tags(self) -> List[str]:
+    def _get_available_tags(self) -> list[str]:
         """Get available tags from qBittorrent"""
         if self.client:
             try:
@@ -918,7 +918,7 @@ class TorrentCreator:
         if failed > 0:
             console.print(f"  [red]Failed: {failed}[/red]")
 
-    def _select_items_for_batch(self, base_path: Path) -> List[Path]:
+    def _select_items_for_batch(self, base_path: Path) -> list[Path]:
         """Interactive selection of items for batch processing"""
         items = []
         for item in sorted(base_path.iterdir()):
@@ -959,7 +959,7 @@ class TorrentCreator:
             # Fallback to manual selection
             return self._manual_select_items(items)
 
-    def _manual_select_items(self, items: List[tuple]) -> List[Path]:
+    def _manual_select_items(self, items: list[tuple]) -> list[Path]:
         """Fallback manual selection if dialog fails"""
         console.print("\n[yellow]Dialog failed, using manual selection[/yellow]")
 

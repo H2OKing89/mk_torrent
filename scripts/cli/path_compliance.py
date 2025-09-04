@@ -22,7 +22,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing import List, Dict, Any, Tuple
+from typing import Any
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
@@ -44,7 +44,7 @@ console = Console()
 
 def detect_hard_links_in_directory(
     folder_path: Path,
-) -> Tuple[int, Dict[int, List[str]]]:
+) -> tuple[int, dict[int, list[str]]]:
     """Detect hard links in a directory
 
     Returns:
@@ -72,7 +72,7 @@ def detect_hard_links_in_directory(
     return total_linked_files, hard_link_groups
 
 
-def find_audio_files(path: Path) -> List[str]:
+def find_audio_files(path: Path) -> list[str]:
     """Find audio files in a directory"""
     audio_extensions = {".m4b", ".mp3", ".flac", ".m4a", ".wav", ".ogg"}
     return [
@@ -82,7 +82,7 @@ def find_audio_files(path: Path) -> List[str]:
     ]
 
 
-def find_all_files(path: Path) -> List[str]:
+def find_all_files(path: Path) -> list[str]:
     """Find all files in a directory (for renaming consistency)"""
     return sorted(
         (f.name for f in path.iterdir() if f.is_file()), key=lambda s: s.lower()
@@ -98,8 +98,8 @@ def has_audio_files(path: Path) -> bool:
 
 
 def analyze_path_compliance(
-    folder_path: Path, files: List[str], max_length: int = 180
-) -> Dict[str, Any]:
+    folder_path: Path, files: list[str], max_length: int = 180
+) -> dict[str, Any]:
     """Analyze compliance for a folder and its files, including hard link detection"""
     violations = []
     max_overage = 0
@@ -142,8 +142,8 @@ def analyze_path_compliance(
 
 
 def should_include_directory(
-    dir_path: Path, include_patterns: List[str], exclude_patterns: List[str]
-) -> Dict[str, Any]:
+    dir_path: Path, include_patterns: list[str], exclude_patterns: list[str]
+) -> dict[str, Any]:
     """Determine if directory should be included based on filters"""
     dir_name = dir_path.name.lower()
     full_path = str(dir_path).lower()
@@ -179,7 +179,7 @@ def should_include_directory(
         }
 
 
-def detect_tracker_intent(dir_path: Path) -> Dict[str, Any]:
+def detect_tracker_intent(dir_path: Path) -> dict[str, Any]:
     """Detect what tracker this directory might be intended for"""
     dir_name = dir_path.name.lower()
 
@@ -374,7 +374,7 @@ def handle_single_audiobook(args):
 
 
 def display_compliance_table(
-    analysis: Dict[str, Any], max_length: int = 180, show_all_files: bool = False
+    analysis: dict[str, Any], max_length: int = 180, show_all_files: bool = False
 ):
     """Display compliance analysis in a table with hard link information"""
     violations = analysis["violations"]
@@ -461,7 +461,7 @@ def display_compliance_table(
         console.print("\n[green]✅ All files are compliant![/green]")
 
 
-def display_changes_preview(log_entries: List[ComplianceLog]):
+def display_changes_preview(log_entries: list[ComplianceLog]):
     """Display detailed preview of proposed changes"""
     if not log_entries:
         console.print("[green]No changes needed - already compliant![/green]")
@@ -669,7 +669,7 @@ def handle_batch_scan(args):
     return 0 if issues_found == 0 else 1
 
 
-def find_audiobook_directories(root_path: Path) -> List[Path]:
+def find_audiobook_directories(root_path: Path) -> list[Path]:
     """Find all directories containing audio files"""
     audiobook_dirs = []
 
@@ -685,7 +685,7 @@ def find_audiobook_directories(root_path: Path) -> List[Path]:
     return audiobook_dirs
 
 
-def scan_directory_for_batch(dir_path: Path, max_length: int = 180) -> Dict[str, Any]:
+def scan_directory_for_batch(dir_path: Path, max_length: int = 180) -> dict[str, Any]:
     """Scan a single directory for batch analysis"""
     # Check if this is an audiobook directory
     if not has_audio_files(dir_path):
@@ -726,8 +726,8 @@ def scan_directory_for_batch(dir_path: Path, max_length: int = 180) -> Dict[str,
 
 
 def estimate_fix_potential(
-    dir_path: Path, files: List[str], max_length: int = 180
-) -> Dict[str, Any]:
+    dir_path: Path, files: list[str], max_length: int = 180
+) -> dict[str, Any]:
     """Estimate if path fixer can resolve compliance issues"""
     try:
         config = ComplianceConfig(max_full_path=max_length, dry_run=True)
@@ -760,7 +760,7 @@ def estimate_fix_potential(
 
 
 def display_batch_summary_table(
-    results: List[Dict[str, Any]], max_length: int, show_compliant: bool
+    results: list[dict[str, Any]], max_length: int, show_compliant: bool
 ):
     """Display batch scan results in a table"""
     table = Table(title=f"Path Compliance Summary (Limit: {max_length} chars)")
@@ -831,7 +831,7 @@ def display_batch_summary_table(
 
 
 def generate_batch_script(
-    results: List[Dict[str, Any]],
+    results: list[dict[str, Any]],
     script_path: str,
     force_risky: bool = False,
     max_length: int = 180,
@@ -908,7 +908,7 @@ def generate_batch_script(
 
 
 def export_batch_report(
-    results: List[Dict[str, Any]], scan_path: Path, export_path: str, max_length: int
+    results: list[dict[str, Any]], scan_path: Path, export_path: str, max_length: int
 ):
     """Export detailed batch report as JSON"""
     issues_found = sum(1 for r in results if not r["compliant"])
@@ -942,10 +942,10 @@ def export_batch_report(
 def save_detailed_log(
     log_path: str,
     folder_name: str,
-    files: List[str],
+    files: list[str],
     new_folder: str,
-    new_files: List[str],
-    log_entries: List[ComplianceLog],
+    new_files: list[str],
+    log_entries: list[ComplianceLog],
     max_length: int,
 ):
     """Save detailed log to JSON file"""

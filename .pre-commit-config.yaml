@@ -11,15 +11,58 @@ repos:
     hooks:
       - id: black
 
+  # Python code modernization
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.17.0
+    hooks:
+      - id: pyupgrade
+        args: [--py310-plus]
+
+  # Security scanning
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.9
+    hooks:
+      - id: bandit
+        args: ["-c", "pyproject.toml"]
+        additional_dependencies: ["bandit[toml]"]
+        exclude: ^tests/
+
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
     hooks:
       - id: end-of-file-fixer
       - id: trailing-whitespace
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=1000]
+      - id: check-case-conflict
+      - id: debug-statements
 
-  # optional but nice:
+  # Spell checking
   - repo: https://github.com/codespell-project/codespell
     rev: v2.3.0
     hooks:
       - id: codespell
         args: ["-L", "asyn,crate,nd,te"]  # add project-specific false positives
+        additional_dependencies: [tomli]
+        exclude: |
+          (?x)^(
+              .*\.lock|
+              .*\.min\.js|
+              test_results/.*|
+              htmlcov/.*
+          )$
+
+# Configure which hooks run at which stages
+default_stages: [pre-commit]
+fail_fast: false
+
+# CI configuration
+ci:
+  autofix_prs: true
+  autofix_commit_msg: "style: auto-fix by pre-commit hooks"
+  autoupdate_schedule: weekly
+  autoupdate_commit_msg: "chore: update pre-commit hooks"

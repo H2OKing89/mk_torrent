@@ -2,7 +2,7 @@
 """Database operations for torrent history tracking"""
 
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import Any
 import json
 from datetime import datetime
 
@@ -11,7 +11,7 @@ from rich.console import Console
 console = Console()
 
 
-def get_history(limit: int = 10) -> List[Dict[str, Any]]:
+def get_history(limit: int = 10) -> list[dict[str, Any]]:
     """Get torrent creation history"""
     # Simple JSON-based history for now
     history_file = get_history_file()
@@ -19,7 +19,7 @@ def get_history(limit: int = 10) -> List[Dict[str, Any]]:
         return []
 
     try:
-        with open(history_file, "r") as f:
+        with open(history_file) as f:
             history = json.load(f)
         return history[-limit:] if limit > 0 else history
     except (json.JSONDecodeError, FileNotFoundError):
@@ -67,7 +67,7 @@ def get_history_file() -> Path:
 
 
 def save_torrent_history(
-    source: Path, output: Path, trackers: List[str], private: bool
+    source: Path, output: Path, trackers: list[str], private: bool
 ):
     """Save torrent creation to history"""
     # Calculate file size
@@ -79,6 +79,6 @@ def save_torrent_history(
     add_history_entry(path=str(source), size=size, status="created")
 
 
-def get_recent_torrents(limit: int = 10) -> List[Dict[str, Any]]:
+def get_recent_torrents(limit: int = 10) -> list[dict[str, Any]]:
     """Get recent torrent creations"""
     return get_history(limit)

@@ -10,7 +10,7 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Union
+from typing import Any
 from dataclasses import dataclass
 
 import requests
@@ -57,10 +57,10 @@ class AudioFormat:
     """Audio format information"""
 
     codec: str
-    bitrate: Optional[int] = None
-    sample_rate: Optional[int] = None
-    channels: Optional[int] = None
-    bit_depth: Optional[int] = None
+    bitrate: int | None = None
+    sample_rate: int | None = None
+    channels: int | None = None
+    bit_depth: int | None = None
     vbr: bool = False
     lossless: bool = False
 
@@ -70,9 +70,9 @@ class AlbumArtwork:
     """Album artwork information"""
 
     url: str
-    width: Optional[int] = None
-    height: Optional[int] = None
-    format: Optional[str] = None
+    width: int | None = None
+    height: int | None = None
+    format: str | None = None
     source: str = "unknown"
     confidence: float = 0.0
 
@@ -98,7 +98,7 @@ class HTMLCleaner:
             "&trade;": "™",
         }
 
-    def sanitize(self, metadata: Dict[str, Any]) -> Dict[str, Any]:
+    def sanitize(self, metadata: dict[str, Any]) -> dict[str, Any]:
         """Sanitize all string fields in metadata from HTML"""
         if not metadata:
             return metadata
@@ -190,7 +190,7 @@ class FormatDetector:
             ".wv": "WavPack",
         }
 
-    def analyze(self, source_files: List[Path]) -> Dict[str, Any]:
+    def analyze(self, source_files: list[Path]) -> dict[str, Any]:
         """Analyze audio files and detect format information"""
         if not MUTAGEN_AVAILABLE:
             console.print(
@@ -221,7 +221,7 @@ class FormatDetector:
             logger.error(f"Error analyzing audio file {primary_file}: {e}")
             return self._basic_format_detection([primary_file])
 
-    def _find_audio_files(self, source_files: List[Path]) -> List[Path]:
+    def _find_audio_files(self, source_files: list[Path]) -> list[Path]:
         """Find all audio files in the source"""
         audio_files = []
 
@@ -235,7 +235,7 @@ class FormatDetector:
 
         return sorted(audio_files)
 
-    def _extract_format_info(self, audio: Any, file_path: Path) -> Dict[str, Any]:
+    def _extract_format_info(self, audio: Any, file_path: Path) -> dict[str, Any]:
         """Extract detailed format information"""
         info = audio.info
         file_ext = file_path.suffix.lower()
@@ -282,7 +282,7 @@ class FormatDetector:
         return format_data
 
     def _classify_mp3_quality(
-        self, bitrate: Optional[int], bitrate_mode: Optional[int]
+        self, bitrate: int | None, bitrate_mode: int | None
     ) -> str:
         """Classify MP3 quality based on bitrate and mode"""
         if not bitrate:
@@ -303,7 +303,7 @@ class FormatDetector:
         else:  # CBR
             return f"MP3 {bitrate_kbps}k"
 
-    def _validate_consistency(self, audio_files: List[Path]) -> Dict[str, Any]:
+    def _validate_consistency(self, audio_files: list[Path]) -> dict[str, Any]:
         """Validate format consistency across multiple files"""
         formats = set()
         bitrates = set()
@@ -331,7 +331,7 @@ class FormatDetector:
 
         return consistency
 
-    def _basic_format_detection(self, source_files: List[Path]) -> Dict[str, Any]:
+    def _basic_format_detection(self, source_files: list[Path]) -> dict[str, Any]:
         """Basic format detection without mutagen"""
         formats = set()
         for file_path in source_files:
@@ -356,13 +356,13 @@ class AudnexusAPI:
         self.session = requests.Session()
         self.session.headers.update({"User-Agent": "RED-Metadata-Engine/1.0"})
 
-    def extract_asin(self, path_or_filename: str) -> Optional[str]:
+    def extract_asin(self, path_or_filename: str) -> str | None:
         """Extract ASIN from filename or path pattern {ASIN.B0C8ZW5N6Y}"""
         asin_pattern = r"\{ASIN\.([A-Z0-9]{10,12})\}"
         match = re.search(asin_pattern, str(path_or_filename))
         return match.group(1) if match else None
 
-    def get_book_metadata(self, asin: str) -> Optional[Dict[str, Any]]:
+    def get_book_metadata(self, asin: str) -> dict[str, Any] | None:
         """Fetch comprehensive book metadata from audnex.us API"""
         try:
             url = f"{self.base_url}/books/{asin}?update=1"
@@ -381,7 +381,7 @@ class AudnexusAPI:
             logger.warning(f"Failed to parse audnexus response for {asin}: {e}")
             return None
 
-    def _normalize_audnexus_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _normalize_audnexus_data(self, data: dict[str, Any]) -> dict[str, Any]:
         """Normalize audnexus API response to metadata format - capture ALL available data"""
         try:
             # Start with ALL raw API data to preserve everything
@@ -566,7 +566,7 @@ class ImageURLFinder:
                 "RedMetadataEngine", "1.0", "https://redacted.ch/"
             )
 
-    def discover(self, metadata: Dict[str, Any]) -> List[AlbumArtwork]:
+    def discover(self, metadata: dict[str, Any]) -> list[AlbumArtwork]:
         """Discover album artwork from multiple sources"""
         artwork_candidates = []
 
@@ -592,13 +592,13 @@ class ImageURLFinder:
 
         return validated_artwork
 
-    def _check_embedded_artwork(self, files: List[Path]) -> List[AlbumArtwork]:
+    def _check_embedded_artwork(self, files: list[Path]) -> list[AlbumArtwork]:
         """Check for embedded artwork in audio files (disabled to avoid output flooding)"""
         # Skip embedded artwork check to avoid console flooding with image data
         # User specifically requested to ignore embedded images
         return []
 
-    def _check_folder_images(self, directory: Optional[Path]) -> List[AlbumArtwork]:
+    def _check_folder_images(self, directory: Path | None) -> list[AlbumArtwork]:
         """Check for image files in the album directory"""
         if not directory or not directory.is_dir():
             return []
@@ -641,7 +641,7 @@ class ImageURLFinder:
 
         return artwork
 
-    def _search_musicbrainz(self, mbid: str) -> List[AlbumArtwork]:
+    def _search_musicbrainz(self, mbid: str) -> list[AlbumArtwork]:
         """Search for artwork on MusicBrainz Cover Art Archive"""
         if not MUSICBRAINZ_AVAILABLE:
             return []
@@ -669,8 +669,8 @@ class ImageURLFinder:
             return []
 
     def _validate_and_rank_images(
-        self, candidates: List[AlbumArtwork]
-    ) -> List[AlbumArtwork]:
+        self, candidates: list[AlbumArtwork]
+    ) -> list[AlbumArtwork]:
         """Validate and rank artwork candidates"""
         validated = []
 
@@ -752,7 +752,7 @@ class TagNormalizer:
             "heavy metal": "metal",
         }
 
-    def normalize(self, tags: List[str]) -> List[str]:
+    def normalize(self, tags: list[str]) -> list[str]:
         """Normalize tags for RED compliance"""
         if not tags:
             return []
@@ -800,9 +800,9 @@ class MetadataEngine:
 
     def process_metadata(
         self,
-        source_files: Union[Path, List[Path]],
-        external_sources: Optional[Dict] = None,
-    ) -> Dict[str, Any]:
+        source_files: Path | list[Path],
+        external_sources: dict | None = None,
+    ) -> dict[str, Any]:
         """Extract and clean metadata for RED compliance"""
         console.print("[cyan]Processing metadata for RED compliance...[/cyan]")
 
@@ -884,7 +884,7 @@ class MetadataEngine:
 
         return metadata
 
-    def _extract_file_metadata(self, source_files: List[Path]) -> Dict[str, Any]:
+    def _extract_file_metadata(self, source_files: list[Path]) -> dict[str, Any]:
         """Extract metadata from audio files"""
         if not MUTAGEN_AVAILABLE:
             console.print(
@@ -987,7 +987,7 @@ class MetadataEngine:
 
         return metadata
 
-    def _extract_chapters(self, audio: Any, file_path: Path) -> List[Dict[str, Any]]:
+    def _extract_chapters(self, audio: Any, file_path: Path) -> list[dict[str, Any]]:
         """Extract chapter information from M4B audiobook files using Mutagen"""
         chapters = []
 
@@ -1051,7 +1051,7 @@ class MetadataEngine:
 
         return chapters
 
-    def _parse_mp4_chapters(self, file_path: Path) -> List[Dict[str, Any]]:
+    def _parse_mp4_chapters(self, file_path: Path) -> list[dict[str, Any]]:
         """Parse actual chapter information from MP4/M4B file structure"""
         chapters = []
 
@@ -1136,7 +1136,7 @@ class MetadataEngine:
 
         return chapters
 
-    def _parse_menu_entries(self, menu_track: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _parse_menu_entries(self, menu_track: dict[str, Any]) -> list[dict[str, Any]]:
         """Parse menu entries from mediainfo output"""
         chapters = []
 
@@ -1237,7 +1237,7 @@ class MetadataEngine:
             logger.debug(f"Error detecting VBR: {e}")
             return False
 
-    def _extract_tag(self, audio: Any, tag_type: str) -> Optional[str]:
+    def _extract_tag(self, audio: Any, tag_type: str) -> str | None:
         """Extract a specific tag from audio metadata with format-specific handling."""
         if not audio:
             return None
@@ -1324,7 +1324,7 @@ class MetadataEngine:
 
         return None
 
-    def _basic_metadata_extraction(self, source_files: List[Path]) -> Dict[str, Any]:
+    def _basic_metadata_extraction(self, source_files: list[Path]) -> dict[str, Any]:
         """Basic metadata extraction from file/folder names"""
         if not source_files:
             return {}
@@ -1341,7 +1341,7 @@ class MetadataEngine:
         pattern = r"^(.+?)\s*-\s*(.+?)(?:\s*\((\d{4})\))?(?:\s*\[.*\])?$"
         match = re.match(pattern, folder_name)
 
-        metadata: Dict[str, Any] = {"files": source_files, "directory": primary_path}
+        metadata: dict[str, Any] = {"files": source_files, "directory": primary_path}
 
         if match:
             metadata.update(
@@ -1357,8 +1357,8 @@ class MetadataEngine:
         return metadata
 
     def _enrich_with_audnexus(
-        self, source_files: List[Path], existing_metadata: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, source_files: list[Path], existing_metadata: dict[str, Any]
+    ) -> dict[str, Any]:
         """Enrich metadata using audnexus API if ASIN is found"""
         enriched_metadata = {}
 
@@ -1441,7 +1441,7 @@ class MetadataEngine:
 
         return enriched_metadata
 
-    def _build_enhanced_description(self, api_metadata: Dict[str, Any]) -> str:
+    def _build_enhanced_description(self, api_metadata: dict[str, Any]) -> str:
         """Build an enhanced description for RED upload using audnexus data"""
         description_parts = []
 
@@ -1534,7 +1534,7 @@ class MetadataEngine:
 
         return "\n\n".join(description_parts)
 
-    def _validate_red_compliance(self, metadata: Dict[str, Any]) -> Dict[str, Any]:
+    def _validate_red_compliance(self, metadata: dict[str, Any]) -> dict[str, Any]:
         """Validate metadata for RED compliance"""
         errors = []
         warnings = []
@@ -1572,7 +1572,7 @@ class MetadataEngine:
             "score": max(0, 100 - len(errors) * 20 - len(warnings) * 5),
         }
 
-    def validate_metadata(self, metadata: Dict[str, Any]) -> Dict[str, Any]:
+    def validate_metadata(self, metadata: dict[str, Any]) -> dict[str, Any]:
         """Validate extracted metadata for RED compliance.
 
         Args:
@@ -1581,7 +1581,7 @@ class MetadataEngine:
         Returns:
             Dictionary with validation results
         """
-        validation: Dict[str, Any] = {"is_valid": True, "warnings": [], "errors": []}
+        validation: dict[str, Any] = {"is_valid": True, "warnings": [], "errors": []}
 
         # Check required fields
         required_fields = ["title", "artist", "album"]
@@ -1616,7 +1616,7 @@ class MetadataEngine:
 
 
 # Convenience function for external use
-def process_album_metadata(source_path: Union[str, Path], **kwargs) -> Dict[str, Any]:
+def process_album_metadata(source_path: str | Path, **kwargs) -> dict[str, Any]:
     """Process metadata for a single album/directory"""
     source_path = Path(source_path)
 

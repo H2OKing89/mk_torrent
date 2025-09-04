@@ -128,7 +128,8 @@ addopts = [
     "--cov=src/mk_torrent",
     "--cov-report=html:test_results/coverage_html",
     "--cov-report=xml:test_results/coverage.xml",
-    "--cov-report=term-missing"
+    "--cov-report=term-missing",
+    "-m", "not network"  # Skip network tests by default
 ]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
@@ -136,8 +137,10 @@ markers = [
     "unit: marks tests as unit tests",
     "metadata: marks tests related to metadata processing",
     "health: marks tests related to health checks",
-    "asyncio: marks tests as async tests"
+    "asyncio: marks tests as async tests",
+    "network: marks tests that require internet connection (skipped in CI by default)"
 ]
+# Skip network tests in CI by default, run them manually with --network
 filterwarnings = [
     "ignore::DeprecationWarning",
     "ignore::PendingDeprecationWarning"
@@ -161,3 +164,18 @@ exclude_lines = [
     "raise AssertionError",
     "raise NotImplementedError"
 ]
+
+[tool.bandit]
+exclude_dirs = ["tests", "archive", "htmlcov", "test_results", "scripts"]
+# Security exclusions for our legitimate use cases:
+# B101: Skip assert_used (we use pytest assertions)
+# B108: Skip hardcoded_tmp_directory (we use /tmp for testing)
+# B404: Skip subprocess import (we need it for Docker/ffprobe)
+# B603: Skip subprocess_without_shell_equals_true (we validate inputs)
+# B607: Skip start_process_with_partial_path (we control the executables)
+# B324: Skip hashlib SHA1 (torrent spec requires SHA1)
+# B107: Skip hardcoded_password_default (these are qBittorrent defaults)
+# B110: Skip try_except_pass (legitimate cleanup code)
+# B112: Skip try_except_continue (legitimate error handling)
+skips = ["B101", "B108", "B404", "B603", "B607", "B324", "B107", "B110", "B112"]
+severity = "medium"

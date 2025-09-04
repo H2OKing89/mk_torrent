@@ -2,7 +2,7 @@
 """Main CLI interface for Torrent Creator"""
 
 from pathlib import Path
-from typing import Optional, List, Dict, Any
+from typing import Any
 import typer
 
 from rich.console import Console
@@ -37,11 +37,11 @@ def setup():
 
 @app.command()
 def create(
-    path: Optional[str] = typer.Argument(None, help="Path to create torrent for"),
+    path: str | None = typer.Argument(None, help="Path to create torrent for"),
     batch: bool = typer.Option(
         False, "--batch", "-b", help="Batch mode for multiple torrents"
     ),
-    docker: Optional[str] = typer.Option(
+    docker: str | None = typer.Option(
         None, "--docker", "-d", help="Docker container name"
     ),
     quick: bool = typer.Option(
@@ -99,7 +99,7 @@ def wizard():
 
 
 @app.command()
-def quick(path: Optional[str] = typer.Argument(None)):
+def quick(path: str | None = typer.Argument(None)):
     """Quick torrent creation with defaults"""
     config = load_config()
     creator = TorrentCreator(config=config)
@@ -189,10 +189,10 @@ def validate(path: str = typer.Argument(..., help="Path to validate")):
 @app.command()
 def templates(
     list_only: bool = typer.Option(False, "--list", "-l", help="List templates only"),
-    apply: Optional[str] = typer.Option(
+    apply: str | None = typer.Option(
         None, "--apply", "-a", help="Apply template by name"
     ),
-    path: Optional[str] = typer.Option(
+    path: str | None = typer.Option(
         None, "--path", "-p", help="Path for template application"
     ),
 ):
@@ -267,7 +267,7 @@ def history(
 
 @app.command()
 def verify(
-    hash: Optional[str] = typer.Argument(None, help="Torrent hash to verify"),
+    hash: str | None = typer.Argument(None, help="Torrent hash to verify"),
     recent: int = typer.Option(
         0, "--recent", "-r", help="Verify N most recent torrents"
     ),
@@ -418,9 +418,7 @@ def metadata(
     format: str = typer.Option(
         "json", "--format", "-f", help="Output format (json, table)"
     ),
-    save: Optional[str] = typer.Option(
-        None, "--save", "-s", help="Save metadata to file"
-    ),
+    save: str | None = typer.Option(None, "--save", "-s", help="Save metadata to file"),
     verbose: bool = typer.Option(
         False, "--verbose", "-v", help="Show detailed metadata"
     ),
@@ -724,7 +722,7 @@ def upload(
 
 @app.command()
 def batch(
-    path: Optional[str] = typer.Argument(None, help="Base directory containing items"),
+    path: str | None = typer.Argument(None, help="Base directory containing items"),
     max_items: int = typer.Option(
         0, "--max", "-m", help="Maximum number of items to select"
     ),
@@ -818,7 +816,7 @@ def batch(
     create_batch_torrents(creator, all_items, config)
 
 
-def create_batch_torrents(creator, items: List[Path], config: Dict[str, Any]):
+def create_batch_torrents(creator, items: list[Path], config: dict[str, Any]):
     """Create torrents for selected items"""
 
     output_dir = Path(config.get("output_directory", Path.home() / "torrents"))

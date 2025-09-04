@@ -1,0 +1,36 @@
+name: Semantic PR Title
+
+on:
+  pull_request_target:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  semantic-pr:
+    name: Check PR title format
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Validate PR title
+        uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # Require conventional commit format for PR titles
+          requireScope: false
+          types: |
+            feat
+            fix
+            perf
+            refactor
+            test
+            docs
+            chore
+            build
+            ci
+          # Custom config for your project
+          validateSingleCommit: false
+          ignoreLabels: |
+            ignore-semantic-pull-request

@@ -2,7 +2,6 @@
 """Path and torrent validation utilities"""
 
 from pathlib import Path
-from typing import Tuple, List, Optional
 
 from rich.console import Console
 from rich.panel import Panel
@@ -10,7 +9,7 @@ from rich.panel import Panel
 console = Console()
 
 
-def validate_path(path_str: str) -> Tuple[bool, List[str]]:
+def validate_path(path_str: str) -> tuple[bool, list[str]]:
     """Validate a path for torrent creation"""
     path = Path(path_str).expanduser().resolve()
     issues = []
@@ -93,7 +92,7 @@ def format_size(size_bytes: int) -> str:
     return f"{size:.2f} PB"
 
 
-def validate_torrent(torrent_path: Path, data_path: Optional[Path] = None) -> bool:
+def validate_torrent(torrent_path: Path, data_path: Path | None = None) -> bool:
     """
     Validate a torrent file
 

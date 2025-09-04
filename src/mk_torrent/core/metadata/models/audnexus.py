@@ -6,7 +6,7 @@ following the official Audnexus API specification.
 """
 
 from datetime import datetime
-from typing import List, Optional, Literal
+from typing import Literal
 from pydantic import BaseModel, Field, HttpUrl
 
 
@@ -17,7 +17,7 @@ Region = Literal["au", "ca", "de", "es", "fr", "in", "it", "jp", "us", "uk"]
 class Person(BaseModel):
     """Person model (Author/Narrator)."""
 
-    asin: Optional[str] = None
+    asin: str | None = None
     name: str
 
 
@@ -32,11 +32,9 @@ class Genre(BaseModel):
 class Series(BaseModel):
     """Series model."""
 
-    asin: Optional[str] = None
+    asin: str | None = None
     name: str
-    position: Optional[str] = Field(
-        None, description="Textual position marker like '1'"
-    )
+    position: str | None = Field(None, description="Textual position marker like '1'")
 
 
 class Book(BaseModel):
@@ -44,28 +42,28 @@ class Book(BaseModel):
 
     asin: str
     title: str
-    subtitle: Optional[str] = None
-    authors: List[Person] = Field(default_factory=list)
-    narrators: Optional[List[Person]] = Field(default_factory=list)
+    subtitle: str | None = None
+    authors: list[Person] = Field(default_factory=list)
+    narrators: list[Person] | None = Field(default_factory=list)
     description: str = ""
     summary: str = Field("", description="Often contains HTML")
-    image: Optional[HttpUrl] = None
+    image: HttpUrl | None = None
     publisher_name: str = Field("", alias="publisherName")
-    copyright: Optional[int] = None
+    copyright: int | None = None
     format_type: str = Field("", alias="formatType", description="e.g., 'unabridged'")
     language: str = ""
-    literature_type: Optional[Literal["fiction", "nonfiction"]] = Field(
+    literature_type: Literal["fiction", "nonfiction"] | None = Field(
         None, alias="literatureType"
     )
-    genres: Optional[List[Genre]] = Field(default_factory=list)
+    genres: list[Genre] | None = Field(default_factory=list)
     rating: str = Field("", description="Note: this is a string in the API")
     region: Region = "us"
-    release_date: Optional[datetime] = Field(None, alias="releaseDate")
+    release_date: datetime | None = Field(None, alias="releaseDate")
     runtime_length_min: int = Field(0, alias="runtimeLengthMin")
-    series_primary: Optional[Series] = Field(None, alias="seriesPrimary")
-    series_secondary: Optional[Series] = Field(None, alias="seriesSecondary")
-    isbn: Optional[str] = ""
-    is_adult: Optional[bool] = Field(None, alias="isAdult")
+    series_primary: Series | None = Field(None, alias="seriesPrimary")
+    series_secondary: Series | None = Field(None, alias="seriesSecondary")
+    isbn: str | None = ""
+    is_adult: bool | None = Field(None, alias="isAdult")
 
     class Config:
         populate_by_name = True  # Allow both alias and field names
@@ -94,7 +92,7 @@ class Chapter(BaseModel):
     region: Region = "us"
     runtime_length_ms: int = Field(..., alias="runtimeLengthMs")
     runtime_length_sec: int = Field(..., alias="runtimeLengthSec")
-    chapters: List[ChapterItem] = Field(default_factory=list)
+    chapters: list[ChapterItem] = Field(default_factory=list)
 
     class Config:
         populate_by_name = True
@@ -106,10 +104,10 @@ class Author(BaseModel):
     asin: str
     name: str
     description: str = ""
-    image: Optional[HttpUrl] = None
-    genres: Optional[List[Genre]] = Field(default_factory=list)
+    image: HttpUrl | None = None
+    genres: list[Genre] | None = Field(default_factory=list)
     region: Region = "us"
-    similar: Optional[List[Person]] = Field(default_factory=list)
+    similar: list[Person] | None = Field(default_factory=list)
 
     class Config:
         populate_by_name = True

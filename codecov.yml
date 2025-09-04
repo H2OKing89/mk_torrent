@@ -1,0 +1,31 @@
+# Codecov configuration for mk_torrent project
+# Provides coverage reporting and PR comments
+
+coverage:
+  # Set coverage targets
+  status:
+    project:
+      default:
+        target: 70%          # Aim for 70% overall coverage
+        threshold: 2%        # Allow 2% decrease before failing
+        informational: true  # Don't fail CI, just inform
+
+    patch:
+      default:
+        target: 80%          # New code should be well-tested
+        threshold: 5%        # Allow some flexibility
+        informational: true
+
+  # Areas to include/exclude
+  ignore:
+    - "tests/"             # Don't count test files in coverage
+    - "examples/"          # Examples don't need coverage
+    - "scripts/"           # Utility scripts don't need coverage
+    - "archive/"           # Legacy code
+    - "**/__init__.py"     # Init files usually just imports
+
+# Comment configuration
+comment:
+  layout: "reach,diff,flags,tree,reach"
+  behavior: default
+  require_changes: false

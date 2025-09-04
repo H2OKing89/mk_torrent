@@ -2,7 +2,7 @@
 """Async utilities for non-blocking operations"""
 
 import asyncio
-from typing import List, Optional, Callable, Dict, Tuple
+from collections.abc import Callable
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 
@@ -28,9 +28,9 @@ class AsyncTorrentCreator:
 
     async def create_batch_async(
         self,
-        paths: List[Tuple[Path, Path]],
-        progress_callback: Optional[Callable] = None,
-    ) -> List[bool]:
+        paths: list[tuple[Path, Path]],
+        progress_callback: Callable | None = None,
+    ) -> list[bool]:
         """Create multiple torrents in parallel"""
         tasks = []
         for source_path, output_path in paths:
@@ -73,11 +73,11 @@ class AsyncTorrentCreator:
         self.executor.shutdown(wait=True)
 
 
-async def parallel_health_checks(configs: Dict[str, dict]) -> List[Tuple[str, bool]]:
+async def parallel_health_checks(configs: dict[str, dict]) -> list[tuple[str, bool]]:
     """Check multiple qBittorrent instances in parallel"""
     from ..api.qbittorrent import QBittorrentAPI
 
-    async def check_one(name: str, config: dict) -> Tuple[str, bool]:
+    async def check_one(name: str, config: dict) -> tuple[str, bool]:
         loop = asyncio.get_event_loop()
         api = QBittorrentAPI(
             config.get("host", "localhost"),
@@ -104,7 +104,7 @@ async def parallel_health_checks(configs: Dict[str, dict]) -> List[Tuple[str, bo
     ]
 
 
-def run_async_batch(paths: List[Tuple[Path, Path]], creator) -> List[bool]:
+def run_async_batch(paths: list[tuple[Path, Path]], creator) -> list[bool]:
     """Convenience function to run async batch from sync code"""
 
     async def _run():

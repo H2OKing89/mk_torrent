@@ -7,7 +7,7 @@ fallback detection methods following the recommended packages specification.
 
 import logging
 from pathlib import Path
-from typing import Dict, Any, Optional, Union, List
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -18,14 +18,14 @@ class AudioFormat:
     def __init__(
         self,
         format_name: str,
-        codec: Optional[str] = None,
-        bitrate: Optional[int] = None,
-        sample_rate: Optional[int] = None,
-        channels: Optional[int] = None,
-        bit_depth: Optional[int] = None,
-        duration: Optional[float] = None,
-        is_lossless: Optional[bool] = None,
-        is_vbr: Optional[bool] = None,
+        codec: str | None = None,
+        bitrate: int | None = None,
+        sample_rate: int | None = None,
+        channels: int | None = None,
+        bit_depth: int | None = None,
+        duration: float | None = None,
+        is_lossless: bool | None = None,
+        is_vbr: bool | None = None,
     ):
         self.format_name = format_name
         self.codec = codec
@@ -37,7 +37,7 @@ class AudioFormat:
         self.is_lossless = is_lossless
         self.is_vbr = is_vbr
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
         return {
             "format": self.format_name,
@@ -119,7 +119,7 @@ class FormatDetector:
             logger.warning("Mutagen not available, using basic format detection")
             return False
 
-    def detect_format(self, file_path: Union[str, Path]) -> AudioFormat:
+    def detect_format(self, file_path: str | Path) -> AudioFormat:
         """
         Detect audio format and extract technical information.
 
@@ -216,7 +216,7 @@ class FormatDetector:
 
         return format_map.get(class_name) or class_name.upper()
 
-    def _get_bit_depth(self, info) -> Optional[int]:
+    def _get_bit_depth(self, info) -> int | None:
         """Extract bit depth information."""
         if hasattr(info, "bits_per_sample"):
             return info.bits_per_sample
@@ -224,7 +224,7 @@ class FormatDetector:
             return info.bitspersample
         return None
 
-    def _detect_vbr(self, info) -> Optional[bool]:
+    def _detect_vbr(self, info) -> bool | None:
         """Detect if audio uses variable bitrate."""
         if hasattr(info, "bitrate_mode"):
             # Some formats explicitly indicate VBR mode
@@ -233,7 +233,7 @@ class FormatDetector:
             return "vbr" in str(info.mode).lower()
         return None
 
-    def _detect_lossless(self, format_name: str, info) -> Optional[bool]:
+    def _detect_lossless(self, format_name: str, info) -> bool | None:
         """Detect if format is lossless."""
         # Check format-based lossless detection
         if format_name.lower() in self.LOSSLESS_FORMATS:
@@ -250,7 +250,7 @@ class FormatDetector:
 
         return None
 
-    def _get_codec_info(self, audio_file, info) -> Optional[str]:
+    def _get_codec_info(self, audio_file, info) -> str | None:
         """Extract codec information."""
         if hasattr(info, "codec"):
             return str(info.codec)
@@ -266,9 +266,7 @@ class FormatDetector:
 
         return None
 
-    def analyze_directory(
-        self, directory: Union[str, Path]
-    ) -> Dict[str, List[AudioFormat]]:
+    def analyze_directory(self, directory: str | Path) -> dict[str, list[AudioFormat]]:
         """
         Analyze all audio files in a directory.
 
@@ -283,7 +281,7 @@ class FormatDetector:
         if not directory.is_dir():
             raise NotADirectoryError(f"Not a directory: {directory}")
 
-        results: Dict[str, List[AudioFormat]] = {}
+        results: dict[str, list[AudioFormat]] = {}
 
         # Common audio extensions
         audio_extensions = {
@@ -316,7 +314,7 @@ class FormatDetector:
 
         return results
 
-    def get_quality_summary(self, formats: List[AudioFormat]) -> Dict[str, Any]:
+    def get_quality_summary(self, formats: list[AudioFormat]) -> dict[str, Any]:
         """
         Generate quality summary from format analysis.
 

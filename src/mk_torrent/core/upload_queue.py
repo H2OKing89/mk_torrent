@@ -2,7 +2,7 @@
 """Upload Queue Management System"""
 
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Any
 from datetime import datetime, timedelta
 import json
 import uuid
@@ -33,21 +33,21 @@ class UploadJob:
 
     job_id: str
     torrent_path: str
-    trackers: List[str]
-    metadata: Dict[str, Any]
+    trackers: list[str]
+    metadata: dict[str, Any]
     status: UploadStatus
     created_at: datetime
     updated_at: datetime
     retry_count: int = 0
     max_retries: int = 3
-    results: Optional[Dict[str, bool]] = None
-    error_message: Optional[str] = None
+    results: dict[str, bool] | None = None
+    error_message: str | None = None
 
     def __post_init__(self):
         if self.results is None:
             self.results = {}
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization"""
         data = asdict(self)
         data["status"] = self.status.value
@@ -56,7 +56,7 @@ class UploadJob:
         return data
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "UploadJob":
+    def from_dict(cls, data: dict[str, Any]) -> "UploadJob":
         """Create from dictionary (JSON deserialization)"""
         data["status"] = UploadStatus(data["status"])
         data["created_at"] = datetime.fromisoformat(data["created_at"])
@@ -88,7 +88,7 @@ class UploadJob:
                 # All trackers failed
                 self.status = UploadStatus.FAILED
 
-    def mark_failed(self, tracker: str, error: Optional[str] = None):
+    def mark_failed(self, tracker: str, error: str | None = None):
         """Mark upload as failed for a tracker"""
         if self.results is None:
             self.results = {}
@@ -108,7 +108,7 @@ class UploadQueue:
         self.queue_dir.mkdir(parents=True, exist_ok=True)
         self.jobs_file = self.queue_dir / "upload_jobs.json"
         self.lock = threading.RLock()
-        self._jobs: Dict[str, UploadJob] = {}
+        self._jobs: dict[str, UploadJob] = {}
         self._load_jobs()
         # Ensure jobs file exists
         if not self.jobs_file.exists():
@@ -120,7 +120,7 @@ class UploadQueue:
             return
 
         try:
-            with open(self.jobs_file, "r") as f:
+            with open(self.jobs_file) as f:
                 data = json.load(f)
                 for job_data in data.get("jobs", []):
                     job = UploadJob.from_dict(job_data)
@@ -152,7 +152,7 @@ class UploadQueue:
             console.print(f"[red]Error saving upload jobs: {e}[/red]")
 
     def add_job(
-        self, torrent_path: Path, trackers: List[str], metadata: Dict[str, Any]
+        self, torrent_path: Path, trackers: list[str], metadata: dict[str, Any]
     ) -> str:
         """Add a new upload job to the queue"""
         with self.lock:
@@ -170,25 +170,25 @@ class UploadQueue:
             self._save_jobs()
             return job_id
 
-    def get_job(self, job_id: str) -> Optional[UploadJob]:
+    def get_job(self, job_id: str) -> UploadJob | None:
         """Get a job by ID"""
         with self.lock:
             return self._jobs.get(job_id)
 
-    def get_pending_jobs(self) -> List[UploadJob]:
+    def get_pending_jobs(self) -> list[UploadJob]:
         """Get all pending jobs"""
         with self.lock:
             return [
                 job for job in self._jobs.values() if job.status == UploadStatus.PENDING
             ]
 
-    def get_failed_jobs(self) -> List[UploadJob]:
+    def get_failed_jobs(self) -> list[UploadJob]:
         """Get all failed jobs that can be retried"""
         with self.lock:
             return [job for job in self._jobs.values() if job.can_retry()]
 
     def update_job_status(
-        self, job_id: str, status: UploadStatus, error_message: Optional[str] = None
+        self, job_id: str, status: UploadStatus, error_message: str | None = None
     ):
         """Update job status"""
         with self.lock:
@@ -212,7 +212,7 @@ class UploadQueue:
                 job.mark_success(tracker)
                 self._save_jobs()
 
-    def mark_job_failed(self, job_id: str, tracker: str, error: Optional[str] = None):
+    def mark_job_failed(self, job_id: str, tracker: str, error: str | None = None):
         """Mark job as failed for a tracker"""
         with self.lock:
             if job_id in self._jobs:
@@ -264,7 +264,7 @@ class UploadQueue:
                     f"[dim]Cleaned up {len(expired_jobs)} expired jobs: {job_info_str}[/dim]"
                 )
 
-    def get_queue_stats(self) -> Dict[str, int]:
+    def get_queue_stats(self) -> dict[str, int]:
         """Get queue statistics"""
         with self.lock:
             stats = {

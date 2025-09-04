@@ -2,7 +2,7 @@
 Audnexus API response templates and type definitions
 """
 
-from typing import Dict, Any, List, Optional, TypedDict, Union
+from typing import Any, TypedDict
 
 # Type definitions for Audnexus API responses
 
@@ -33,24 +33,24 @@ class SeriesData(TypedDict):
 
     asin: str
     name: str
-    position: Union[str, int]
+    position: str | int
 
 
 class AudnexusBookResponse(TypedDict, total=False):
     """Complete Audnexus API book response structure"""
 
     asin: str
-    authors: List[AuthorData]
+    authors: list[AuthorData]
     copyright: int
     description: str
     formatType: str  # "unabridged" or "abridged"
-    genres: List[GenreData]
+    genres: list[GenreData]
     image: str  # URL to cover image
     isAdult: bool
     isbn: str
     language: str
     literatureType: str  # "fiction" or "non-fiction"
-    narrators: List[NarratorData]
+    narrators: list[NarratorData]
     publisherName: str
     rating: str  # "4.9" format
     region: str  # "us", "uk", etc.
@@ -59,8 +59,8 @@ class AudnexusBookResponse(TypedDict, total=False):
     summary: str  # HTML content
     title: str
     # Optional fields
-    subtitle: Optional[str]
-    seriesPrimary: Optional[SeriesData]
+    subtitle: str | None
+    seriesPrimary: SeriesData | None
 
 
 class AudnexusErrorResponse(TypedDict):
@@ -150,7 +150,7 @@ def normalize_language(language: str) -> str:
     return language_map.get(language.lower(), language.lower())
 
 
-def format_runtime(minutes: int) -> Dict[str, Any]:
+def format_runtime(minutes: int) -> dict[str, Any]:
     """Format runtime from minutes to various formats"""
     hours = minutes // 60
     mins = minutes % 60

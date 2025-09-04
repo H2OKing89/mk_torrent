@@ -2,7 +2,7 @@
 """Template management for torrent creation"""
 
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Any
 import json
 
 from rich.console import Console
@@ -12,7 +12,7 @@ from rich.prompt import Prompt, Confirm  # Add these imports
 console = Console()
 
 
-def save_template(template: Dict[str, Any]) -> bool:
+def save_template(template: dict[str, Any]) -> bool:
     """Save a template to disk"""
     templates_dir = Path.home() / ".config" / "torrent_creator" / "templates"
     templates_dir.mkdir(parents=True, exist_ok=True)
@@ -32,7 +32,7 @@ def save_template(template: Dict[str, Any]) -> bool:
         return False
 
 
-def load_templates() -> List[Dict[str, Any]]:
+def load_templates() -> list[dict[str, Any]]:
     """Load all templates from disk"""
     templates_dir = Path.home() / ".config" / "torrent_creator" / "templates"
     if not templates_dir.exists():
@@ -53,13 +53,13 @@ def load_templates() -> List[Dict[str, Any]]:
     return templates
 
 
-def save_templates(templates: List[Dict[str, Any]]) -> None:
+def save_templates(templates: list[dict[str, Any]]) -> None:
     """Save multiple templates"""
     for template in templates:
         save_template(template)  # Fix: This line was incorrectly indented
 
 
-def list_templates() -> List[Dict[str, Any]]:
+def list_templates() -> list[dict[str, Any]]:
     """List all available templates"""
     return load_templates()
 
@@ -100,7 +100,7 @@ def apply_template_cli(template_name: str, source_path: Path) -> bool:
     return True
 
 
-def view_templates(templates: Dict[str, Any]):
+def view_templates(templates: dict[str, Any]):
     """Display all templates"""
     if not templates:
         console.print("[yellow]No templates saved[/yellow]")
@@ -123,7 +123,7 @@ def view_templates(templates: Dict[str, Any]):
     console.print(table)
 
 
-def create_template(templates: Dict[str, Any]):
+def create_template(templates: dict[str, Any]):
     """Create a new template"""
     name = Prompt.ask("Template name")
     if name in templates:
@@ -161,7 +161,7 @@ def create_template(templates: Dict[str, Any]):
     console.print(f"[green]✅ Template '{name}' created[/green]")
 
 
-def edit_template(templates: Dict[str, Any]):
+def edit_template(templates: dict[str, Any]):
     """Edit existing template"""
     if not templates:
         console.print("[yellow]No templates to edit[/yellow]")
@@ -182,7 +182,7 @@ def edit_template(templates: Dict[str, Any]):
     console.print(f"[green]✅ Template '{name}' updated[/green]")
 
 
-def delete_template(templates: Dict[str, Any]):
+def delete_template(templates: dict[str, Any]):
     """Delete a template"""
     if not templates:
         console.print("[yellow]No templates to delete[/yellow]")
@@ -195,7 +195,7 @@ def delete_template(templates: Dict[str, Any]):
         console.print(f"[green]✅ Template '{name}' deleted[/green]")
 
 
-def apply_template(templates: Dict[str, Any]):
+def apply_template(templates: dict[str, Any]):
     """Apply a template to create torrent"""
     if not templates:
         console.print("[yellow]No templates available[/yellow]")

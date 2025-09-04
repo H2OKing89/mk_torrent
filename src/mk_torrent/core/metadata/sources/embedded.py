@@ -9,7 +9,7 @@ import json
 import logging
 import subprocess
 from pathlib import Path
-from typing import Dict, Any, Union
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +70,7 @@ class EmbeddedSource:
         else:
             return False
 
-    def extract(self, source: Union[Path, str]) -> Dict[str, Any]:
+    def extract(self, source: Path | str) -> dict[str, Any]:
         """
         Extract technical metadata from audio file.
 
@@ -109,7 +109,7 @@ class EmbeddedSource:
         result["source"] = "basic"
         return result
 
-    def _extract_with_ffprobe(self, file_path: Path) -> Dict[str, Any]:
+    def _extract_with_ffprobe(self, file_path: Path) -> dict[str, Any]:
         """Extract technical metadata using ffprobe."""
         cmd = [
             "ffprobe",
@@ -141,7 +141,7 @@ class EmbeddedSource:
             logger.error(f"ffprobe timed out processing {file_path}")
             raise
 
-    def _extract_with_mutagen(self, file_path: Path) -> Dict[str, Any]:
+    def _extract_with_mutagen(self, file_path: Path) -> dict[str, Any]:
         """Extract technical metadata using mutagen."""
         try:
             from mutagen._file import File as MutagenFile
@@ -155,9 +155,9 @@ class EmbeddedSource:
         except ImportError:
             raise RuntimeError("mutagen not available")
 
-    def _normalize_ffprobe_data(self, data: dict, file_path: Path) -> Dict[str, Any]:
+    def _normalize_ffprobe_data(self, data: dict, file_path: Path) -> dict[str, Any]:
         """Normalize ffprobe output to internal format."""
-        result: Dict[str, Any] = {"_src": "embedded"}
+        result: dict[str, Any] = {"_src": "embedded"}
 
         # Get format information
         format_info = data.get("format", {})
@@ -237,9 +237,9 @@ class EmbeddedSource:
 
         return result
 
-    def _normalize_mutagen_data(self, audio_file, file_path: Path) -> Dict[str, Any]:
+    def _normalize_mutagen_data(self, audio_file, file_path: Path) -> dict[str, Any]:
         """Normalize mutagen data to internal format."""
-        result: Dict[str, Any] = {"_src": "embedded"}
+        result: dict[str, Any] = {"_src": "embedded"}
 
         # File size
         file_size = file_path.stat().st_size
@@ -295,9 +295,9 @@ class EmbeddedSource:
 
         return result
 
-    def _basic_file_info(self, file_path: Path) -> Dict[str, Any]:
+    def _basic_file_info(self, file_path: Path) -> dict[str, Any]:
         """Minimal file information when tools unavailable."""
-        result: Dict[str, Any] = {"_src": "embedded"}
+        result: dict[str, Any] = {"_src": "embedded"}
 
         try:
             # Basic file system info
@@ -334,7 +334,7 @@ class EmbeddedSource:
 
         return result
 
-    def get_backend_info(self) -> Dict[str, Any]:
+    def get_backend_info(self) -> dict[str, Any]:
         """Get information about available backends."""
         return {
             "ffprobe_available": self.ffprobe_available,

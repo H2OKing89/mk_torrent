@@ -1,0 +1,66 @@
+name: Documentation
+
+on:
+  pull_request:
+    paths:
+      - "docs/**"
+      - "*.md"
+      - "README*"
+  push:
+    branches: [ main ]
+    paths:
+      - "docs/**"
+      - "*.md"
+      - "README*"
+
+permissions:
+  contents: read
+
+jobs:
+  link-check:
+    name: Check documentation links
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check links with lychee
+        uses: lycheeverse/lychee-action@v1
+        with:
+          # Check all markdown files for broken links
+          args: --verbose --no-progress --exclude-all-private --exclude-mail --max-concurrency 8 "docs/**/*.md" "*.md"
+          # Don't fail the job on broken links, just report them
+          fail: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload link check results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: link-check-results
+          path: lychee/out.md
+
+  markdown-lint:
+    name: Lint markdown files
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Lint markdown files
+        uses: DavidAnson/markdownlint-cli2-action@v16
+        with:
+          globs: |
+            **/*.md
+            !node_modules/**
+            !archive/**
+          # Config for your project structure
+          config: |
+            {
+              "line-length": false,
+              "no-inline-html": false,
+              "no-bare-urls": false
+            }

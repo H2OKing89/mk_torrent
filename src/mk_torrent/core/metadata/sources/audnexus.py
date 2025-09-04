@@ -14,7 +14,7 @@ Features:
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 import re
 from datetime import datetime
 
@@ -60,7 +60,7 @@ class AudnexusSource:
         self.base_url = base_url.rstrip("/")
         self.region = region
         self.timeout = timeout
-        self._client: Optional[Any] = None
+        self._client: Any | None = None
         self._client_type: str = ""
 
         # Initialize caching
@@ -151,7 +151,7 @@ class AudnexusSource:
             logger.warning("tenacity not available, running without retry logic")
             return lambda func: func
 
-    def _make_request(self, url: str, params: Dict[str, Any]) -> Dict[str, Any]:
+    def _make_request(self, url: str, params: dict[str, Any]) -> dict[str, Any]:
         """Make HTTP request with retry logic and caching."""
         # Check cache first
         cache_key = f"{url}?{hash(str(sorted(params.items())))}"
@@ -193,7 +193,7 @@ class AudnexusSource:
         """Clean HTML content to plain text using HTMLCleaner service."""
         return self._html_cleaner.clean_html(html_content)
 
-    def extract(self, source: Union[str, Path]) -> Dict[str, Any]:
+    def extract(self, source: str | Path) -> dict[str, Any]:
         """
         Extract metadata from source (ASIN or path containing ASIN).
 
@@ -280,7 +280,7 @@ class AudnexusSource:
             logger.error(f"Failed to extract metadata from Audnexus for {asin}: {e}")
             raise SourceUnavailable("audnexus", f"Extraction failed: {e}") from e
 
-    def _extract_asin(self, text: str) -> Optional[str]:
+    def _extract_asin(self, text: str) -> str | None:
         """Extract ASIN from text using pattern {ASIN.B0C8ZW5N6Y}."""
         asin_pattern = r"\{ASIN\.([A-Z0-9]{10,12})\}"
         match = re.search(asin_pattern, text)
@@ -292,7 +292,7 @@ class AudnexusSource:
 
     def _get_book(
         self, asin: str, region: str = "us", update: int = 0, seed_authors: int = 0
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """
         Get book metadata from Audnexus API.
 
@@ -325,7 +325,7 @@ class AudnexusSource:
 
     def get_chapters(
         self, asin: str, region: str = "us", update: int = 0
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """
         Get chapter information for a book.
 
@@ -350,7 +350,7 @@ class AudnexusSource:
             logger.error(f"Failed to fetch chapters for {asin}: {e}")
             return None
 
-    def search_authors(self, name: str, region: str = "us") -> List[Dict[str, Any]]:
+    def search_authors(self, name: str, region: str = "us") -> list[dict[str, Any]]:
         """
         Search for authors by name.
 
@@ -374,7 +374,7 @@ class AudnexusSource:
 
     def get_author(
         self, asin: str, region: str = "us", update: str = "0"
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """
         Get author details by ASIN.
 
@@ -400,7 +400,7 @@ class AudnexusSource:
             logger.error(f"Failed to fetch author {asin}: {e}")
             return None
 
-    def _normalize_book_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _normalize_book_data(self, data: dict[str, Any]) -> dict[str, Any]:
         """
         Normalize Audnexus book data to our metadata schema.
 
@@ -522,7 +522,7 @@ class AudnexusSource:
 
         return normalized
 
-    def _extract_primary_author(self, authors: List[Dict[str, Any]]) -> str:
+    def _extract_primary_author(self, authors: list[dict[str, Any]]) -> str:
         """Extract primary author name from authors list."""
         if not authors:
             return ""
@@ -542,8 +542,8 @@ class AudnexusSource:
 
     # Async methods for rate-limited usage
     async def _make_request_async(
-        self, url: str, params: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, url: str, params: dict[str, Any]
+    ) -> dict[str, Any]:
         """Make async HTTP request with rate limiting and caching."""
         # Apply rate limiting if available
         if self._rate_limiter:
@@ -579,7 +579,7 @@ class AudnexusSource:
 
     async def get_book_async(
         self, asin: str, region: str = "us", update: int = 0, seed_authors: int = 0
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Async version of get_book with rate limiting."""
         url = f"{self.base_url}/books/{asin}"
         params = {"region": region}
@@ -598,7 +598,7 @@ class AudnexusSource:
 
     async def get_chapters_async(
         self, asin: str, region: str = "us", update: int = 0
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Async version of get_chapters with rate limiting."""
         url = f"{self.base_url}/books/{asin}/chapters"
         params = {"region": region}
@@ -615,7 +615,7 @@ class AudnexusSource:
 
     async def search_authors_async(
         self, name: str, region: str = "us"
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Async version of search_authors with rate limiting."""
         url = f"{self.base_url}/authors"
         params = {"name": name, "region": region}
@@ -628,7 +628,7 @@ class AudnexusSource:
             logger.error(f"Author search failed for {name} (async): {e}")
             return []
 
-    async def extract_async(self, source: Union[str, Path]) -> Dict[str, Any]:
+    async def extract_async(self, source: str | Path) -> dict[str, Any]:
         """Async version of extract with rate limiting."""
         # Convert Path to string
         source_str = str(source) if isinstance(source, Path) else source

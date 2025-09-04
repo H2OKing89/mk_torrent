@@ -6,7 +6,7 @@ import time
 import requests
 import logging
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Any
 from rich.console import Console
 
 from .base import TrackerAPI, TrackerConfig
@@ -75,10 +75,10 @@ class RedactedAPI(TrackerAPI):
         self,
         endpoint: str,
         method: str = "GET",
-        data: Optional[Dict] = None,
-        files: Optional[Dict] = None,
+        data: dict | None = None,
+        files: dict | None = None,
         timeout: int = 30,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Make an authenticated request to RED API"""
         self._rate_limit()
 
@@ -122,11 +122,11 @@ class RedactedAPI(TrackerAPI):
 
     def search_existing(
         self,
-        artist: Optional[str] = None,
-        album: Optional[str] = None,
-        title: Optional[str] = None,
+        artist: str | None = None,
+        album: str | None = None,
+        title: str | None = None,
         **kwargs,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Search for existing torrents on RED"""
         try:
             search_params = {"action": "browse", "searchstr": ""}
@@ -149,7 +149,7 @@ class RedactedAPI(TrackerAPI):
             console.print(f"[yellow]Warning: Search failed: {e}[/yellow]")
             return []
 
-    def validate_metadata(self, metadata: Dict[str, Any]) -> Dict[str, Any]:
+    def validate_metadata(self, metadata: dict[str, Any]) -> dict[str, Any]:
         """Validate metadata for RED requirements"""
         errors = []
         warnings = []
@@ -198,8 +198,8 @@ class RedactedAPI(TrackerAPI):
         }
 
     def prepare_upload_data(
-        self, metadata: Dict[str, Any], torrent_path: Path
-    ) -> Dict[str, Any]:
+        self, metadata: dict[str, Any], torrent_path: Path
+    ) -> dict[str, Any]:
         """Prepare data for RED upload"""
 
         # Detect release type
@@ -223,7 +223,7 @@ class RedactedAPI(TrackerAPI):
 
         return upload_data
 
-    def _detect_release_type(self, metadata: Dict[str, Any]) -> int:
+    def _detect_release_type(self, metadata: dict[str, Any]) -> int:
         """Detect RED release type from metadata"""
         title = metadata.get("album", "").lower()
 
@@ -252,8 +252,8 @@ class RedactedAPI(TrackerAPI):
             return self.RELEASE_TYPES["ALBUM"]
 
     def upload_torrent(
-        self, torrent_path: Path, metadata: Dict[str, Any], dry_run: bool = True
-    ) -> Dict[str, Any]:
+        self, torrent_path: Path, metadata: dict[str, Any], dry_run: bool = True
+    ) -> dict[str, Any]:
         """Upload torrent to RED"""
         if dry_run:
             console.print("[yellow]DRY RUN: Would upload to RED[/yellow]")

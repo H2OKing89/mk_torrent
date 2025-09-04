@@ -7,7 +7,7 @@ validating, and mapping metadata across different content types.
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from .base import (
     AudiobookMeta,
@@ -26,9 +26,9 @@ class MetadataEngine:
     """Main metadata processing engine with dependency injection and registry pattern."""
 
     def __init__(self):
-        self._processors: Dict[str, MetadataProcessor] = {}
-        self._mappers: Dict[str, MetadataMapper] = {}
-        self._default_processor: Optional[str] = None
+        self._processors: dict[str, MetadataProcessor] = {}
+        self._mappers: dict[str, MetadataMapper] = {}
+        self._default_processor: str | None = None
 
     def register_processor(
         self, content_type: str, processor: MetadataProcessor
@@ -96,7 +96,7 @@ class MetadataEngine:
         return False
 
     def extract_metadata(
-        self, source: Source, content_type: Optional[str] = None, enhance: bool = True
+        self, source: Source, content_type: str | None = None, enhance: bool = True
     ) -> MetadataDict:
         """Extract metadata from a source using the appropriate processor."""
         try:
@@ -130,8 +130,8 @@ class MetadataEngine:
 
     def validate_metadata(
         self,
-        metadata: Union[MetadataDict, AudiobookMeta],
-        content_type: Optional[str] = None,
+        metadata: MetadataDict | AudiobookMeta,
+        content_type: str | None = None,
     ) -> ValidationResult:
         """Validate metadata using the appropriate processor."""
         try:
@@ -165,7 +165,7 @@ class MetadataEngine:
             raise MetadataError(f"Validation failed: {e}") from e
 
     def map_to_tracker(
-        self, metadata: Union[MetadataDict, AudiobookMeta], tracker_name: str
+        self, metadata: MetadataDict | AudiobookMeta, tracker_name: str
     ) -> MetadataDict:
         """Map metadata to tracker-specific format."""
         try:
@@ -200,10 +200,10 @@ class MetadataEngine:
     def process_full_pipeline(
         self,
         source: Source,
-        content_type: Optional[str] = None,
-        tracker_name: Optional[str] = None,
+        content_type: str | None = None,
+        tracker_name: str | None = None,
         validate: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Run the full pipeline: extract -> validate -> (optionally) map."""
         result = {
             "source": str(source),
@@ -246,19 +246,19 @@ class MetadataEngine:
 
         return result
 
-    def get_available_processors(self) -> List[str]:
+    def get_available_processors(self) -> list[str]:
         """Get list of available content type processors."""
         return list(self._processors.keys())
 
-    def get_available_mappers(self) -> List[str]:
+    def get_available_mappers(self) -> list[str]:
         """Get list of available tracker mappers."""
         return list(self._mappers.keys())
 
 
 # Convenience function for backward compatibility
 def process_metadata(
-    source: Union[Path, List[Path]], content_type: Optional[str] = None
-) -> Dict[str, Any]:
+    source: Path | list[Path], content_type: str | None = None
+) -> dict[str, Any]:
     """Convenience function to process metadata (legacy interface)."""
     engine = MetadataEngine()
     # Auto-register basic processors if none exist

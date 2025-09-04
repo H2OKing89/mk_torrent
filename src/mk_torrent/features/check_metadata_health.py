@@ -9,7 +9,7 @@ import sys
 import json
 import time
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any
 from rich.console import Console
 
 console = Console()
@@ -19,7 +19,7 @@ class MetadataHealthChecker:
     """Comprehensive metadata health checker"""
 
     def __init__(self):
-        self.results: Dict[str, Any] = {
+        self.results: dict[str, Any] = {
             "dependencies": {},
             "capabilities": {},
             "connectivity": {},

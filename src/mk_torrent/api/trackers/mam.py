@@ -3,7 +3,7 @@ MyAnonamouse (MAM) tracker API implementation
 """
 
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Any
 from rich.console import Console
 
 from .base import TrackerAPI, TrackerConfig
@@ -45,16 +45,16 @@ class MyAnonaMouseAPI(TrackerAPI):
 
     def search_existing(
         self,
-        artist: Optional[str] = None,
-        album: Optional[str] = None,
-        title: Optional[str] = None,
+        artist: str | None = None,
+        album: str | None = None,
+        title: str | None = None,
         **kwargs,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Search for existing torrents on MAM"""
         # TODO: Implement MAM search
         return []
 
-    def validate_metadata(self, metadata: Dict[str, Any]) -> Dict[str, Any]:
+    def validate_metadata(self, metadata: dict[str, Any]) -> dict[str, Any]:
         """Validate metadata for MAM requirements"""
         # MAM is more lenient with metadata
         errors = []
@@ -72,15 +72,15 @@ class MyAnonaMouseAPI(TrackerAPI):
         }
 
     def prepare_upload_data(
-        self, metadata: Dict[str, Any], torrent_path: Path
-    ) -> Dict[str, Any]:
+        self, metadata: dict[str, Any], torrent_path: Path
+    ) -> dict[str, Any]:
         """Prepare data for MAM upload"""
         # TODO: Implement MAM upload preparation
         return {}
 
     def upload_torrent(
-        self, torrent_path: Path, metadata: Dict[str, Any], dry_run: bool = True
-    ) -> Dict[str, Any]:
+        self, torrent_path: Path, metadata: dict[str, Any], dry_run: bool = True
+    ) -> dict[str, Any]:
         """Upload torrent to MAM"""
         console.print("[yellow]MAM upload not yet implemented[/yellow]")
         return {"success": False, "message": "Not implemented"}

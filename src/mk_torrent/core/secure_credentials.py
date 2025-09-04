@@ -2,7 +2,6 @@
 """Secure credential management for sensitive data"""
 
 from pathlib import Path
-from typing import Dict, Optional
 import json
 import base64
 import getpass
@@ -68,7 +67,7 @@ class SecureCredentialManager:
         )
         return base64.urlsafe_b64encode(kdf.derive(password.encode()))
 
-    def _get_fernet(self, password: Optional[str] = None) -> Fernet:
+    def _get_fernet(self, password: str | None = None) -> Fernet:
         """Get Fernet cipher instance"""
         if password:
             key = self._derive_key(password)
@@ -131,7 +130,7 @@ class SecureCredentialManager:
 
     def get_qbittorrent_password(
         self, host: str, port: int, username: str
-    ) -> Optional[str]:
+    ) -> str | None:
         """Retrieve qBittorrent password securely"""
         service_name = f"{self.app_name}_qbittorrent"
 
@@ -165,7 +164,7 @@ class SecureCredentialManager:
             )
             self._store_encrypted_credential(f"tracker_{domain}", "passkey", passkey)
 
-    def get_tracker_passkey(self, tracker_url: str) -> Optional[str]:
+    def get_tracker_passkey(self, tracker_url: str) -> str | None:
         """Retrieve tracker passkey securely"""
         from urllib.parse import urlparse
 
@@ -195,12 +194,12 @@ class SecureCredentialManager:
         # Save encrypted
         self._save_encrypted_credentials(credentials)
 
-    def _get_encrypted_credential(self, service: str, username: str) -> Optional[str]:
+    def _get_encrypted_credential(self, service: str, username: str) -> str | None:
         """Retrieve credential from encrypted file"""
         credentials = self._load_encrypted_credentials()
         return credentials.get(service, {}).get(username)
 
-    def _load_encrypted_credentials(self) -> Dict[str, Dict[str, str]]:
+    def _load_encrypted_credentials(self) -> dict[str, dict[str, str]]:
         """Load encrypted credentials file"""
         if not self.secure_config_file.exists():
             return {}
@@ -228,7 +227,7 @@ class SecureCredentialManager:
             console.print(f"[red]Error loading encrypted credentials: {e}[/red]")
             return {}
 
-    def _save_encrypted_credentials(self, credentials: Dict[str, Dict[str, str]]):
+    def _save_encrypted_credentials(self, credentials: dict[str, dict[str, str]]):
         """Save credentials to encrypted file"""
         try:
             fernet = self._get_fernet()
@@ -251,7 +250,7 @@ class SecureCredentialManager:
         )
 
         try:
-            with open(config_file, "r") as f:
+            with open(config_file) as f:
                 config = json.load(f)
 
             # Migrate qBittorrent credentials
@@ -283,7 +282,7 @@ class SecureCredentialManager:
         console.print("[cyan]🔄 Migrating tracker passkeys to secure storage...[/cyan]")
 
         try:
-            with open(trackers_file, "r") as f:
+            with open(trackers_file) as f:
                 trackers = [line.strip() for line in f if line.strip()]
 
             migrated_trackers = []
@@ -345,7 +344,7 @@ class SecureCredentialManager:
 
     def get_tracker_credential(
         self, tracker_name: str, credential_type: str
-    ) -> Optional[str]:
+    ) -> str | None:
         """Public method to get tracker-specific credential from secure storage"""
         if not tracker_name or not tracker_name.strip():
             raise ValueError("Tracker name cannot be empty")
@@ -388,9 +387,7 @@ def migrate_to_secure_storage():
     secure_manager.migrate_tracker_passkeys(trackers_file)
 
 
-def get_secure_qbittorrent_password(
-    host: str, port: int, username: str
-) -> Optional[str]:
+def get_secure_qbittorrent_password(host: str, port: int, username: str) -> str | None:
     """Get qBittorrent password from secure storage"""
     return secure_manager.get_qbittorrent_password(host, port, username)
 
@@ -402,7 +399,7 @@ def get_secure_tracker_url(tracker_url: str) -> str:
 
 def get_secure_tracker_credential(
     tracker_name: str, credential_type: str
-) -> Optional[str]:
+) -> str | None:
     """Get tracker-specific credential from secure storage"""
     return secure_manager.get_tracker_credential(tracker_name, credential_type)
 

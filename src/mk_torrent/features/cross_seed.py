@@ -2,7 +2,6 @@
 """Cross-seeding utilities for torrent management"""
 
 from pathlib import Path
-from typing import List, Tuple
 import hashlib
 import bencode  # pip install bencode.py
 
@@ -62,7 +61,7 @@ class CrossSeedManager:
 
     def verify_cross_seed_compatibility(
         self, torrent1: Path, torrent2: Path
-    ) -> Tuple[bool, str]:
+    ) -> tuple[bool, str]:
         """
         Verify two torrents are compatible for cross-seeding
 
@@ -107,7 +106,7 @@ class CrossSeedManager:
         except Exception as e:
             return False, f"Error: {e}"
 
-    def list_backup_torrents(self) -> List[Path]:
+    def list_backup_torrents(self) -> list[Path]:
         """List all backed up torrent files"""
         return sorted(self.backup_dir.glob("*.torrent"))
 

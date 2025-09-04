@@ -10,7 +10,7 @@ Format: Title - vol_XX (YYYY) (Author) {ASIN.ABC} [Uploader]
 import re
 import unicodedata
 from pathlib import Path
-from typing import Dict, Any, Union, Tuple, List
+from typing import Any
 
 
 class PathInfoSource:
@@ -60,7 +60,7 @@ class PathInfoSource:
         """
         self.strict = strict
 
-    def extract(self, source: Union[Path, str]) -> Dict[str, Any]:
+    def extract(self, source: Path | str) -> dict[str, Any]:
         """
         Parse metadata from filename or path.
 
@@ -115,7 +115,7 @@ class PathInfoSource:
 
         return result
 
-    def _extract_primary(self, groups: dict) -> Dict[str, Any]:
+    def _extract_primary(self, groups: dict) -> dict[str, Any]:
         """Extract from canonical format match."""
         result = {}
 
@@ -150,7 +150,7 @@ class PathInfoSource:
 
         return result
 
-    def _fallback_parse(self, basename: str) -> Dict[str, Any]:
+    def _fallback_parse(self, basename: str) -> dict[str, Any]:
         """Try alternative parsing patterns."""
         result = {}
 
@@ -209,7 +209,7 @@ class PathInfoSource:
 
         return result
 
-    def _parse_directory(self, directory: str) -> Dict[str, Any]:
+    def _parse_directory(self, directory: str) -> dict[str, Any]:
         """Extract metadata from directory structure."""
         result = {}
 
@@ -321,7 +321,7 @@ class PathInfoSource:
 
         return any(re.match(pattern, text) for pattern in author_patterns)
 
-    def _clean_extracted_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _clean_extracted_data(self, data: dict[str, Any]) -> dict[str, Any]:
         """Final cleanup and normalization of extracted data."""
         cleaned = {}
 
@@ -339,7 +339,7 @@ class PathInfoSource:
 
         return cleaned
 
-    def validate_filename(self, filename: str) -> Tuple[bool, List[str]]:
+    def validate_filename(self, filename: str) -> tuple[bool, list[str]]:
         """
         Validate filename against canonical format.
 

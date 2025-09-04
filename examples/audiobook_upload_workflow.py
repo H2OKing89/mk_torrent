@@ -25,7 +25,7 @@ Requirements:
 import sys
 import os
 import requests
-from typing import Dict, List, Optional, Any
+from typing import Any
 
 # Import from our secure credentials system
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
@@ -51,7 +51,7 @@ class AudiobookUploader:
         self,
         torrent_path: str,
         title: str,
-        artists: List[str],
+        artists: list[str],
         year: int,
         releasetype: int = 1,  # Default to Album
         format_type: str = "MP3",
@@ -59,9 +59,9 @@ class AudiobookUploader:
         media: str = "CD",
         tags: str = "audiobook",
         description: str = "",
-        other_bitrate: Optional[str] = None,
+        other_bitrate: str | None = None,
         dryrun: bool = True,
-    ) -> Dict:
+    ) -> dict:
         """
         Upload an audiobook torrent to RED tracker.
 
@@ -195,7 +195,7 @@ def main():
 
     # Example audiobook metadata (in real usage, this could be extracted from torrent or prompted)
     # For demonstration, using sample data
-    sample_metadata: Dict[str, Any] = {
+    sample_metadata: dict[str, Any] = {
         "title": "The Great Gatsby",
         "artists": ["F. Scott Fitzgerald", "Narrated by Jake Gyllenhaal"],
         "year": 2023,

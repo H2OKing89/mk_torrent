@@ -1,6 +1,25 @@
-# Default owners
-*            @H2OKing89
+# Global default
+* @H2OKing89
 
-# Scoped ownership
-/src/mk_torrent/core/metadata/   @H2OKing89
-/tests/                          @H2OKing89
+# Core systems - require careful review
+/src/mk_torrent/core/metadata/    @H2OKing89
+/src/mk_torrent/core/validation/  @H2OKing89
+
+# API integrations
+/src/mk_torrent/api/red/         @H2OKing89
+/src/mk_torrent/api/qbittorrent/ @H2OKing89
+
+# Configuration and infrastructure
+/.github/                        @H2OKing89
+/pyproject.toml                  @H2OKing89
+/requirements*.txt               @H2OKing89
+/.pre-commit-config.yaml         @H2OKing89
+
+# Documentation
+/docs/                          @H2OKing89
+/README.md                      @H2OKing89
+/CONTRIBUTING.md                @H2OKing89
+
+# Security-sensitive files
+/.github/workflows/             @H2OKing89
+/src/mk_torrent/utils/secure_*  @H2OKing89

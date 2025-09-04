@@ -2,7 +2,7 @@
 """Comprehensive health checks for the torrent creator system"""
 
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any
 import subprocess
 import shutil
 import psutil  # Add to requirements.txt
@@ -22,7 +22,7 @@ console = Console()
 class SystemHealthCheck:
     """System-level health checks"""
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         self.config = config
         self.results = {
             "disk_space": {},
@@ -34,9 +34,9 @@ class SystemHealthCheck:
             "performance": {},
         }
 
-    def check_disk_space(self) -> Dict[str, Any]:
+    def check_disk_space(self) -> dict[str, Any]:
         """Check available disk space for critical paths"""
-        results: Dict[str, Any] = {}
+        results: dict[str, Any] = {}
 
         # Check output directory
         output_dir = Path(self.config.get("output_directory", "."))
@@ -72,9 +72,9 @@ class SystemHealthCheck:
         self.results["disk_space"] = results
         return results
 
-    def check_permissions(self) -> Dict[str, Any]:
+    def check_permissions(self) -> dict[str, Any]:
         """Check read/write permissions for critical paths"""
-        results: Dict[str, Any] = {}
+        results: dict[str, Any] = {}
 
         # Paths to check
         paths_to_check = [
@@ -109,9 +109,9 @@ class SystemHealthCheck:
         self.results["permissions"] = results
         return results
 
-    def check_dependencies(self) -> Dict[str, Any]:
+    def check_dependencies(self) -> dict[str, Any]:
         """Check for required external tools and Python packages"""
-        results: Dict[str, Any] = {
+        results: dict[str, Any] = {
             "python_version": {
                 "version": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
                 "healthy": sys.version_info >= (3, 8),
@@ -138,9 +138,9 @@ class SystemHealthCheck:
         self.results["dependencies"] = results
         return results
 
-    def check_network_connectivity(self) -> Dict[str, Any]:
+    def check_network_connectivity(self) -> dict[str, Any]:
         """Check network connectivity to trackers and qBittorrent"""
-        results: Dict[str, Any] = {"qbittorrent": {}, "trackers": {}, "dns": {}}
+        results: dict[str, Any] = {"qbittorrent": {}, "trackers": {}, "dns": {}}
 
         # Check qBittorrent connectivity
         host = self.config.get("qbit_host", "localhost")
@@ -150,7 +150,7 @@ class SystemHealthCheck:
             sock = socket.create_connection((host, port), timeout=5)
             sock.close()
             results["qbittorrent"] = {"reachable": True, "host": host, "port": port}
-        except (socket.timeout, socket.error) as e:
+        except (TimeoutError, OSError) as e:
             results["qbittorrent"] = {
                 "reachable": False,
                 "host": host,
@@ -175,9 +175,9 @@ class SystemHealthCheck:
         self.results["network"] = results
         return results
 
-    def check_docker_health(self) -> Dict[str, Any]:
+    def check_docker_health(self) -> dict[str, Any]:
         """Check Docker daemon and container health if using Docker mode"""
-        results: Dict[str, Any] = {
+        results: dict[str, Any] = {
             "daemon_running": False,
             "container_status": None,
             "path_mappings": {},
@@ -233,11 +233,11 @@ class SystemHealthCheck:
         self.results["docker"] = results
         return results
 
-    def check_qbittorrent_health(self) -> Dict[str, Any]:
+    def check_qbittorrent_health(self) -> dict[str, Any]:
         """Detailed qBittorrent health checks"""
         from ..api.qbittorrent import QBittorrentAPI
 
-        results: Dict[str, Any] = {
+        results: dict[str, Any] = {
             "api_accessible": False,
             "version": None,
             "free_space": None,
@@ -305,14 +305,14 @@ class SystemHealthCheck:
         self.results["qbittorrent"] = results
         return results
 
-    def check_performance_metrics(self) -> Dict[str, Any]:
+    def check_performance_metrics(self) -> dict[str, Any]:
         """Check system performance metrics"""
         cpu_percent = psutil.cpu_percent(interval=1)
         memory_info = psutil.virtual_memory()
         load_avg = psutil.getloadavg() if hasattr(psutil, "getloadavg") else [0, 0, 0]
         cpu_count = psutil.cpu_count()
 
-        results: Dict[str, Any] = {
+        results: dict[str, Any] = {
             "cpu_percent": cpu_percent,
             "memory": {
                 "percent": memory_info.percent,
@@ -333,7 +333,7 @@ class SystemHealthCheck:
         self.results["performance"] = results
         return results
 
-    def run_all_checks(self) -> Dict[str, Any]:
+    def run_all_checks(self) -> dict[str, Any]:
         """Run all health checks with progress indicator"""
         checks = [
             ("Disk Space", self.check_disk_space),
@@ -478,14 +478,14 @@ class SystemHealthCheck:
         )
 
 
-def run_comprehensive_health_check(config: Dict[str, Any]) -> bool:
+def run_comprehensive_health_check(config: dict[str, Any]) -> bool:
     """Run comprehensive health checks"""
     checker = SystemHealthCheck(config)
     checker.run_all_checks()
     return checker.display_results()
 
 
-def run_quick_health_check(config: Dict[str, Any]) -> bool:
+def run_quick_health_check(config: dict[str, Any]) -> bool:
     """Run a quick health check (essential checks only)"""
     console.print("[cyan]Running quick health check...[/cyan]")
 
@@ -522,7 +522,7 @@ def run_quick_health_check(config: Dict[str, Any]) -> bool:
 class ContinuousMonitor:
     """Continuous health monitoring"""
 
-    def __init__(self, config: Dict[str, Any], interval: int = 60):
+    def __init__(self, config: dict[str, Any], interval: int = 60):
         self.config = config
         self.interval = interval
         self.history = []
@@ -577,7 +577,7 @@ class ContinuousMonitor:
 class MetadataHealthCheck:
     """Metadata processing health checks"""
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         self.config = config
         self.results = {
             "metadata_dependencies": {},
@@ -586,7 +586,7 @@ class MetadataHealthCheck:
             "validation_rules": {},
         }
 
-    def check_metadata_dependencies(self) -> Dict[str, Any]:
+    def check_metadata_dependencies(self) -> dict[str, Any]:
         """Check metadata processing dependencies"""
         results = {}
 
@@ -639,7 +639,7 @@ class MetadataHealthCheck:
         self.results["metadata_dependencies"] = results
         return results
 
-    def check_api_connectivity(self) -> Dict[str, Any]:
+    def check_api_connectivity(self) -> dict[str, Any]:
         """Check connectivity to metadata APIs"""
         results = {}
 
@@ -677,7 +677,7 @@ class MetadataHealthCheck:
         self.results["api_connectivity"] = results
         return results
 
-    def check_processing_capabilities(self) -> Dict[str, Any]:
+    def check_processing_capabilities(self) -> dict[str, Any]:
         """Check metadata processing capabilities"""
         results = {}
 
@@ -736,7 +736,7 @@ class MetadataHealthCheck:
         self.results["processing_capabilities"] = results
         return results
 
-    def check_validation_rules(self) -> Dict[str, Any]:
+    def check_validation_rules(self) -> dict[str, Any]:
         """Check metadata validation rules"""
         results = {}
 
@@ -765,7 +765,7 @@ class MetadataHealthCheck:
         self.results["validation_rules"] = results
         return results
 
-    def run_all_checks(self) -> Dict[str, Any]:
+    def run_all_checks(self) -> dict[str, Any]:
         """Run all metadata health checks"""
         console.print("[cyan]Running metadata health checks...[/cyan]")
 
@@ -831,15 +831,15 @@ class MetadataHealthCheck:
 class EnhancedSystemHealthCheck(SystemHealthCheck):
     """Enhanced system health check with metadata capabilities"""
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         super().__init__(config)
         self.metadata_checker = MetadataHealthCheck(config)
 
-    def check_metadata_health(self) -> Dict[str, Any]:
+    def check_metadata_health(self) -> dict[str, Any]:
         """Check metadata processing health"""
         return self.metadata_checker.run_all_checks()
 
-    def run_comprehensive_check(self) -> Dict[str, Any]:
+    def run_comprehensive_check(self) -> dict[str, Any]:
         """Run comprehensive health check including metadata"""
         console.print("[bold cyan]Running Comprehensive Health Check[/bold cyan]")
         console.print("=" * 50)

@@ -18,7 +18,7 @@ import re
 import hashlib
 import bencodepy
 from pathlib import Path
-from typing import Dict, Optional, Any
+from typing import Any
 from dataclasses import dataclass
 
 from rich.console import Console
@@ -163,7 +163,7 @@ class AudiobookProcessor:
 
         return shortened.strip()
 
-    def parse_filename_metadata(self, directory_path: str) -> Dict[str, str]:
+    def parse_filename_metadata(self, directory_path: str) -> dict[str, str]:
         """Extract metadata from directory/filename structure"""
         dir_name = os.path.basename(directory_path.rstrip("/"))
 
@@ -201,7 +201,7 @@ class AudiobookProcessor:
             console.print("[dim]    Trying fallback patterns...[/dim]")
             return {}
 
-    def extract_m4b_metadata(self, m4b_path: str) -> Dict[str, Any]:
+    def extract_m4b_metadata(self, m4b_path: str) -> dict[str, Any]:
         """Extract metadata from M4B file using Mutagen"""
         if not os.path.exists(m4b_path):
             return {}
@@ -251,7 +251,7 @@ class AudiobookProcessor:
             return str(value) if value else default
         return default
 
-    def create_torrent_for_audiobook(self, directory_path: str) -> Optional[str]:
+    def create_torrent_for_audiobook(self, directory_path: str) -> str | None:
         """Create a torrent file for an audiobook directory with RED compatibility checks"""
         if not os.path.exists(directory_path):
             console.print(f"[red]❌ Directory not found: {directory_path}[/red]")
@@ -350,7 +350,7 @@ class AudiobookProcessor:
             print(f"❌ Error creating torrent: {e}")
             return None
 
-    def combine_metadata(self, directory_path: str) -> Optional[AudiobookMetadata]:
+    def combine_metadata(self, directory_path: str) -> AudiobookMetadata | None:
         """Combine filename and M4B metadata into structured format"""
 
         # Parse filename metadata
@@ -398,7 +398,7 @@ class AudiobookProcessor:
             print(f"❌ Error combining metadata: {e}")
             return None
 
-    def format_red_metadata(self, metadata: AudiobookMetadata) -> Dict[str, Any]:
+    def format_red_metadata(self, metadata: AudiobookMetadata) -> dict[str, Any]:
         """Format metadata for RED upload"""
 
         # Format title for RED (Author - Series - Volume)

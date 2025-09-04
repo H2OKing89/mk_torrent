@@ -285,7 +285,7 @@ class TestSecureCredentialManager:
             )
 
         # Check that password was removed from config file
-        with open(config_file, "r") as f:
+        with open(config_file) as f:
             updated_config = json.load(f)
 
         assert "qbit_password" not in updated_config
@@ -310,7 +310,7 @@ class TestSecureCredentialManager:
             )
 
         # Check that passkey was replaced in trackers file
-        with open(trackers_file, "r") as f:
+        with open(trackers_file) as f:
             updated_content = f.read()
 
         assert "SECURE_PASSKEY_STORED" in updated_content

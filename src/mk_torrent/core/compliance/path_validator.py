@@ -3,7 +3,7 @@ Path validation for different trackers
 """
 
 from pathlib import Path
-from typing import Dict, Any, List, Tuple, Optional
+from typing import Any
 from dataclasses import dataclass
 import unicodedata
 import logging
@@ -16,7 +16,7 @@ class PathRule:
     """Path validation rule"""
 
     max_length: int = 255
-    forbidden_chars: Optional[List[str]] = None
+    forbidden_chars: list[str] | None = None
     require_unicode_nfc: bool = False
 
     def __post_init__(self):
@@ -42,7 +42,7 @@ class PathValidator:
         self.tracker = tracker.lower()
         self.rule = self.TRACKER_RULES.get(self.tracker, self.TRACKER_RULES["default"])
 
-    def validate(self, path: Path) -> Tuple[bool, List[str]]:
+    def validate(self, path: Path) -> tuple[bool, list[str]]:
         """Validate a path against tracker rules"""
         issues = []
         path_str = str(path)
@@ -67,9 +67,9 @@ class PathValidator:
 
         return len(issues) == 0, issues
 
-    def validate_tree(self, root: Path) -> Dict[str, Any]:
+    def validate_tree(self, root: Path) -> dict[str, Any]:
         """Validate all paths in a directory tree"""
-        invalid_files: List[Dict[str, Any]] = []
+        invalid_files: list[dict[str, Any]] = []
         total_files = 0
         longest_path = ""
         longest_length = 0
@@ -121,7 +121,7 @@ class PathValidator:
 
         return results
 
-    def check_single_path(self, path_str: str) -> Dict[str, Any]:
+    def check_single_path(self, path_str: str) -> dict[str, Any]:
         """Check a single path string for compliance"""
         valid, issues = self.validate(Path(path_str))
 
@@ -140,12 +140,12 @@ class PathValidator:
         }
 
     @classmethod
-    def get_available_trackers(cls) -> List[str]:
+    def get_available_trackers(cls) -> list[str]:
         """Get list of available tracker rules"""
         return [k for k in cls.TRACKER_RULES.keys() if k != "default"]
 
     @classmethod
-    def compare_trackers(cls, path_str: str) -> Dict[str, Dict[str, Any]]:
+    def compare_trackers(cls, path_str: str) -> dict[str, dict[str, Any]]:
         """Compare path compliance across all trackers"""
         results = {}
 

@@ -5,7 +5,7 @@ Provides comprehensive validation for audiobook metadata, including both
 general content validation and tracker-specific requirements.
 """
 
-from typing import Dict, List, Any
+from typing import Any
 from .common import (
     non_empty,
     is_year,
@@ -20,7 +20,7 @@ from .common import (
 )
 
 
-def validate_audiobook(metadata: Dict[str, Any]) -> Dict[str, Any]:
+def validate_audiobook(metadata: dict[str, Any]) -> dict[str, Any]:
     """
     Validate audiobook metadata with tracker-agnostic and RED-specific checks.
 
@@ -91,7 +91,7 @@ def validate_audiobook(metadata: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def _validate_title(metadata: Dict, errors: List[str], warnings: List[str]) -> None:
+def _validate_title(metadata: dict, errors: list[str], warnings: list[str]) -> None:
     """Validate title field."""
     title = metadata.get("title", "")
 
@@ -102,7 +102,7 @@ def _validate_title(metadata: Dict, errors: List[str], warnings: List[str]) -> N
             warnings.append("Title has leading/trailing whitespace")
 
 
-def _validate_author(metadata: Dict, errors: List[str], warnings: List[str]) -> None:
+def _validate_author(metadata: dict, errors: list[str], warnings: list[str]) -> None:
     """Validate author field."""
     author = metadata.get("author", "")
 
@@ -113,7 +113,7 @@ def _validate_author(metadata: Dict, errors: List[str], warnings: List[str]) -> 
             warnings.append("Author has leading/trailing whitespace")
 
 
-def _validate_album(metadata: Dict, errors: List[str], warnings: List[str]) -> None:
+def _validate_album(metadata: dict, errors: list[str], warnings: list[str]) -> None:
     """Validate album field (RED wants this present)."""
     album = metadata.get("album", "")
     title = metadata.get("title", "")
@@ -125,7 +125,7 @@ def _validate_album(metadata: Dict, errors: List[str], warnings: List[str]) -> N
         )
 
 
-def _validate_year(metadata: Dict, errors: List[str], warnings: List[str]) -> None:
+def _validate_year(metadata: dict, errors: list[str], warnings: list[str]) -> None:
     """Validate year field."""
     year = metadata.get("year")
 
@@ -140,7 +140,7 @@ def _validate_year(metadata: Dict, errors: List[str], warnings: List[str]) -> No
         warnings.append("Year not provided - recommended for tracker compliance")
 
 
-def _validate_duration(metadata: Dict, errors: List[str], warnings: List[str]) -> None:
+def _validate_duration(metadata: dict, errors: list[str], warnings: list[str]) -> None:
     """Validate duration field."""
     duration = metadata.get("duration_sec")
 
@@ -156,7 +156,7 @@ def _validate_duration(metadata: Dict, errors: List[str], warnings: List[str]) -
 
 
 def _validate_format_encoding(
-    metadata: Dict, errors: List[str], warnings: List[str]
+    metadata: dict, errors: list[str], warnings: list[str]
 ) -> None:
     """Validate format and encoding fields."""
     format_val = metadata.get("format", "")
@@ -181,7 +181,7 @@ def _validate_format_encoding(
 
 
 def _validate_identifiers(
-    metadata: Dict, errors: List[str], warnings: List[str]
+    metadata: dict, errors: list[str], warnings: list[str]
 ) -> None:
     """Validate ASIN and ISBN identifiers."""
     asin = metadata.get("asin", "")
@@ -199,7 +199,7 @@ def _validate_identifiers(
 
 
 def _validate_volume_series(
-    metadata: Dict, errors: List[str], warnings: List[str]
+    metadata: dict, errors: list[str], warnings: list[str]
 ) -> None:
     """Validate volume and series fields."""
     volume = metadata.get("volume", "")
@@ -219,7 +219,7 @@ def _validate_volume_series(
         warnings.append("Volume specified but no series name")
 
 
-def _validate_narrator(metadata: Dict, errors: List[str], warnings: List[str]) -> None:
+def _validate_narrator(metadata: dict, errors: list[str], warnings: list[str]) -> None:
     """Validate narrator field."""
     narrator = metadata.get("narrator", "")
 
@@ -235,7 +235,7 @@ def _validate_narrator(metadata: Dict, errors: List[str], warnings: List[str]) -
 
 
 def _validate_publisher_description(
-    metadata: Dict, errors: List[str], warnings: List[str]
+    metadata: dict, errors: list[str], warnings: list[str]
 ) -> None:
     """Validate publisher and description fields."""
     publisher = metadata.get("publisher", "")
@@ -256,7 +256,7 @@ def _validate_publisher_description(
             warnings.append("Description contains HTML tags - should be cleaned")
 
 
-def _validate_language(metadata: Dict, errors: List[str], warnings: List[str]) -> None:
+def _validate_language(metadata: dict, errors: list[str], warnings: list[str]) -> None:
     """Validate language field."""
     language = metadata.get("language", "")
 
@@ -269,7 +269,7 @@ def _validate_language(metadata: Dict, errors: List[str], warnings: List[str]) -
 
 
 def _validate_genres_tags(
-    metadata: Dict, errors: List[str], warnings: List[str]
+    metadata: dict, errors: list[str], warnings: list[str]
 ) -> None:
     """Validate genres and tags fields."""
     genres = metadata.get("genres", [])
@@ -289,7 +289,7 @@ def _validate_genres_tags(
         warnings.append("Many tags specified - may be excessive")
 
 
-def _validate_red_compliance(metadata: Dict, warnings: List[str]) -> None:
+def _validate_red_compliance(metadata: dict, warnings: list[str]) -> None:
     """Add RED-specific validation hints."""
     title = metadata.get("title", "")
     album = metadata.get("album", "")

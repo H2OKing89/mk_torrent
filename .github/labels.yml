@@ -1,0 +1,124 @@
+# GitHub Labels Configuration
+# This file defines all labels used in the repository for automatic sync
+
+# Type labels (what kind of change)
+type/feature:
+  color: "2ea043"
+  description: "New feature or enhancement"
+
+type/refactor:
+  color: "A371F7"
+  description: "Internal code refactoring"
+
+type/tests:
+  color: "0e8a16"
+  description: "Test-related changes only"
+
+type/docs:
+  color: "0366d6"
+  description: "Documentation updates"
+
+type/bug:
+  color: "d73a4a"
+  description: "Bug fix"
+
+type/ci:
+  color: "1f883d"
+  description: "CI/CD and workflow changes"
+
+type/chore:
+  color: "fef2c0"
+  description: "Maintenance and housekeeping"
+
+# Area labels (which part of the codebase)
+area/metadata:
+  color: "5319e7"
+  description: "Metadata core functionality"
+
+area/trackers:
+  color: "b60205"
+  description: "Tracker integration (RED, etc.)"
+
+area/qbittorrent:
+  color: "1d76db"
+  description: "qBittorrent API integration"
+
+area/utils:
+  color: "0052cc"
+  description: "Utility functions and helpers"
+
+area/cli:
+  color: "006b75"
+  description: "Command line interface"
+
+# Size labels (how big is the change)
+size/XS:
+  color: "ededed"
+  description: "Extra small change (<10 lines)"
+
+size/S:
+  color: "ededed"
+  description: "Small change (10-50 lines)"
+
+size/M:
+  color: "ededed"
+  description: "Medium change (51-200 lines)"
+
+size/L:
+  color: "ededed"
+  description: "Large change (201-500 lines)"
+
+size/XL:
+  color: "ededed"
+  description: "Extra large change (>500 lines)"
+
+# Priority labels
+priority/low:
+  color: "c2e0c6"
+  description: "Low priority"
+
+priority/medium:
+  color: "fbca04"
+  description: "Medium priority"
+
+priority/high:
+  color: "ff9500"
+  description: "High priority"
+
+priority/critical:
+  color: "d93f0b"
+  description: "Critical priority"
+
+# Status labels
+status/needs-review:
+  color: "fbca04"
+  description: "Awaiting code review"
+
+status/needs-testing:
+  color: "1f883d"
+  description: "Needs testing or validation"
+
+status/blocked:
+  color: "d93f0b"
+  description: "Blocked by dependency or issue"
+
+status/wip:
+  color: "fef2c0"
+  description: "Work in progress"
+
+# Special labels
+good-first-issue:
+  color: "7057ff"
+  description: "Good for newcomers"
+
+help-wanted:
+  color: "008672"
+  description: "Community help requested"
+
+needs-triage:
+  color: "d876e3"
+  description: "Needs initial triage"
+
+automerge:
+  color: "0e8a16"
+  description: "Auto-merge when CI passes"

@@ -1,0 +1,57 @@
+name: ✨ Feature Request
+description: Suggest a new feature or enhancement
+labels: [enhancement, needs-triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a feature! Please describe what you'd like to see added.
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      description: Which part of mk_torrent would this affect?
+      options:
+        - Metadata extraction
+        - RED tracker integration
+        - qBittorrent integration
+        - CLI interface
+        - Torrent creation
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem will this solve?
+      description: Describe the problem or use case this feature would address
+      placeholder: |
+        As a user, I want to...
+        Currently, I have to...
+        This would help because...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: What would you like to see implemented?
+      placeholder: Describe your ideal solution or feature
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Are there any workarounds or alternative approaches?
+      placeholder: What other solutions have you considered?
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Any other context, screenshots, or examples
+      placeholder: Examples, mockups, related features, etc.

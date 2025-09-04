@@ -8,7 +8,7 @@ metadata processors, sources, and services must implement.
 from __future__ import annotations
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Protocol, Union
+from typing import Any, Protocol, Union
 
 
 @dataclass
@@ -26,9 +26,9 @@ class AudiobookMeta:
     album: str = ""  # default: title
     series: str = ""
     volume: str = ""  # e.g., "08"
-    year: Optional[int] = None
+    year: int | None = None
     narrator: str = ""
-    duration_sec: Optional[int] = None
+    duration_sec: int | None = None
     format: str = ""  # AAC/FLAC/MP3/etc
     encoding: str = ""  # V0/CBR320/Lossless/etc
     asin: str = ""
@@ -36,31 +36,31 @@ class AudiobookMeta:
     publisher: str = ""
     copyright: str = ""  # Enhanced field for copyright notice
     release_date: str = ""  # Enhanced field for release date (ISO format)
-    rating: Optional[float] = None  # Enhanced field for rating (0.0-5.0)
+    rating: float | None = None  # Enhanced field for rating (0.0-5.0)
     language: str = "en"
     region: str = ""  # Enhanced field for region/country code
     literature_type: str = ""  # Enhanced field (fiction, non-fiction, etc.)
     format_type: str = ""  # Enhanced field (m4b, mp3, etc.)
-    is_adult: Optional[bool] = None  # Enhanced field for adult content flag
+    is_adult: bool | None = None  # Enhanced field for adult content flag
     description: str = ""
     description_html: str = ""  # Enhanced field for HTML description
     description_text: str = ""  # Enhanced field for plain text description
-    genres: List[str] = field(default_factory=list)
-    tags: List[str] = field(default_factory=list)
-    chapters: List[Dict[str, Any]] = field(default_factory=list)
-    files: List[Path] = field(default_factory=list)
-    source_path: Optional[Path] = None
+    genres: list[str] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
+    chapters: list[dict[str, Any]] = field(default_factory=list)
+    files: list[Path] = field(default_factory=list)
+    source_path: Path | None = None
     artwork_url: str = ""
-    cover_dimensions: Optional[Dict[str, int]] = (
+    cover_dimensions: dict[str, int] | None = (
         None  # Enhanced field {"width": 600, "height": 800}
     )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "AudiobookMeta":
+    def from_dict(cls, data: dict[str, Any]) -> AudiobookMeta:
         """Create instance from dictionary data."""
         # Filter out unknown fields and convert Path objects
         valid_fields = {k: v for k, v in data.items() if k in cls.__dataclass_fields__}
@@ -84,8 +84,8 @@ class ValidationResult:
     """Result of metadata validation."""
 
     valid: bool
-    errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
     completeness: float = 0.0  # 0.0 to 1.0
 
     def add_error(self, message: str) -> None:
@@ -97,7 +97,7 @@ class ValidationResult:
         """Add a warning message."""
         self.warnings.append(message)
 
-    def merge(self, other: "ValidationResult") -> "ValidationResult":
+    def merge(self, other: ValidationResult) -> ValidationResult:
         """Merge another validation result into this one."""
         return ValidationResult(
             valid=self.valid and other.valid,
@@ -110,7 +110,7 @@ class ValidationResult:
 class MetadataSource(Protocol):
     """Protocol for metadata extraction sources."""
 
-    def extract(self, source: Union[Path, str]) -> Dict[str, Any]:
+    def extract(self, source: Path | str) -> dict[str, Any]:
         """Extract metadata from a source (file path, URL, etc.)."""
         ...
 
@@ -122,7 +122,7 @@ class MetadataSource(Protocol):
 class MetadataService(Protocol):
     """Protocol for metadata processing services."""
 
-    def process(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def process(self, data: dict[str, Any]) -> dict[str, Any]:
         """Process/transform metadata."""
         ...
 
@@ -130,9 +130,7 @@ class MetadataService(Protocol):
 class MetadataValidator(Protocol):
     """Protocol for metadata validation."""
 
-    def validate(
-        self, metadata: Union[AudiobookMeta, Dict[str, Any]]
-    ) -> ValidationResult:
+    def validate(self, metadata: AudiobookMeta | dict[str, Any]) -> ValidationResult:
         """Validate metadata and return detailed results."""
         ...
 
@@ -140,15 +138,15 @@ class MetadataValidator(Protocol):
 class MetadataProcessor(Protocol):
     """Protocol for content-type specific metadata processors."""
 
-    def extract(self, source: Union[Path, str]) -> Dict[str, Any]:
+    def extract(self, source: Path | str) -> dict[str, Any]:
         """Extract metadata from source using all available sources/services."""
         ...
 
-    def validate(self, metadata: Dict[str, Any]) -> ValidationResult:
+    def validate(self, metadata: dict[str, Any]) -> ValidationResult:
         """Validate extracted metadata."""
         ...
 
-    def enhance(self, metadata: Dict[str, Any]) -> Dict[str, Any]:
+    def enhance(self, metadata: dict[str, Any]) -> dict[str, Any]:
         """Add derived/computed fields to metadata."""
         ...
 
@@ -156,15 +154,15 @@ class MetadataProcessor(Protocol):
 class MetadataMapper(Protocol):
     """Protocol for tracker-specific field mapping."""
 
-    def map_to_tracker(self, metadata: AudiobookMeta) -> Dict[str, Any]:
+    def map_to_tracker(self, metadata: AudiobookMeta) -> dict[str, Any]:
         """Map internal metadata model to tracker-specific format."""
         ...
 
-    def map_from_tracker(self, tracker_data: Dict[str, Any]) -> Dict[str, Any]:
+    def map_from_tracker(self, tracker_data: dict[str, Any]) -> dict[str, Any]:
         """Map tracker-specific data back to internal format."""
         ...
 
 
 # Type aliases for clarity
 Source = Union[Path, str]
-MetadataDict = Dict[str, Any]
+MetadataDict = dict[str, Any]

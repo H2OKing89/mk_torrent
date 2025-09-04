@@ -7,7 +7,7 @@ to provide comprehensive audiobook metadata extraction.
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, Union
+from typing import Any
 
 from ..base import ValidationResult
 from ..sources.audnexus import AudnexusSource
@@ -42,7 +42,7 @@ class AudiobookProcessor:
             self._audnexus = AudnexusSource(region=self.region)
         return self._audnexus
 
-    def extract(self, source: Union[str, Path]) -> Dict[str, Any]:
+    def extract(self, source: str | Path) -> dict[str, Any]:
         """
         Extract audiobook metadata from source.
 
@@ -88,7 +88,7 @@ class AudiobookProcessor:
 
         return metadata
 
-    def _extract_from_filename(self, source_path: Path) -> Dict[str, Any]:
+    def _extract_from_filename(self, source_path: Path) -> dict[str, Any]:
         """
         Extract metadata from filename patterns.
 
@@ -140,7 +140,7 @@ class AudiobookProcessor:
 
         return metadata
 
-    def validate(self, metadata: Dict[str, Any]) -> ValidationResult:
+    def validate(self, metadata: dict[str, Any]) -> ValidationResult:
         """
         Validate audiobook metadata using comprehensive validator.
 
@@ -178,7 +178,7 @@ class AudiobookProcessor:
 
         return result
 
-    def enhance(self, metadata: Dict[str, Any]) -> Dict[str, Any]:
+    def enhance(self, metadata: dict[str, Any]) -> dict[str, Any]:
         """
         Enhance metadata with derived fields and cleanup.
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """qBittorrent API integration using qbittorrent-api library"""
 
-from typing import Optional, Dict, Any, List, Tuple
+from typing import Any
 import logging
 import requests
 import urllib3  # Add this import
@@ -141,7 +141,7 @@ class QBittorrentAPI:
         except Exception:
             return False
 
-    def test_connection(self) -> Tuple[bool, str]:
+    def test_connection(self) -> tuple[bool, str]:
         """Test connection to qBittorrent"""
         try:
             # First try to get API version (sometimes doesn't require auth)
@@ -177,7 +177,7 @@ class QBittorrentAPI:
         except Exception as e:
             return False, str(e)
 
-    def get_preferences(self) -> Optional[Dict[str, Any]]:
+    def get_preferences(self) -> dict[str, Any] | None:
         """Get qBittorrent preferences"""
         if not self.logged_in:
             if not self.login():
@@ -206,7 +206,7 @@ class QBittorrentAPI:
             console.print(f"[red]Error getting preferences: {e}[/red]")
             return None
 
-    def get_default_save_path(self) -> Optional[str]:
+    def get_default_save_path(self) -> str | None:
         """Get default save path from qBittorrent"""
         prefs = self.get_preferences()
         if prefs:
@@ -216,11 +216,11 @@ class QBittorrentAPI:
     def create_torrent(
         self,
         source_path: str,
-        trackers: Optional[list] = None,
+        trackers: list | None = None,
         comment: str = "",
         is_private: bool = False,
         piece_size: int = 0,
-    ) -> Tuple[bool, bytes]:
+    ) -> tuple[bool, bytes]:
         """Create torrent via API (if supported)"""
         if not self.logged_in:
             if not self.login():
@@ -234,9 +234,9 @@ class QBittorrentAPI:
         console.print("[yellow]Using alternative method...[/yellow]")
         return False, b""
 
-    def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """Perform comprehensive health check"""
-        results: Dict[str, Any] = {  # Fix: explicitly type the dict
+        results: dict[str, Any] = {  # Fix: explicitly type the dict
             "connection": False,
             "api_version": None,
             "authenticated": False,
@@ -310,7 +310,7 @@ class QBittorrentAPI:
 
         return results
 
-    def get_categories(self) -> Dict[str, Any]:
+    def get_categories(self) -> dict[str, Any]:
         """Get all categories from qBittorrent"""
         if not self.logged_in:
             if not self.login():
@@ -346,7 +346,7 @@ class QBittorrentAPI:
             console.print(f"[red]Error creating category: {e}[/red]")
             return False
 
-    def get_tags(self) -> List[str]:
+    def get_tags(self) -> list[str]:
         """Get all tags from qBittorrent"""
         if not self.logged_in:
             if not self.login():
@@ -364,7 +364,7 @@ class QBittorrentAPI:
             console.print(f"[red]Error getting tags: {e}[/red]")
         return []
 
-    def create_tags(self, tags: List[str]) -> bool:
+    def create_tags(self, tags: list[str]) -> bool:
         """Create new tags in qBittorrent"""
         if not self.logged_in:
             if not self.login():
@@ -386,7 +386,7 @@ class QBittorrentAPI:
             console.print(f"[red]Error creating tags: {e}[/red]")
             return False
 
-    def sync_categories_and_tags(self, config: Dict[str, Any]) -> None:
+    def sync_categories_and_tags(self, config: dict[str, Any]) -> None:
         """Sync categories and tags from config to qBittorrent"""
         console.print("[cyan]Syncing categories and tags with qBittorrent...[/cyan]")
 
@@ -407,7 +407,7 @@ class QBittorrentAPI:
                 console.print(f"  [green]✓ Created tags: {', '.join(new_tags)}[/green]")
 
 
-def run_health_check(config: Dict[str, Any]) -> bool:
+def run_health_check(config: dict[str, Any]) -> bool:
     """Run health check with config"""
     console.print(
         Panel.fit(
@@ -575,7 +575,7 @@ def check_docker_connectivity(container_name: str) -> bool:
         return False
 
 
-def validate_qbittorrent_config(config: Dict[str, Any]) -> bool:
+def validate_qbittorrent_config(config: dict[str, Any]) -> bool:
     """Validate qBittorrent connection configuration"""
     if not config.get("qbit_host"):
         return False
@@ -611,7 +611,7 @@ def validate_qbittorrent_config(config: Dict[str, Any]) -> bool:
         return False
 
 
-def sync_qbittorrent_metadata(config: Dict[str, Any]) -> None:
+def sync_qbittorrent_metadata(config: dict[str, Any]) -> None:
     """Sync categories and tags with qBittorrent"""
     try:
         client = Client(

@@ -7,7 +7,7 @@ These provide the building blocks for more complex validators.
 
 import re
 from datetime import datetime
-from typing import Any, Optional, Tuple
+from typing import Any
 
 
 def is_year(value: Any) -> bool:
@@ -101,7 +101,7 @@ def is_valid_isbn(value: str) -> bool:
     return False
 
 
-def normalize_volume(value: Any) -> Optional[str]:
+def normalize_volume(value: Any) -> str | None:
     """Normalize volume to zero-padded string (e.g., '03', '12')."""
     if value is None:
         return None
@@ -126,7 +126,7 @@ def normalize_volume(value: Any) -> Optional[str]:
 
 def validate_year_drift(
     value: Any, max_future_years: int = 2
-) -> Tuple[bool, Optional[str]]:
+) -> tuple[bool, str | None]:
     """
     Check if year is reasonable, allowing some future drift.
 

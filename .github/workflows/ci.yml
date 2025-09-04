@@ -4,9 +4,25 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     branches: [ main ]
+    paths:
+      - "**/*.py"
+      - "pyproject.toml"
+      - "requirements*.txt"
+      - ".pre-commit-config.yaml"
+      - ".github/workflows/ci.yml"
   push:
     branches: [ main ]
+    paths:
+      - "**/*.py"
+      - "pyproject.toml"
+      - "requirements*.txt"
+      - ".pre-commit-config.yaml"
+      - ".github/workflows/ci.yml"
   workflow_dispatch:
+
+# Default permissions (least privilege)
+permissions:
+  contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -16,6 +32,9 @@ jobs:
   lint:
     name: Lint (pre-commit)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write  # For SARIF upload
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -30,9 +49,24 @@ jobs:
       - run: pip install pyright
       - run: pyright
 
+      # Generate Ruff SARIF report for code scanning
+      - name: Run Ruff with SARIF output
+        run: |
+          pip install ruff
+          ruff check --output-format=sarif --output-file=ruff.sarif . || true
+
+      - name: Upload Ruff SARIF to GitHub
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: ruff.sarif
+          category: ruff
+
   test:
     name: Tests (pytest)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     strategy:
       matrix:
         python-version: ["3.10", "3.11", "3.12"]
@@ -46,6 +80,15 @@ jobs:
       - run: pip install -r requirements.txt
       - run: pip install -e .
       - run: pytest -q --maxfail=1 --disable-warnings --cov=src --cov-report=xml
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: matrix.python-version == '3.12'  # Only upload once
+        with:
+          files: coverage.xml
+          fail_ci_if_error: false  # Don't fail CI if Codecov is down
+          verbose: true
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:

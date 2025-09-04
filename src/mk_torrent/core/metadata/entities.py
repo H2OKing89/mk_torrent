@@ -9,7 +9,7 @@ These entities represent the future comprehensive model outlined in Document #04
 from __future__ import annotations
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 from datetime import date, datetime
 
 
@@ -18,7 +18,7 @@ class PersonRef:
     """Reference to a person (author, narrator, etc.)."""
 
     name: str
-    asin: Optional[str] = None  # Audnexus author ASIN when present
+    asin: str | None = None  # Audnexus author ASIN when present
     role: str = ""  # "author", "narrator"
 
 
@@ -28,7 +28,7 @@ class GenreTag:
 
     name: str
     type: str = "genre"  # "genre" | "tag" (Audnexus); others allowed
-    asin: Optional[str] = None
+    asin: str | None = None
 
 
 @dataclass
@@ -37,8 +37,8 @@ class SeriesRef:
 
     name: str = ""
     position_str: str = ""  # e.g. "3"
-    position_num: Optional[float] = None  # 3.0, 3.5 if needed
-    asin: Optional[str] = None
+    position_num: float | None = None  # 3.0, 3.5 if needed
+    asin: str | None = None
 
 
 @dataclass
@@ -57,10 +57,10 @@ class ImageAsset:
 
     url: str = ""  # remote art (Audnexus)
     embedded: bool = False
-    width: Optional[int] = None
-    height: Optional[int] = None
+    width: int | None = None
+    height: int | None = None
     format: str = ""  # "JPEG" etc.
-    size_bytes: Optional[int] = None
+    size_bytes: int | None = None
 
 
 @dataclass
@@ -69,12 +69,12 @@ class AudioStream:
 
     codec: str = ""  # "AAC", "FLAC", "MP3"
     profile: str = ""  # "LC" etc.
-    bitrate_bps: Optional[int] = None
+    bitrate_bps: int | None = None
     bitrate_mode: str = ""  # "CBR" | "VBR"
-    channels: Optional[int] = None
+    channels: int | None = None
     layout: str = ""  # "L R"
-    sample_rate_hz: Optional[int] = None
-    duration_sec: Optional[float] = None
+    sample_rate_hz: int | None = None
+    duration_sec: float | None = None
     compression: str = ""  # "Lossy" | "Lossless"
 
 
@@ -83,7 +83,7 @@ class FileRef:
     """File reference with metadata."""
 
     path: Path
-    size_bytes: Optional[int] = None
+    size_bytes: int | None = None
     container: str = ""  # "MPEG-4"
     extension: str = ""  # "m4b"
 
@@ -93,9 +93,9 @@ class Provenance:
     """Data source provenance tracking."""
 
     source: str  # "mediainfo" | "audnexus" | "pathinfo"
-    fetched_at: Optional[datetime] = None
-    version: Optional[str] = None
-    raw: Dict[str, Any] = field(default_factory=dict)
+    fetched_at: datetime | None = None
+    version: str | None = None
+    raw: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -117,44 +117,44 @@ class AudiobookMetaRich:
     # People
     author_primary: str = ""  # convenience field
     narrator_primary: str = ""  # convenience field
-    authors: List[PersonRef] = field(default_factory=list)
-    narrators: List[PersonRef] = field(default_factory=list)
+    authors: list[PersonRef] = field(default_factory=list)
+    narrators: list[PersonRef] = field(default_factory=list)
 
     # Publishing & identification
     asin: str = ""
     isbn: str = ""
     publisher: str = ""
     copyright: str = ""  # NEW: Copyright information
-    release_date: Optional[date] = None  # NEW: Full release date
-    year: Optional[int] = None
+    release_date: date | None = None  # NEW: Full release date
+    year: int | None = None
 
     # Content classification
     language: str = "en"  # ISO-639-1 where possible
     region: str = ""  # "us" etc.
     literature_type: str = ""  # "fiction"|"nonfiction"|...
     format_type: str = ""  # "unabridged"|"abridged"
-    is_adult: Optional[bool] = None
-    rating: Optional[float] = None  # 0.0 to 5.0 scale
+    is_adult: bool | None = None
+    rating: float | None = None  # 0.0 to 5.0 scale
 
     # Time & runtime
-    runtime_min: Optional[int] = None  # remote (Audnexus)
-    duration_sec: Optional[int] = None  # embedded (file trumps remote)
+    runtime_min: int | None = None  # remote (Audnexus)
+    duration_sec: int | None = None  # embedded (file trumps remote)
 
     # Description & topics
     description_html: str = ""  # raw HTML
     description_text: str = ""  # sanitized/plain text
-    genres: List[GenreTag] = field(default_factory=list)
-    tags: List[str] = field(default_factory=list)
+    genres: list[GenreTag] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
 
     # Media & structure
     cover: ImageAsset = field(default_factory=ImageAsset)
-    images: List[ImageAsset] = field(default_factory=list)
-    chapters: List[Chapter] = field(default_factory=list)
+    images: list[ImageAsset] = field(default_factory=list)
+    chapters: list[Chapter] = field(default_factory=list)
     audio: AudioStream = field(default_factory=AudioStream)
 
     # Files & paths
-    files: List[FileRef] = field(default_factory=list)
-    source_path: Optional[Path] = None  # the "main" file's path
+    files: list[FileRef] = field(default_factory=list)
+    source_path: Path | None = None  # the "main" file's path
 
     # Derived for pipeline consumers (slugging, compliance, UI)
     display_title: str = ""  # e.g., "How a Realist Hero… — vol_03"
@@ -162,14 +162,14 @@ class AudiobookMetaRich:
     artwork_url: str = ""  # kept for convenience
 
     # Provenance (keep originals for troubleshooting)
-    provenance: List[Provenance] = field(default_factory=list)
+    provenance: list[Provenance] = field(default_factory=list)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "AudiobookMetaRich":
+    def from_dict(cls, data: dict[str, Any]) -> AudiobookMetaRich:
         """Create instance from dictionary data."""
         # Handle cover_dimensions BEFORE filtering (it's not a dataclass field)
         cover_dimensions = data.get("cover_dimensions", None)
@@ -294,7 +294,7 @@ class AudiobookMetaRich:
 
         return cls(**valid_fields)
 
-    def to_simple_audiobook_meta(self) -> Dict[str, Any]:
+    def to_simple_audiobook_meta(self) -> dict[str, Any]:
         """Convert to simple AudiobookMeta format for backward compatibility."""
 
         # Extract cover dimensions from cover image asset

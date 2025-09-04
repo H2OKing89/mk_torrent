@@ -4,7 +4,7 @@ Upload workflow integration using the new tracker-agnostic architecture
 """
 
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any
 from rich.console import Console
 
 from ..api.trackers import get_tracker_api
@@ -16,7 +16,7 @@ console = Console()
 def upload_workflow(
     source_path: Path,
     tracker: str,
-    config: Dict[str, Any],
+    config: dict[str, Any],
     dry_run: bool = True,
     check_existing: bool = True,
 ) -> bool:
@@ -167,7 +167,7 @@ def upload_workflow(
 
 
 def check_existing_torrents(
-    tracker: str, metadata: Dict[str, Any], config: Dict[str, Any]
+    tracker: str, metadata: dict[str, Any], config: dict[str, Any]
 ) -> list:
     """
     Check for existing torrents on a tracker
