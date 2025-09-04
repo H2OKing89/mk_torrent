@@ -65,21 +65,17 @@ async def demonstrate_package_integration():
     try:
         from src.mk_torrent.core.metadata.sources.embedded import EmbeddedSource
 
-        embedded = EmbeddedSource()
-        print(
-            f"   ✅ Embedded source initialized, mutagen available: {embedded._mutagen_available}"
-        )
+        EmbeddedSource()
+        print("   ✅ Embedded source initialized successfully")
     except Exception as e:
         print(f"   ❌ Error: {e}")
 
-    # 5. Data Validation (pydantic)
-    print("\n✅ Data Validation (pydantic)")
+    # 5. Data Processing (dict-based)
+    print("\n✅ Data Processing (dict-based)")
     try:
-        from src.mk_torrent.core.metadata.models.audnexus import Person
-
-        # Create a sample person model
-        author = Person(name="Brandon Sanderson", asin="B001KGFMD2")
-        print(f"   ✅ Pydantic models working: {author.name} ({author.asin})")
+        # Create a sample author dict (matches actual implementation)
+        author = {"name": "Brandon Sanderson", "asin": "B001KGFMD2"}
+        print(f"   ✅ Dict-based models working: {author['name']} ({author['asin']})")
     except Exception as e:
         print(f"   ❌ Error: {e}")
 

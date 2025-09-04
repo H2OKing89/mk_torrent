@@ -19,8 +19,7 @@ src/mk_torrent/core/metadata/
   services/
     __init__.py
     html_cleaner.py       # nh3/bs4-based sanitizer (plain-text output)
-    format_detector.py    # Mutagen optional; VBR/CBR; lossless flags
-    image_finder.py       # cover discovery heuristics (tags, sidecar, API)
+    format_detector.py    # Comprehensive audio format detection & quality scoring
     tag_normalizer.py     # genres/tags normalization (lowercasing, dedupe)
     merge.py              # precedence-based field merger (declarative)
   validators/
@@ -30,9 +29,6 @@ src/mk_torrent/core/metadata/
   mappers/
     __init__.py
     red.py                # internal → RED upload fields mapping
-  schemas/
-    __init__.py
-    audiobook.py          # (optional) pydantic model for strict mode
 ```
 
 ## Module Organization Principles
@@ -67,11 +63,6 @@ src/mk_torrent/core/metadata/
 - Transform internal model to tracker-specific formats
 - Keeps tracker APIs clean and focused
 - Easy to add new trackers
-
-### Schemas (Optional Strict Validation)
-- Pydantic models for strict mode
-- Runtime validation when needed
-- Complement to dataclass-based primary model
 
 ## Migration Note
 

@@ -11,6 +11,9 @@ import os
 # Add the project root to Python path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# Import real data fixtures
+from tests.utils.real_data_helpers import real_three_source_metadata
+
 
 @pytest.fixture(scope="session")
 def temp_workspace():

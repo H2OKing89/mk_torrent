@@ -5,12 +5,14 @@ Implements the MetadataSource protocol to fetch data from api.audnex.us
 following the official API documentation (v1.8.0).
 
 Features:
-- Typed models with Pydantic validation
+- Direct dict-based data handling for optimal performance
 - Exponential backoff retry logic with tenacity
 - TTL caching with cachetools
 - Rate limiting with aiolimiter
 - HTML sanitization with nh3
 """
+
+from __future__ import annotations
 
 import logging
 from pathlib import Path
@@ -30,7 +32,7 @@ class AudnexusSource:
 
     Features:
     - Fetches audiobook metadata from api.audnex.us following v1.8.0 API spec
-    - Typed models with Pydantic validation
+    - Direct dict-based data handling for optimal performance
     - Exponential backoff retry logic
     - TTL caching for API responses
     - Rate limiting for polite API usage

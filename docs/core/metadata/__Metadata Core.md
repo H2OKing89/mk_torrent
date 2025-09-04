@@ -94,7 +94,7 @@ For immediate implementation needs, here are the most important sections with th
 ## 1) Goals
 
 * **Single, canonical metadata engine** that is easy to extend.
-* Clean separation of **content processors** (audiobook/music/video), **sources** (embedded tags, Audnexus API), and **services** (HTML cleaning, format detection, image discovery, tag normalization).
+* Clean separation of **content processors** (audiobook/music/video), **sources** (embedded tags, Audnexus API), and **services** (HTML cleaning, format detection, tag normalization).
 * **Deterministic merging** of multiple sources with precedence rules.
 * **Strict-but-friendly validation** with actionable error/warning output for tracker requirements (starting with RED).
 * A **stable internal model** (dataclass / pydantic) that downstreams (trackers, CLI, workflows) can rely on.
@@ -255,7 +255,7 @@ test = [
 ## 1) Goals
 
 * **Single, canonical metadata engine** that is easy to extend.
-* Clean separation of **content processors** (audiobook/music/video), **sources** (embedded tags, Audnexus API), and **services** (HTML cleaning, format detection, image discovery, tag normalization).
+* Clean separation of **content processors** (audiobook/music/video), **sources** (embedded tags, Audnexus API), and **services** (HTML cleaning, format detection, tag normalization).
 * **Deterministic merging** of multiple sources with precedence rules.
 * **Strict-but-friendly validation** with actionable error/warning output for tracker requirements (starting with RED).
 * A **stable internal model** (dataclass / pydantic) that downstreams (trackers, CLI, workflows) can rely on.
@@ -299,7 +299,7 @@ test = [
   - **embedded.py**: Technical file properties (duration, bitrate, codec, file size, chapters)
   - **audnexus.py**: Authoritative descriptive metadata (title, author, series, description)
   - **pathinfo.py**: Tracker-compliant naming information (series, volume, ASIN)
-* **Services** provide generic utilities (sanitization, format sniffing, image URL detection, tag normalization).
+* **Services** provide generic utilities (sanitization, format detection, tag normalization).
 * **Validators** return `valid/errors/warnings/completeness` for precise UX.
 * **Mappers** translate from internal model to tracker-specific payloads (e.g., RED form fields), keeping trackers free of raw parsing.
 
@@ -324,8 +324,7 @@ src/mk_torrent/core/metadata/
   services/
     __init__.py
     html_cleaner.py       # nh3/bs4-based sanitizer (plain-text output)
-    format_detector.py    # Mutagen optional; VBR/CBR; lossless flags
-    image_finder.py       # cover discovery heuristics (tags, sidecar, API)
+    format_detector.py    # Comprehensive audio format detection & quality scoring
     tag_normalizer.py     # genres/tags normalization (lowercasing, dedupe)
     merge.py              # precedence-based field merger (declarative)
   validators/
@@ -335,9 +334,6 @@ src/mk_torrent/core/metadata/
   mappers/
     __init__.py
     red.py                # internal → RED upload fields mapping
-  schemas/
-    __init__.py
-    audiobook.py          # (optional) pydantic model for strict mode
 ```
 
 > **Note**: `features/metadata_engine.py` becomes **thin re-exports** or is removed after callers migrate to `core/metadata`.
@@ -465,8 +461,9 @@ self.processors["audiobook"] = AudiobookMetadata(
 
 ### 7.2 Format Detector (`services/format_detector.py`)
 
-* Mutagen optional path; if not installed, basic extension mapping.
-* Knows MP3 VBR bucket mapping (V0/V1/V2), CBR classification, lossless flags.
+* Comprehensive audio format detection with VBR classification and quality scoring.
+* Advanced encoding detection: MP3 VBR bucket mapping (V0/V1/V2), CBR classification, lossless flags.
+* Multi-backend support with graceful fallback: mutagen preferred, extension mapping as backup.
 
 ### 7.3 Audnexus (`sources/audnexus.py`)
 
