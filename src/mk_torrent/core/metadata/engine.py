@@ -27,7 +27,6 @@ from .base import (
     MetadataMapper,
     ValidationResult,
     Source,
-    MetadataDict,
 )
 from .exceptions import ProcessorNotFound, MetadataError
 
@@ -109,7 +108,7 @@ class MetadataEngine:
 
     def extract_metadata(
         self, source: Source, content_type: str | None = None, enhance: bool = True
-    ) -> MetadataDict:
+    ) -> dict[str, Any]:
         """Extract metadata from a source using the appropriate processor."""
         try:
             # Detect content type if not provided
@@ -142,7 +141,7 @@ class MetadataEngine:
 
     def validate_metadata(
         self,
-        metadata: MetadataDict | AudiobookMeta,
+        metadata: dict[str, Any] | AudiobookMeta,
         content_type: str | None = None,
     ) -> ValidationResult:
         """Validate metadata using the appropriate processor."""
@@ -177,8 +176,8 @@ class MetadataEngine:
             raise MetadataError(f"Validation failed: {e}") from e
 
     def map_to_tracker(
-        self, metadata: MetadataDict | AudiobookMeta, tracker_name: str
-    ) -> MetadataDict:
+        self, metadata: dict[str, Any] | AudiobookMeta, tracker_name: str
+    ) -> dict[str, Any]:
         """Map metadata to tracker-specific format."""
         try:
             if tracker_name not in self._mappers:

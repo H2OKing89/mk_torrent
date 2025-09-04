@@ -161,6 +161,29 @@ class TestScalarFieldMerging:
         result = merger.merge(simple_candidates)
         assert result["duration_sec"] == 3600  # embedded > api for duration
 
+    def test_embedded_wins_for_cbr_vbr_fields(self, merger):
+        """Test that new CBR/VBR detection fields are properly handled."""
+        candidates = [
+            {"_src": "path", "bitrate": 128000},  # Basic info from path
+            {"_src": "api", "bitrate": 125000},  # API approximation
+            {
+                "_src": "embedded",
+                "bitrate": 125588,  # Precise from file
+                "bitrate_mode": "CBR",  # NEW: Encoding analysis
+                "bitrate_variance": 1.2,  # NEW: Variance calculation
+            },
+        ]
+        result = merger.merge(candidates)
+
+        # Embedded should win for all technical fields
+        assert result["bitrate"] == 125588  # Most precise
+        assert result["bitrate_mode"] == "CBR"  # Only embedded has this
+        assert result["bitrate_variance"] == 1.2  # Only embedded has this
+
+        print(
+            f"✅ CBR/VBR fields: mode={result['bitrate_mode']}, variance={result['bitrate_variance']}%"
+        )
+
     def test_fallback_to_lower_precedence(self, merger):
         candidates = [
             {"_src": "path", "title": ""},  # empty, not meaningful

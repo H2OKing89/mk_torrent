@@ -75,7 +75,48 @@ class TestEmbeddedSourceReal:
         if "channels" in result:
             assert isinstance(result["channels"], (int, float))
 
+        # New CBR/VBR detection fields (if available)
+        if "bitrate_mode" in result:
+            assert result["bitrate_mode"] in ["CBR", "VBR"]
+        if "bitrate_variance" in result:
+            assert isinstance(result["bitrate_variance"], (int, float))
+            assert 0 <= result["bitrate_variance"] <= 100  # Percentage
+
         print(f"✅ Technical metadata extracted: {result}")
+
+    def test_cbr_vbr_detection(self, embedded_source):
+        """Test CBR/VBR detection functionality."""
+        if not SAMPLE_AUDIOBOOK.exists():
+            pytest.skip("Sample audiobook file not available")
+
+        result = embedded_source.extract(SAMPLE_AUDIOBOOK)
+
+        # Check if CBR/VBR detection worked
+        if "bitrate_mode" in result and "bitrate_variance" in result:
+            bitrate_mode = result["bitrate_mode"]
+            bitrate_variance = result["bitrate_variance"]
+
+            print("🎵 Encoding Analysis:")
+            print(f"   Bitrate Mode: {bitrate_mode}")
+            print(f"   Bitrate Variance: {bitrate_variance}%")
+
+            # Validate the detection logic
+            assert bitrate_mode in ["CBR", "VBR"]
+            assert isinstance(bitrate_variance, (int, float))
+
+            # Check consistency between mode and variance
+            if bitrate_mode == "CBR":
+                assert (
+                    bitrate_variance < 5.0
+                ), f"CBR should have low variance, got {bitrate_variance}%"
+            else:  # VBR
+                assert (
+                    bitrate_variance >= 5.0
+                ), f"VBR should have high variance, got {bitrate_variance}%"
+
+            print("✅ CBR/VBR detection working correctly")
+        else:
+            print("⚠️ CBR/VBR detection not available (may be using basic fallback)")
 
     def test_chapter_detection(self, embedded_source):
         """Test chapter detection from real m4b file."""
@@ -94,6 +135,14 @@ class TestEmbeddedSourceReal:
 
         if has_chapters:
             assert chapter_count is None or chapter_count > 0
+
+        # With our enhanced implementation, we should detect reasonable chapter counts
+        if chapter_count and chapter_count > 0:
+            # For a ~8.75 hour audiobook, 10-25 chapters is very reasonable
+            assert (
+                5 <= chapter_count <= 30
+            ), f"Chapter count {chapter_count} seems unrealistic for audiobook"
+            print(f"✅ Enhanced chapter detection: {chapter_count} chapters estimated")
 
         print(f"✅ Chapter info: count={chapter_count}, has_chapters={has_chapters}")
 

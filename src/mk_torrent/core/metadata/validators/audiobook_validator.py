@@ -5,6 +5,8 @@ Provides comprehensive validation for audiobook metadata, including both
 general content validation and tracker-specific requirements.
 """
 
+from __future__ import annotations
+
 from typing import Any
 from .common import (
     non_empty,

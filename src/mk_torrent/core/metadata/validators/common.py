@@ -5,6 +5,7 @@ Basic validation functions that can be reused across different content types.
 These provide the building blocks for more complex validators.
 """
 
+from __future__ import annotations
 import re
 from datetime import datetime
 from typing import Any

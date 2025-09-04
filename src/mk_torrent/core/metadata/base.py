@@ -174,4 +174,4 @@ class MetadataMapper(Protocol):
 
 # Type aliases for clarity
 Source = Union[Path, str]
-MetadataDict = dict[str, Any]
+MetadataDict = "dict[str, Any]"
