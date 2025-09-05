@@ -17,8 +17,8 @@ from .common import (
     is_language_iso,
     normalize_volume,
     validate_year_drift,
-    clean_genre_tags,
-    estimate_completeness,
+    clean_genre_tags,  # type: ignore[attr-defined]
+    estimate_completeness,  # type: ignore[attr-defined]
 )
 
 
@@ -38,14 +38,14 @@ def validate_audiobook(metadata: dict[str, Any]) -> dict[str, Any]:
             "completeness": float (0.0-1.0)
         }
     """
-    errors = []
-    warnings = []
+    errors: list[str] = []
+    warnings: list[str] = []
 
     # Required fields (RED compliance)
-    required_fields = ["title", "author"]
+    required_fields: list[str] = ["title", "author"]
 
     # Recommended fields for better completeness
-    recommended_fields = [
+    recommended_fields: list[str] = [
         "year",
         "narrator",
         "duration_sec",
@@ -93,9 +93,11 @@ def validate_audiobook(metadata: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _validate_title(metadata: dict, errors: list[str], warnings: list[str]) -> None:
+def _validate_title(
+    metadata: dict[str, Any], errors: list[str], warnings: list[str]
+) -> None:
     """Validate title field."""
-    title = metadata.get("title", "")
+    title: Any = metadata.get("title", "")
 
     if non_empty(title):
         if len(title) > 200:
@@ -104,9 +106,11 @@ def _validate_title(metadata: dict, errors: list[str], warnings: list[str]) -> N
             warnings.append("Title has leading/trailing whitespace")
 
 
-def _validate_author(metadata: dict, errors: list[str], warnings: list[str]) -> None:
+def _validate_author(
+    metadata: dict[str, Any], errors: list[str], warnings: list[str]
+) -> None:
     """Validate author field."""
-    author = metadata.get("author", "")
+    author: Any = metadata.get("author", "")
 
     if non_empty(author):
         if len(author) > 100:
@@ -115,10 +119,12 @@ def _validate_author(metadata: dict, errors: list[str], warnings: list[str]) -> 
             warnings.append("Author has leading/trailing whitespace")
 
 
-def _validate_album(metadata: dict, errors: list[str], warnings: list[str]) -> None:
+def _validate_album(
+    metadata: dict[str, Any], errors: list[str], warnings: list[str]
+) -> None:
     """Validate album field (RED wants this present)."""
-    album = metadata.get("album", "")
-    title = metadata.get("title", "")
+    album: Any = metadata.get("album", "")
+    title: Any = metadata.get("title", "")
 
     # RED expects album field - if empty, should default to title
     if not non_empty(album) and non_empty(title):
@@ -127,24 +133,28 @@ def _validate_album(metadata: dict, errors: list[str], warnings: list[str]) -> N
         )
 
 
-def _validate_year(metadata: dict, errors: list[str], warnings: list[str]) -> None:
+def _validate_year(
+    metadata: dict[str, Any], errors: list[str], warnings: list[str]
+) -> None:
     """Validate year field."""
-    year = metadata.get("year")
+    year: Any = metadata.get("year")
 
     if year is not None:
         if not is_year(year):
             errors.append(f"Invalid year: {year}")
         else:
-            is_valid, warning_msg = validate_year_drift(year)
+            _, warning_msg = validate_year_drift(year)
             if warning_msg:
                 warnings.append(warning_msg)
     else:
         warnings.append("Year not provided - recommended for tracker compliance")
 
 
-def _validate_duration(metadata: dict, errors: list[str], warnings: list[str]) -> None:
+def _validate_duration(
+    metadata: dict[str, Any], errors: list[str], warnings: list[str]
+) -> None:
     """Validate duration field."""
-    duration = metadata.get("duration_sec")
+    duration: Any = metadata.get("duration_sec")
 
     if duration is not None:
         if not duration_sanity(duration):
@@ -158,11 +168,11 @@ def _validate_duration(metadata: dict, errors: list[str], warnings: list[str]) -
 
 
 def _validate_format_encoding(
-    metadata: dict, errors: list[str], warnings: list[str]
+    metadata: dict[str, Any], errors: list[str], warnings: list[str]
 ) -> None:
     """Validate format and encoding fields."""
-    format_val = metadata.get("format", "")
-    encoding = metadata.get("encoding", "")
+    format_val: Any = metadata.get("format", "")
+    encoding: Any = metadata.get("encoding", "")
 
     valid_formats = {"AAC", "MP3", "FLAC", "M4A", "M4B", "OGG"}
 
@@ -183,11 +193,11 @@ def _validate_format_encoding(
 
 
 def _validate_identifiers(
-    metadata: dict, errors: list[str], warnings: list[str]
+    metadata: dict[str, Any], errors: list[str], warnings: list[str]
 ) -> None:
     """Validate ASIN and ISBN identifiers."""
-    asin = metadata.get("asin", "")
-    isbn = metadata.get("isbn", "")
+    asin: Any = metadata.get("asin", "")
+    isbn: Any = metadata.get("isbn", "")
 
     if non_empty(asin):
         if not is_valid_asin(asin):
@@ -201,11 +211,11 @@ def _validate_identifiers(
 
 
 def _validate_volume_series(
-    metadata: dict, errors: list[str], warnings: list[str]
+    metadata: dict[str, Any], errors: list[str], warnings: list[str]
 ) -> None:
     """Validate volume and series fields."""
-    volume = metadata.get("volume", "")
-    series = metadata.get("series", "")
+    volume: Any = metadata.get("volume", "")
+    series: Any = metadata.get("series", "")
 
     if non_empty(volume):
         normalized = normalize_volume(volume)
@@ -221,9 +231,11 @@ def _validate_volume_series(
         warnings.append("Volume specified but no series name")
 
 
-def _validate_narrator(metadata: dict, errors: list[str], warnings: list[str]) -> None:
+def _validate_narrator(
+    metadata: dict[str, Any], errors: list[str], warnings: list[str]
+) -> None:
     """Validate narrator field."""
-    narrator = metadata.get("narrator", "")
+    narrator: Any = metadata.get("narrator", "")
 
     if non_empty(narrator):
         if len(narrator) > 200:
@@ -237,11 +249,11 @@ def _validate_narrator(metadata: dict, errors: list[str], warnings: list[str]) -
 
 
 def _validate_publisher_description(
-    metadata: dict, errors: list[str], warnings: list[str]
+    metadata: dict[str, Any], errors: list[str], warnings: list[str]
 ) -> None:
     """Validate publisher and description fields."""
-    publisher = metadata.get("publisher", "")
-    description = metadata.get("description", "")
+    publisher: Any = metadata.get("publisher", "")
+    description: Any = metadata.get("description", "")
 
     if non_empty(publisher):
         if len(publisher) > 100:
@@ -258,9 +270,11 @@ def _validate_publisher_description(
             warnings.append("Description contains HTML tags - should be cleaned")
 
 
-def _validate_language(metadata: dict, errors: list[str], warnings: list[str]) -> None:
+def _validate_language(
+    metadata: dict[str, Any], errors: list[str], warnings: list[str]
+) -> None:
     """Validate language field."""
-    language = metadata.get("language", "")
+    language: Any = metadata.get("language", "")
 
     if non_empty(language):
         if not is_language_iso(language):
@@ -271,38 +285,38 @@ def _validate_language(metadata: dict, errors: list[str], warnings: list[str]) -
 
 
 def _validate_genres_tags(
-    metadata: dict, errors: list[str], warnings: list[str]
+    metadata: dict[str, Any], errors: list[str], warnings: list[str]
 ) -> None:
     """Validate genres and tags fields."""
-    genres = metadata.get("genres", [])
-    tags = metadata.get("tags", [])
+    genres: Any = metadata.get("genres", [])
+    tags: Any = metadata.get("tags", [])
 
     if isinstance(genres, list):
-        if len(genres) == 0:
+        if len(genres) == 0:  # type: ignore[arg-type]
             warnings.append("No genres specified - helpful for categorization")
-        elif len(genres) > 10:
+        elif len(genres) > 10:  # type: ignore[arg-type]
             warnings.append("Many genres specified - consider consolidating")
 
-        cleaned_genres = clean_genre_tags(genres)
+        cleaned_genres: Any = clean_genre_tags(genres)  # type: ignore[misc]
         if cleaned_genres != genres:
             warnings.append("Genres could be normalized (case, duplicates)")
 
-    if isinstance(tags, list) and len(tags) > 20:
+    if isinstance(tags, list) and len(tags) > 20:  # type: ignore[arg-type]
         warnings.append("Many tags specified - may be excessive")
 
 
-def _validate_red_compliance(metadata: dict, warnings: list[str]) -> None:
+def _validate_red_compliance(metadata: dict[str, Any], warnings: list[str]) -> None:
     """Add RED-specific validation hints."""
-    title = metadata.get("title", "")
-    album = metadata.get("album", "")
+    title: Any = metadata.get("title", "")
+    album: Any = metadata.get("album", "")
 
     # RED prefers album field to be present
     if non_empty(title) and not non_empty(album):
         warnings.append("RED tracker expects 'album' field - should default to title")
 
     # RED likes specific metadata fields
-    red_recommended = ["year", "narrator", "publisher", "description"]
-    missing_red = [
+    red_recommended: list[str] = ["year", "narrator", "publisher", "description"]
+    missing_red: list[str] = [
         field for field in red_recommended if not non_empty(metadata.get(field))
     ]
 
@@ -310,8 +324,8 @@ def _validate_red_compliance(metadata: dict, warnings: list[str]) -> None:
         warnings.append(f"RED recommends these fields: {', '.join(missing_red)}")
 
     # Format preferences for RED
-    format_val = metadata.get("format", "").upper()
-    encoding = metadata.get("encoding", "")
+    format_val: Any = metadata.get("format", "").upper()
+    encoding: Any = metadata.get("encoding", "")
 
     if format_val == "M4B":
         # M4B is good for audiobooks

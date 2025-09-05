@@ -44,7 +44,7 @@ class PathValidator:
 
     def validate(self, path: Path) -> tuple[bool, list[str]]:
         """Validate a path against tracker rules"""
-        issues = []
+        issues: list[str] = []
         path_str = str(path)
 
         # Check length
@@ -108,7 +108,7 @@ class PathValidator:
         else:
             compliance_rate = 1.0
 
-        results = {
+        results: dict[str, Any] = {
             "valid": len(invalid_files) == 0,
             "total_files": total_files,
             "invalid_files": invalid_files,
@@ -153,4 +153,4 @@ class PathValidator:
             validator = cls(tracker)
             results[tracker] = validator.check_single_path(path_str)
 
-        return results
+        return results  # type: ignore[return-value]

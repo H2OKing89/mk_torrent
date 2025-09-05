@@ -98,13 +98,13 @@ class PathFixer:
         self, folder_abs_path: str, filenames: "list[str]", apply_changes: bool = False
     ) -> "tuple[str, list[str], list[ComplianceLog]]":
         """Fix paths to meet compliance requirements"""
-        self.log = []
+        self.log: list[ComplianceLog] = []
         abs_dir = Path(folder_abs_path).resolve()
         folder_basename = abs_dir.name
 
         # Normalize inputs - use basename for all compliance math
-        normalized_folder, changes = self.normalize_text(folder_basename)
-        normalized_files = []
+        normalized_folder, _changes = self.normalize_text(folder_basename)
+        normalized_files: list[str] = []
         for filename in filenames:
             norm_file, _ = self.normalize_text(filename)
             normalized_files.append(norm_file)
@@ -114,7 +114,7 @@ class PathFixer:
             return normalized_folder, normalized_files, self.log
 
         # Apply conservative file edits first
-        files_after_conservative = []
+        files_after_conservative: list[str] = []
         for filename in normalized_files:
             conservative_file = self._apply_conservative_file_edits(filename)
             files_after_conservative.append(conservative_file)
@@ -197,7 +197,7 @@ class PathFixer:
         )
 
         # Apply aggressive file edits to each file
-        final_files = []
+        final_files: list[str] = []
         for filename in files_after_conservative:
             # Apply full stepwise reduction (5→0) using the shortened folder
             aggressive_filename = self._shorten_filename_stepwise(
@@ -245,7 +245,7 @@ class PathFixer:
 
     def normalize_text(self, text: str) -> "tuple[str, list[str]]":
         """Normalize text for consistent processing"""
-        changes = []
+        changes: list[str] = []
 
         # Fix ASIN format
         pattern = r"\{ASIN\.([A-Z0-9]+)\}"
@@ -429,7 +429,7 @@ class PathFixer:
         This is a best-effort search with a time limit to prevent performance issues.
         If the search takes too long, it returns early with whatever it found.
         """
-        external_links = []
+        external_links: list[str] = []
         start_time = time.time()
 
         try:
@@ -510,7 +510,7 @@ class PathFixer:
         for orig_inode, orig_paths in original_hard_links.items():
             found_corresponding_group: bool = False
 
-            for new_inode, new_paths in new_hard_links.items():
+            for _new_inode, new_paths in new_hard_links.items():
                 if len(orig_paths) == len(new_paths):
                     # Check if the files are the same (just renamed)
                     orig_filenames = {Path(p).name for p in orig_paths}
