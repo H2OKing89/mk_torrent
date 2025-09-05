@@ -24,6 +24,10 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
+# Type aliases for untyped third-party libraries
+MutagenFile = Any  # mutagen._file.File
+FfprobeData = dict[str, Any]  # ffprobe JSON output structure
+
 
 class EmbeddedSource:
     """
@@ -155,9 +159,9 @@ class EmbeddedSource:
     def _extract_with_mutagen(self, file_path: Path) -> dict[str, Any]:
         """Extract technical metadata using mutagen."""
         try:
-            from mutagen._file import File as MutagenFile
+            from mutagen._file import File as MutagenFileModule  # type: ignore
 
-            audio_file = MutagenFile(file_path)
+            audio_file = MutagenFileModule(file_path)  # type: ignore
             if audio_file is None:
                 raise ValueError(f"mutagen could not read file: {file_path}")
 
@@ -166,30 +170,32 @@ class EmbeddedSource:
         except ImportError:
             raise RuntimeError("mutagen not available")
 
-    def _normalize_ffprobe_data(self, data: dict, file_path: Path) -> dict[str, Any]:
+    def _normalize_ffprobe_data(
+        self, data: FfprobeData, file_path: Path
+    ) -> dict[str, Any]:
         """Normalize ffprobe output to internal format."""
         result: dict[str, Any] = {"_src": "embedded"}
 
         # Get format information
-        format_info = data.get("format", {})
+        format_info: dict[str, Any] = data.get("format", {})
 
         # File size
-        file_size = format_info.get("size")
+        file_size: Any = format_info.get("size")
         if file_size:
             result["file_size_bytes"] = int(file_size)
             result["file_size_mb"] = round(int(file_size) / (1024 * 1024), 1)
 
         # Duration (prefer format duration as it's most reliable)
-        duration = format_info.get("duration")
+        duration: Any = format_info.get("duration")
         if duration:
             result["duration_sec"] = int(float(duration))
 
         # Audio stream information
-        audio_streams = [
+        audio_streams: list[dict[str, Any]] = [
             s for s in data.get("streams", []) if s.get("codec_type") == "audio"
         ]
         if audio_streams:
-            stream = audio_streams[0]  # Use first audio stream
+            stream: dict[str, Any] = audio_streams[0]  # Use first audio stream
 
             # Codec information
             result["codec"] = stream.get("codec_name", "")
@@ -212,14 +218,14 @@ class EmbeddedSource:
                 result["channel_layout"] = stream["channel_layout"]
 
         # Chapter information
-        chapters = data.get("chapters", [])
+        chapters: list[dict[str, Any]] = data.get("chapters", [])
         result["chapter_count"] = len(chapters)
         result["has_chapters"] = len(chapters) > 0
 
         if chapters:
             chapter_list = []
             for i, chapter in enumerate(chapters):
-                chapter_info = {
+                chapter_info: dict[str, Any] = {
                     "number": i + 1,
                     "title": chapter.get("tags", {}).get("title", f"Chapter {i + 1}"),
                     "start_time": float(chapter.get("start_time", 0)),
@@ -227,20 +233,20 @@ class EmbeddedSource:
                     "duration": float(chapter.get("end_time", 0))
                     - float(chapter.get("start_time", 0)),
                 }
-                chapter_list.append(chapter_info)
+                chapter_list.append(chapter_info)  # type: ignore
             result["chapters"] = chapter_list
 
         # Cover art detection (look for attached pictures)
-        video_streams = [
+        video_streams: list[dict[str, Any]] = [
             s for s in data.get("streams", []) if s.get("codec_type") == "video"
         ]
-        cover_streams = [
+        cover_streams: list[dict[str, Any]] = [
             s for s in video_streams if s.get("disposition", {}).get("attached_pic")
         ]
 
         result["has_cover_art"] = len(cover_streams) > 0
         if cover_streams:
-            cover = cover_streams[0]
+            cover: dict[str, Any] = cover_streams[0]
             result["cover_dimensions"] = {
                 "width": cover.get("width", 0),
                 "height": cover.get("height", 0),
@@ -248,7 +254,9 @@ class EmbeddedSource:
 
         return result
 
-    def _normalize_mutagen_data(self, audio_file, file_path: Path) -> dict[str, Any]:
+    def _normalize_mutagen_data(
+        self, audio_file: MutagenFile, file_path: Path
+    ) -> dict[str, Any]:
         """Normalize mutagen data to internal format."""
         result: dict[str, Any] = {"_src": "embedded"}
 
@@ -310,6 +318,7 @@ class EmbeddedSource:
 
         # Try to extract chapters from M4B/MP4 files
         if file_path.suffix.lower() in [".m4b", ".m4a"] and hasattr(audio_file, "tags"):
+            total_length = None
             try:
                 # For MP4/M4B files, try to get chapter information
                 from mutagen.mp4 import MP4
@@ -328,39 +337,39 @@ class EmbeddedSource:
                         # Some M4B files store chapter info in custom atoms
                         if audio_file.tags:
                             # Look for chapter-related tags
-                            for key, value in audio_file.tags.items():
+                            for key, value in audio_file.tags.items():  # type: ignore
                                 if (
-                                    "chap" in str(key).lower()
-                                    or "toc" in str(key).lower()
+                                    "chap" in str(key).lower()  # type: ignore
+                                    or "toc" in str(key).lower()  # type: ignore
                                 ):
                                     logger.debug(
                                         f"Found potential chapter tag: {key} = {value}"
                                     )
 
                             # Check for track number patterns that might indicate chapters
-                            track_num = audio_file.tags.get("trkn")
-                            if track_num and len(track_num) > 0:
-                                if len(track_num[0]) == 2:  # (current, total) format
-                                    total_tracks = track_num[0][1]
+                            track_num: Any = audio_file.tags.get("trkn")  # type: ignore
+                            if track_num and len(track_num) > 0:  # type: ignore
+                                if len(track_num[0]) == 2:  # type: ignore
+                                    total_tracks: int = track_num[0][1]  # type: ignore
                                     if total_tracks and total_tracks > 1:
                                         result["chapter_count"] = total_tracks
                                         result["has_chapters"] = True
 
                                         # Create basic chapter structure
-                                        chapter_duration = (
+                                        chapter_duration: float = (  # type: ignore
                                             total_length / total_tracks
                                             if total_tracks > 0
                                             else 0
                                         )
-                                        for i in range(total_tracks):
-                                            chapter_info = {
+                                        for i in range(total_tracks):  # type: ignore
+                                            chapter_info: dict[str, Any] = {  # type: ignore
                                                 "number": i + 1,
                                                 "title": f"Chapter {i + 1}",
                                                 "start_time": i * chapter_duration,
                                                 "end_time": (i + 1) * chapter_duration,
                                                 "duration": chapter_duration,
                                             }
-                                            chapters_found.append(chapter_info)
+                                            chapters_found.append(chapter_info)  # type: ignore
 
                                         result["chapters"] = chapters_found
                                         logger.debug(

@@ -78,10 +78,12 @@ class AudnexusSource:
         try:
             from cachetools import TTLCache
 
-            self._cache = TTLCache(maxsize=max_cache_size, ttl=cache_ttl)
+            self._cache: TTLCache[str, Any] | dict[str, Any] = TTLCache(
+                maxsize=max_cache_size, ttl=cache_ttl
+            )
         except ImportError:
             logger.warning("cachetools not available, running without cache")
-            self._cache = {}
+            self._cache: TTLCache[str, Any] | dict[str, Any] = {}
 
         # Initialize rate limiter (for async usage)
         self._rate_limit_per_second = rate_limit_per_second
@@ -142,7 +144,7 @@ class AudnexusSource:
                     "audnexus", "Neither httpx nor requests available"
                 )
 
-    def _get_retry_decorator(self):
+    def _get_retry_decorator(self) -> Any:
         """Get retry decorator with exponential backoff."""
         try:
             from tenacity import (
@@ -160,7 +162,7 @@ class AudnexusSource:
             )
         except ImportError:
             logger.warning("tenacity not available, running without retry logic")
-            return lambda func: func
+            return lambda func: func  # type: ignore
 
     def _make_request(self, url: str, params: dict[str, Any]) -> dict[str, Any]:
         """Make HTTP request with retry logic and caching."""
@@ -218,19 +220,16 @@ class AudnexusSource:
             SourceUnavailable: If API is unavailable or ASIN not found
         """
         # Extract ASIN from source
-        if isinstance(source, (str, Path)):
-            asin = self._extract_asin(str(source))
-            if not asin:
-                # Try to use source directly as ASIN if it looks like one
-                source_str = str(source)
-                if self._is_valid_asin(source_str):
-                    asin = source_str
-                else:
-                    raise SourceUnavailable(
-                        "audnexus", f"No ASIN found in source: {source}"
-                    )
-        else:
-            raise SourceUnavailable("audnexus", f"Invalid source type: {type(source)}")
+        asin = self._extract_asin(str(source))
+        if not asin:
+            # Try to use source directly as ASIN if it looks like one
+            source_str = str(source)
+            if self._is_valid_asin(source_str):
+                asin = source_str
+            else:
+                raise SourceUnavailable(
+                    "audnexus", f"No ASIN found in source: {source}"
+                )
 
         # Fetch book metadata
         try:

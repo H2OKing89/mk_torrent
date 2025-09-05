@@ -55,13 +55,13 @@ class TagNormalizer:
             return []
 
         # Step 1: Basic cleanup
-        cleaned = []
+        cleaned: list[str] = []
         for tag in tags:
-            if isinstance(tag, str) and tag.strip():
+            if tag.strip():
                 cleaned.append(tag.strip())
 
         # Step 2: Apply direct mappings
-        mapped = []
+        mapped: list[str] = []
         for tag in cleaned:
             normalized = self._normalize_single_tag(tag)
             if normalized:
@@ -87,7 +87,7 @@ class TagNormalizer:
             return self._genre_map[tag_lower]
 
         # Check fuzzy matching for close variants if rapidfuzz available
-        if rapidfuzz_available:
+        if rapidfuzz_available and fuzz is not None:
             for known_tag, canonical in self._genre_map.items():
                 if fuzz.ratio(tag_lower, known_tag) >= 90:  # 90% similarity
                     return canonical
@@ -113,7 +113,7 @@ class TagNormalizer:
 
         # Handle ampersands and prepositions
         words = text.split()
-        result = []
+        result: list[str] = []
         for i, word in enumerate(words):
             word_lower = word.lower()
             if word_lower in [
@@ -139,8 +139,8 @@ class TagNormalizer:
 
     def _consolidate_overlapping_tags(self, tags: list[str]) -> list[str]:
         """Consolidate overlapping/redundant concepts based on rules."""
-        tag_set = set(tags)
-        to_remove = set()
+        tag_set: set[str] = set(tags)
+        to_remove: set[str] = set()
 
         for rule in self._consolidation_rules:
             primary = rule["primary"]
@@ -158,8 +158,8 @@ class TagNormalizer:
 
     def _deduplicate_preserve_order(self, tags: list[str]) -> list[str]:
         """Remove duplicates while preserving original order (case-insensitive)."""
-        seen = set()
-        result = []
+        seen: set[str] = set()
+        result: list[str] = []
 
         for tag in tags:
             tag_lower = tag.lower()
@@ -197,7 +197,7 @@ class TagNormalizer:
             "young adult",
         }
 
-        filtered = []
+        filtered: list[str] = []
         for tag in tags:
             tag_lower = tag.lower()
             # Check if tag matches any RED genre (partial matching)

@@ -1,7 +1,8 @@
 """
 Audiobook Metadata Field Merger - Core Modular Metadata System.
 
-Part of the new modular metadata architecture providing declarative precedence-based
+Part of the new mod# List fields that should be merged with union logic
+list_fields: set[str] = {"genres", "tags", "chapters"}ar metadata architecture providing declarative precedence-based
 merging that replaces primitive ad-hoc field selection with sophisticated three-source
 intelligent merging capabilities.
 
@@ -87,22 +88,40 @@ DEFAULT_PRECEDENCE: dict[str, list[str]] = {
 }
 
 # Fields that should be treated as lists for union logic
-LIST_FIELDS = {"genres", "tags", "chapters"}
+_list_fields = {"genres", "tags", "chapters"}
+
+
+# Make LIST_FIELDS a property-like access
+class _ListFieldsProxy:
+    def __contains__(self, item: str) -> bool:
+        return item in _list_fields
+
+    def __iter__(self):
+        return iter(_list_fields)
+
+    def __len__(self) -> int:
+        return len(_list_fields)
+
+
+LIST_FIELDS = _ListFieldsProxy()
 
 
 def _is_meaningful(value: Any) -> bool:
     """
-    Check if a value contains meaningful content.
+    Check if a value is meaningful (not empty/null).
 
-    Returns False for None, empty strings (including whitespace-only),
-    empty collections, but True for valid scalars and non-empty collections.
+    Args:
+        value: Value to check
+
+    Returns:
+        True if value is meaningful, False otherwise
     """
     if value is None:
         return False
     if isinstance(value, str):
         return value.strip() != ""
     if isinstance(value, (list, tuple, set, dict)):
-        return len(value) > 0
+        return len(value) > 0  # type: ignore[arg-type]
     return True
 
 
@@ -128,30 +147,41 @@ def _values_for_field(
     return None
 
 
-def _dedupe_preserve_order(items: Iterable[str]) -> list[str]:
+def _dedupe_preserve_order(items: Iterable[Any]) -> list[Any]:
     """
-    Deduplicate list items while preserving order, case-insensitive.
+    Deduplicate list items while preserving order.
+
+    For strings: case-insensitive deduplication with strip()
+    For other types: equality-based deduplication
 
     Args:
-        items: Iterable of string items to deduplicate
+        items: Iterable of items to deduplicate
 
     Returns:
         List with duplicates removed, order preserved, empty items filtered
     """
-    seen = set()
-    result: list[str] = []
+    seen_strings: set[str] = set()
+    seen_others: list[Any] = []
+    result: list[Any] = []
 
     for item in items:
-        # Normalize the item
-        normalized = item.strip() if isinstance(item, str) else str(item).strip()
-        if not normalized:
-            continue
+        if isinstance(item, str):
+            # String handling: normalize and check for empty
+            normalized = item.strip()
+            if not normalized:
+                continue
 
-        # Case-insensitive deduplication
-        key = normalized.lower()
-        if key not in seen:
-            seen.add(key)
-            result.append(normalized)
+            # Case-insensitive deduplication for strings
+            key = normalized.lower()
+            if key not in seen_strings:
+                seen_strings.add(key)
+                result.append(normalized)
+        else:
+            # Non-string handling: check if we've seen this item before
+            # Use list iteration since dicts aren't hashable
+            if item not in seen_others:
+                seen_others.append(item)
+                result.append(item)
 
     return result
 
@@ -180,6 +210,7 @@ class FieldMerger:
                        Defaults to DEFAULT_PRECEDENCE if not provided.
         """
         self.precedence = precedence or DEFAULT_PRECEDENCE.copy()
+        self.list_fields: set[str] = {"genres", "tags", "chapters"}
 
     def merge(self, candidates: list[dict[str, Any]]) -> dict[str, Any]:
         """
@@ -211,7 +242,7 @@ class FieldMerger:
             # Get precedence order for this field (fallback to common order)
             order = self.precedence.get(field, ["api", "embedded", "path"])
 
-            if field in LIST_FIELDS:
+            if field in self.list_fields:
                 # List field: union with stable order
                 merged_value = self._merge_list_field(candidates, field, order)
                 if merged_value:  # Only include non-empty lists
@@ -279,12 +310,12 @@ class FieldMerger:
                 ]
             elif isinstance(value, (list, tuple)):
                 # Already a list/tuple
-                items = list(value)
+                items = list(value)  # type: ignore[arg-type]
             else:
                 # Single item, treat as list
                 items = [value]
 
-            combined_items.extend(items)
+            combined_items.extend(items)  # type: ignore[arg-type]
 
         # Deduplicate while preserving order
         return _dedupe_preserve_order(combined_items)
@@ -318,8 +349,10 @@ class FieldMerger:
         Args:
             field: Field name to treat as list
         """
-        global LIST_FIELDS
-        LIST_FIELDS = LIST_FIELDS | {field}
+        self.list_fields.add(field)
+        # Also update the global set for consistency
+        global _list_fields
+        _list_fields.add(field)
 
 
 # Convenience function for simple usage

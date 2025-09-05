@@ -125,15 +125,17 @@ class PathInfoSource:
 
         return result
 
-    def _extract_primary(self, groups: dict) -> dict[str, Any]:
+    def _extract_primary(self, groups: dict[str, Any]) -> dict[str, Any]:
         """Extract from canonical format match."""
-        result = {}
+        result: dict[str, Any] = {}
 
         if groups.get("title"):
-            result["title"] = self._clean_title(groups["title"])
+            title: str = groups["title"]
+            result["title"] = self._clean_title(title)
 
         if groups.get("volume"):
-            result["volume"] = self._normalize_volume(groups["volume"])
+            volume_str: str = groups["volume"]
+            result["volume"] = self._normalize_volume(volume_str)
 
         if groups.get("year"):
             try:
@@ -144,15 +146,17 @@ class PathInfoSource:
                 pass
 
         if groups.get("author"):
-            result["author"] = self._clean_author(groups["author"])
+            author: str = groups["author"]
+            result["author"] = self._clean_author(author)
 
         if groups.get("asin"):
-            asin = groups["asin"].upper()
+            asin: str = groups["asin"].upper()
             if self._validate_asin(asin):
                 result["asin"] = asin
 
         if groups.get("uploader"):
-            result["uploader"] = groups["uploader"].strip()
+            uploader: str = groups["uploader"]
+            result["uploader"] = uploader.strip()
 
         # If we have both title and volume, treat title as series name
         if result.get("title") and result.get("volume"):
@@ -162,12 +166,12 @@ class PathInfoSource:
 
     def _fallback_parse(self, basename: str) -> dict[str, Any]:
         """Try alternative parsing patterns."""
-        result = {}
+        result: dict[str, Any] = {}
 
         # Try series pattern
         match = self.SERIES_PATTERN.match(basename)
         if match:
-            groups = match.groupdict()
+            groups: dict[str, Any] = match.groupdict()
 
             if groups.get("series"):
                 result["series"] = self._clean_title(groups["series"])
@@ -198,7 +202,7 @@ class PathInfoSource:
         # Try simple pattern
         match = self.SIMPLE_PATTERN.match(basename)
         if match:
-            groups = match.groupdict()
+            groups: dict[str, Any] = match.groupdict()
 
             if groups.get("title"):
                 result["title"] = self._clean_title(groups["title"])
@@ -221,7 +225,7 @@ class PathInfoSource:
 
     def _parse_directory(self, directory: str) -> dict[str, Any]:
         """Extract metadata from directory structure."""
-        result = {}
+        result: dict[str, Any] = {}
 
         # Look for series patterns in directory name
         series_match = re.search(
@@ -333,7 +337,7 @@ class PathInfoSource:
 
     def _clean_extracted_data(self, data: dict[str, Any]) -> dict[str, Any]:
         """Final cleanup and normalization of extracted data."""
-        cleaned = {}
+        cleaned: dict[str, Any] = {}
 
         for key, value in data.items():
             if key == "_src":
@@ -359,7 +363,7 @@ class PathInfoSource:
         Returns:
             Tuple of (is_valid, list_of_issues)
         """
-        issues = []
+        issues: list[str] = []
 
         # Remove extension for validation
         basename = filename
@@ -372,7 +376,7 @@ class PathInfoSource:
             issues.append("Does not match canonical format")
             return False, issues
 
-        groups = match.groupdict()
+        groups: dict[str, Any] = match.groupdict()
 
         # Check for required components
         if not groups.get("title"):
@@ -408,7 +412,7 @@ class PathInfoSource:
         extracted = self.extract(filename)
 
         # Build canonical format
-        parts = []
+        parts: list[str] = []
 
         # Title (required)
         title = extracted.get("title", "Unknown Title")

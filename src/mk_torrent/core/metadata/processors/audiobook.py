@@ -87,7 +87,7 @@ class AudiobookProcessor:
             Dict containing merged metadata from all sources
         """
         source_path = Path(source) if isinstance(source, str) else source
-        candidates = []
+        candidates: list[dict[str, Any]] = []
 
         # Extract from Audnexus API
         try:
