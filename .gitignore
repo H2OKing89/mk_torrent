@@ -41,6 +41,7 @@ pip-delete-this-directory.txt
 test_torrents/
 test_audiobooks/
 tests/samples
+tests/samples/torrent_files
 
 
 # Unit test / coverage reports
