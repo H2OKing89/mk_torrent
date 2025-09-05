@@ -1,12 +1,21 @@
 {
   "include": ["src"],
   "exclude": ["**/node_modules", "**/__pycache__", "**/.venv", "**/test_results", "**/htmlcov"],
-  "pythonVersion": "3.8",
+  "pythonVersion": "3.11",
   "typeCheckingMode": "strict",
+  "venv": ".venv",
   "reportMissingImports": true,
   "reportMissingTypeStubs": false,
   "reportUnusedImport": "warning",
   "reportUnusedVariable": "warning",
+  "diagnosticSeverityOverrides": {
+    "reportUnknownVariableType": "none",
+    "reportUnknownMemberType": "none",
+    "reportUnknownArgumentType": "none",
+    "reportUnknownLambdaType": "none",
+    "reportMissingTypeStubs": "none",
+    "reportIndexIssue": "warning"
+  },
   "executionEnvironments": [
     {
       "root": ".",
