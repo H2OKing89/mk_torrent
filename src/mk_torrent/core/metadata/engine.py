@@ -29,6 +29,8 @@ from .base import (
     Source,
 )
 from .exceptions import ProcessorNotFound, MetadataError
+from .processors.audiobook import AudiobookProcessor
+from .services.tag_normalizer import TagNormalizer
 
 logger = logging.getLogger(__name__)
 
@@ -216,7 +218,7 @@ class MetadataEngine:
         validate: bool = True,
     ) -> dict[str, Any]:
         """Run the full pipeline: extract -> validate -> (optionally) map."""
-        result = {
+        result: dict[str, Any] = {
             "source": str(source),
             "content_type": content_type,
             "metadata": {},
@@ -265,6 +267,20 @@ class MetadataEngine:
         """Get list of available tracker mappers."""
         return list(self._mappers.keys())
 
+    def setup_default_processors(self) -> None:
+        """Set up default processors with proper dependency injection."""
+        # Create shared services
+        tag_normalizer = TagNormalizer(content_type="audiobook")
+
+        # Create and register audiobook processor with dependencies
+        audiobook_processor = AudiobookProcessor(tag_normalizer=tag_normalizer)
+        self.register_processor("audiobook", audiobook_processor)
+
+        # Set audiobook as default
+        self.set_default_processor("audiobook")
+
+        logger.info("Default processors set up with TagNormalizer integration")
+
 
 # Convenience function for backward compatibility
 def process_metadata(
@@ -272,9 +288,9 @@ def process_metadata(
 ) -> dict[str, Any]:
     """Convenience function to process metadata (legacy interface)."""
     engine = MetadataEngine()
-    # Auto-register basic processors if none exist
+    # Auto-register default processors with proper dependency injection
     if not engine.get_available_processors():
-        engine.set_default_processor("audiobook")
+        engine.setup_default_processors()
 
     if isinstance(source, list):
         source = source[0] if source else Path()

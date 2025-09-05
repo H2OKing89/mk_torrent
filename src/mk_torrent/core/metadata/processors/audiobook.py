@@ -22,6 +22,7 @@ from ..base import ValidationResult
 from ..sources.audnexus import AudnexusSource
 from ..sources.embedded import EmbeddedSource
 from ..sources.pathinfo import PathInfoSource
+from ..services.tag_normalizer import TagNormalizer
 from ..exceptions import SourceUnavailable
 
 logger = logging.getLogger(__name__)
@@ -40,17 +41,19 @@ class AudiobookProcessor:
     3. Filename/path parsing
     """
 
-    def __init__(self, region: str = "us"):
+    def __init__(self, region: str = "us", tag_normalizer: TagNormalizer | None = None):
         """
         Initialize audiobook processor.
 
         Args:
             region: Default region for Audnexus API queries
+            tag_normalizer: Tag normalization service (created if not provided)
         """
         self.region = region
         self._audnexus = None
         self._embedded = None
         self._pathinfo = None
+        self._tag_normalizer = tag_normalizer or TagNormalizer(content_type="audiobook")
 
     def _get_audnexus_source(self) -> AudnexusSource:
         """Get or create Audnexus source instance."""
@@ -222,6 +225,39 @@ class AudiobookProcessor:
         # Normalize genres to list
         if enhanced.get("genre") and not enhanced.get("genres"):
             enhanced["genres"] = [enhanced["genre"]]
+
+        # Normalize genres and tags using TagNormalizer
+        if enhanced.get("genres"):
+            # Convert various inputs to list format
+            genres = enhanced["genres"]
+            if isinstance(genres, str):
+                # Handle comma/semicolon separated strings (including mixed)
+                # First split on semicolons, then commas
+                parts: list[str] = []
+                for part in genres.split(";"):
+                    parts.extend([p.strip() for p in part.split(",") if p.strip()])
+                genres = parts if parts else [genres.strip()]
+
+            # Apply tag normalization
+            enhanced["genres"] = self._tag_normalizer.normalize(genres)
+            logger.debug(
+                f"Normalized {len(genres)} genres to {len(enhanced['genres'])} genres"
+            )
+
+        if enhanced.get("tags"):
+            # Convert various inputs to list format
+            tags = enhanced["tags"]
+            if isinstance(tags, str):
+                # Handle comma/semicolon separated strings (including mixed)
+                # First split on semicolons, then commas
+                parts: list[str] = []
+                for part in tags.split(";"):
+                    parts.extend([p.strip() for p in part.split(",") if p.strip()])
+                tags = parts if parts else [tags.strip()]
+
+            # Apply tag normalization
+            enhanced["tags"] = self._tag_normalizer.normalize(tags)
+            logger.debug(f"Normalized {len(tags)} tags to {len(enhanced['tags'])} tags")
 
         # Clean up string fields
         for field in [

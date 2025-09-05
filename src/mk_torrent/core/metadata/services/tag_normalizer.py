@@ -322,6 +322,10 @@ class TagNormalizer:
         """Build rules for consolidating overlapping concepts."""
         return [
             {
+                "primary": "Science Fiction",
+                "alternates": ["Sci-Fi", "Scifi", "Sci Fi"],
+            },
+            {
                 "primary": "Post-Apocalyptic",
                 "alternates": ["Apocalyptic & Post-Apocalyptic"],
             },

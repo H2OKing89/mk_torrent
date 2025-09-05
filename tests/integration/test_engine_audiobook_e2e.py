@@ -339,3 +339,139 @@ class TestMetadataIntegration:
         # Test explicit content type selection
         result = self.engine.extract_metadata("test.mp3", content_type="music")
         assert result is not None
+
+
+class TestTagNormalizationIntegration:
+    """Test tag normalization integration in the full processing pipeline."""
+
+    def setup_method(self):
+        """Set up test environment with real processor and TagNormalizer."""
+        from mk_torrent.core.metadata.processors.audiobook import AudiobookProcessor
+        from mk_torrent.core.metadata.services.tag_normalizer import TagNormalizer
+
+        self.engine = MetadataEngine()
+
+        # Create processor with TagNormalizer integration
+        self.tag_normalizer = TagNormalizer(content_type="audiobook")
+        self.processor = AudiobookProcessor(tag_normalizer=self.tag_normalizer)
+
+        # Register components
+        self.engine.register_processor("audiobook", self.processor)
+        self.engine.set_default_processor("audiobook")
+
+    def test_tag_normalization_in_pipeline(self):
+        """Test that tag normalization works in the full processing pipeline."""
+        # Create test metadata with messy tags and genres
+        test_metadata = {
+            "title": "Test Book",
+            "author": "Test Author",
+            "genres": ["SCIENCE-FICTION", "sci fi", "SciFi", "adventure", "Adventure"],
+            "tags": ["DYSTOPIAN", "dystopian", "Future", "FUTURE", "space opera"],
+            "source_path": "test.m4b",
+            "processor": "audiobook",
+        }
+
+        # Test enhance method directly (which includes tag normalization)
+        enhanced = self.processor.enhance(test_metadata)
+
+        # Verify genres were normalized
+        assert "genres" in enhanced
+        genres = enhanced["genres"]
+        assert isinstance(genres, list)
+        assert len(genres) < len(test_metadata["genres"])  # Should be deduplicated
+
+        # Should have Science Fiction (normalized from various sci-fi variants)
+        assert any("Science Fiction" in genre for genre in genres)
+        assert any("Adventure" in genre for genre in genres)
+
+        # Verify tags were normalized
+        assert "tags" in enhanced
+        tags = enhanced["tags"]
+        assert isinstance(tags, list)
+        assert len(tags) < len(test_metadata["tags"])  # Should be deduplicated
+
+        # Should have normalized versions
+        assert any("Dystopian" in tag for tag in tags)
+        assert any("Future" in tag for tag in tags)
+
+    def test_engine_setup_default_processors_includes_tag_normalizer(self):
+        """Test that engine.setup_default_processors() includes TagNormalizer."""
+        # Create fresh engine
+        engine = MetadataEngine()
+
+        # Setup default processors (should include TagNormalizer integration)
+        engine.setup_default_processors()
+
+        # Verify audiobook processor was registered
+        processors = engine.get_available_processors()
+        assert "audiobook" in processors
+
+        # Test with real messy tag data
+        test_metadata = {
+            "title": "Test",
+            "author": "Author",
+            "genres": "Science Fiction, sci-fi, SciFi",  # String format
+            "tags": ["duplicate", "DUPLICATE", "Duplicate"],
+        }
+
+        # Process through full pipeline
+        processor = engine._processors["audiobook"]
+        enhanced = processor.enhance(test_metadata)
+
+        # Verify normalization happened
+        assert isinstance(enhanced["genres"], list)
+        assert len(enhanced["genres"]) <= 2  # Should deduplicate sci-fi variants
+        assert len(enhanced["tags"]) == 1  # Should deduplicate to single "Duplicate"
+
+    def test_comma_separated_string_normalization(self):
+        """Test that comma-separated string tags get normalized properly."""
+        test_data = {
+            "title": "Test Book",
+            "author": "Test Author",
+            "genres": "Fantasy, fantasy, FANTASY, Magic, magic",  # String format
+            "tags": "epic; Epic; EPIC; dragons, Dragons",  # Mixed separators
+        }
+
+        enhanced = self.processor.enhance(test_data)
+
+        # Verify genres converted to list and normalized
+        genres = enhanced["genres"]
+        assert isinstance(genres, list)
+        assert "Fantasy" in genres
+        assert "Magic" in genres
+        assert len(genres) == 2  # Should deduplicate
+
+        # Verify tags converted to list and normalized (mixed separators)
+        tags = enhanced["tags"]
+        assert isinstance(tags, list)
+        assert "Epic" in tags
+        assert "Dragons" in tags
+        assert len(tags) == 2  # Should deduplicate
+
+    @pytest.mark.skipif(
+        not AUDIOBOOK_SAMPLE_FILE.exists(), reason="Sample file not available"
+    )
+    def test_real_file_tag_normalization(self):
+        """Test tag normalization with real audiobook sample file."""
+        # Process real file
+        metadata = self.engine.extract_metadata(
+            str(AUDIOBOOK_SAMPLE_FILE), enhance=True
+        )
+
+        # Verify metadata was extracted
+        assert metadata is not None
+        assert metadata.get("title") is not None
+
+        # If genres exist, they should be normalized lists
+        if metadata.get("genres"):
+            genres = metadata["genres"]
+            assert isinstance(genres, list)
+            # All genres should be properly formatted (no duplicates, proper case)
+            assert len(genres) == len({g.lower() for g in genres})
+
+        # If tags exist, they should be normalized lists
+        if metadata.get("tags"):
+            tags = metadata["tags"]
+            assert isinstance(tags, list)
+            # All tags should be properly formatted (no duplicates, proper case)
+            assert len(tags) == len({t.lower() for t in tags})
