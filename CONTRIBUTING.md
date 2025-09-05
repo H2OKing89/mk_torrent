@@ -100,6 +100,7 @@ Use semantic commit messages in your PR titles:
 src/mk_torrent/
 ├── core/              # Core functionality
 │   ├── metadata/      # Metadata extraction system
+│   │   └── templates/ # ✅ Template system (BBCode generation)
 │   └── validation/    # Data validation
 ├── api/               # External API integrations
 │   ├── red/          # RED tracker integration
@@ -120,6 +121,12 @@ tests/
 2. Implement the `MetadataSource` protocol
 3. Add comprehensive tests in `tests/unit/core/metadata/sources/`
 4. Update documentation
+
+### Working with Template System
+1. Templates are in `src/mk_torrent/core/metadata/templates/templates/`
+2. Use Jinja2 syntax with BBCode output formatting
+3. Test templates with `test_template_integration.py`
+4. Follow Pydantic data models in `templates/models.py`
 
 ### Adding Tracker Support
 1. Create tracker module in `src/mk_torrent/api/trackers/`

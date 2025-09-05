@@ -39,6 +39,7 @@ This document serves as the conductor for the metadata architecture refactor. Ea
 
 ### Integration & Output
 9. **[Tracker Mapping](./9%20—%20Tracker%20Mapping.md)** - Output formatting for tracker APIs
+9.5. **[Template System](./9.5%20—%20Template%20System.md)** - BBCode description generation with Jinja2 and Pydantic (**NEW**)
 10. **[Configuration](./10%20—%20Configuration.md)** - Settings, precedence rules, and runtime behavior
 10.5. **[Recommended Packages & Project Extras](./10.5%20—%20Recommended%20Packages%20&%20Project%20Extras.md)** - Dependencies and optional enhancements
 
@@ -60,12 +61,15 @@ This document serves as the conductor for the metadata architecture refactor. Ea
 ## Quick Reference
 
 ### Current Implementation Status
+- ✅ **Phase 1: Complete Service Integration** - TagNormalizer fully integrated into audiobook processor pipeline (**COMPLETED**)
+- ✅ **Phase 2: RED Tracker Mapper Implementation** - Template-driven description system with BBCode generation (**NEW**)
+- ✅ **Template System Architecture** - Jinja2 + Pydantic models for professional tracker descriptions (**NEW**)
 - ✅ Validation system (audiobook_validator.py) - completed and lint-compliant
 - ✅ Architecture cleanup - legacy code removed, modern structure in place
 - ✅ Documentation organization - detailed specifications created
-- ✅ **Enhanced Mutagen Implementation** - CBR/VBR detection and improved chapter analysis (**NEW**)
-- ✅ **Three-source strategy** - Complete with intelligent field merging (**ENHANCED**)
-- 🎯 **Next Priority**: Tag Normalizer implementation for field standardization
+- ✅ **Enhanced Mutagen Implementation** - CBR/VBR detection and improved chapter analysis
+- ✅ **Three-source strategy** - Complete with intelligent field merging
+- 🎯 **Next Priority**: Enhanced processor implementations (music/video) and advanced configuration
 
 ### Key Architectural Decisions
 - **Primary Data Model**: Dataclass (fast, zero deps) with optional Pydantic mirror
@@ -78,8 +82,9 @@ This document serves as the conductor for the metadata architecture refactor. Ea
 - **Engine**: Orchestrates the entire pipeline
 - **Processors**: Content-type specific handlers (audiobook, music, video)
 - **Sources**: Metadata extractors (embedded tags, APIs, path parsing)
-- **Services**: Generic utilities (cleaning, merging, validation)
-- **Mappers**: Tracker-specific output formatters
+- **Services**: Generic utilities (cleaning, merging, validation, tag normalization)
+- **Templates**: BBCode description generation system with Jinja2 + Pydantic models (**NEW**)
+- **Mappers**: Tracker-specific output formatters with template-driven descriptions (**ENHANCED**)
 
 ---
 
@@ -112,7 +117,11 @@ For immediate implementation needs, here are the most important sections with th
 |  wizard.py / uploads   |        |  api/trackers/red.py |         |   api/qbittorrent  |
 +-----------+------------+        +------------+---------+         +----------+---------+
             |                                  |                              |
-            |                                  |                              |
+            |                    +-------------+-------------+                |
+            |                    |     Template System     |                |
+            |                    |   Jinja2 + Pydantic    |                |
+            |                    |   BBCode Generation     |                |
+            |                    +-------------+-----------+                |
             v                                  |                              |
    +--------+---------------------------+      |                              |
    |         Metadata Engine            |      |                              |
@@ -125,24 +134,26 @@ For immediate implementation needs, here are the most important sections with th
    |   Processors (by type) |      |  Mappers (tracker)   |         |  Torrent Creator |
    |  processors/audiobook  |----->|  mappers/red.py      |-------->|  core/torrent_.. |
    +------------------------+      +----------------------+         +------------------+
-            |
-            v
-   +-------------------+   +------------------+   +-------------------+
-   | Sources/Extractors|   |  Services/Utils  |   |   Validators      |
-   | embedded.py       |   | html_cleaner.py  |   | audiobook_validator|
-   | audnexus.py       |   | format_detector.py|  | common.py          |
-   +-------------------+   +------------------+   +-------------------+
+            |                               ^
+            v                               |
+   +-------------------+   +----------------+------+   +-------------------+
+   | Sources/Extractors|   |  Templates & Services |   |   Validators      |
+   | embedded.py       |   | templates/renderer.py |   | audiobook_validator|
+   | audnexus.py       |   | services/tag_norm.py  |   | common.py          |
+   | pathinfo.py       |   | services/html_clean.py|   |                   |
+   +-------------------+   +----------------------+   +-------------------+
 ```
 
 * **Engine** orchestrates processors → sources → merge → services → validate → (optionally) map to tracker shape.
-* **Processor** encapsulates content-type knowledge (path patterns, field expectations, defaults).
+* **Processor** encapsulates content-type knowledge (path patterns, field expectations, defaults) and integrates tag normalization.
 * **Sources** pull raw metadata with specialized focus:
   - **embedded.py**: Technical file properties (duration, bitrate, codec, file size, chapters)
   - **audnexus.py**: Authoritative descriptive metadata (title, author, series, description)
   - **pathinfo.py**: Tracker-compliant naming information (series, volume, ASIN)
-* **Services** provide generic utilities (sanitization, format sniffing, image URL detection, tag normalization).
+* **Services** provide generic utilities (sanitization, format sniffing, image URL detection, **tag normalization**).
+* **Templates** generate professional BBCode descriptions using Jinja2 with custom filters and Pydantic validation (**NEW**).
 * **Validators** return `valid/errors/warnings/completeness` for precise UX.
-* **Mappers** translate from internal model to tracker-specific payloads (e.g., RED form fields), keeping trackers free of raw parsing.
+* **Mappers** translate from internal model to tracker-specific payloads with **template-generated descriptions** (**ENHANCED**).
 
 ---
 
@@ -184,6 +195,96 @@ class AudiobookMeta:
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
 ```
+
+---
+
+## 4.5) Template System Architecture (**NEW**)
+
+**Template-Driven Description Generation for Professional Tracker Uploads**
+
+The template system provides a robust, maintainable approach to generating detailed BBCode descriptions for tracker uploads.
+
+### Core Components
+
+**Template Renderer (`templates/renderer.py`)**
+- **Jinja2 Environment**: `StrictUndefined` for missing field detection
+- **Custom Filters**: `fmt_bytes`, `fmt_duration`, `yesno`, `join_authors`, `clean_html`
+- **Template Loading**: Automatic discovery and validation
+- **Error Handling**: Graceful fallback to basic descriptions
+
+**Pydantic Data Models (`templates/models.py`)**
+- **Type Safety**: Complete validation of template data
+- **Structured Models**: `Description`, `Release`, `BookInfo`, `Chapter`, `Series`
+- **Validation Rules**: ISBN patterns, timestamp formats, field constraints
+- **Auto-correction**: Chapter counts, data consistency checks
+
+**BBCode Templates (`templates/templates/`)**
+- **bbcode_desc.jinja**: Main description with book info, summary, chapters
+- **bbcode_release_desc.jinja**: Technical release information and lineage
+- **Cross-platform**: Compatible with RED, MAM, and other BBCode trackers
+
+### Integration with RED Mapper
+
+```python
+# RED Mapper leverages template system for professional descriptions
+class REDMapper:
+    def __init__(self, template_dir: Optional[Path] = None):
+        self.template_renderer = TemplateRenderer(template_dir)
+
+    def map_to_red_upload(self, metadata: AudiobookMeta) -> Dict[str, Any]:
+        # ... field mapping ...
+
+        # Generate detailed BBCode description
+        upload_data['album_desc'] = self._generate_detailed_description(metadata)
+        return upload_data
+
+    def _generate_detailed_description(self, metadata: AudiobookMeta) -> str:
+        template_data = self._build_template_data(metadata)
+        return self.template_renderer.render_description(template_data)
+```
+
+### Generated Output Example
+
+The template system produces professional descriptions like:
+
+```bbcode
+[b][size=4]The Martian[/size][/b]
+[i]A Novel[/i]
+
+[b]Summary[/b]
+[b]Six days ago, astronaut Mark Watney became one of the first people to walk on Mars...[/b]
+
+[b]Book Info[/b]
+[*] Authors: Andy Weir
+[*] Narrators: R.C. Bray
+[*] Publisher: Crown
+[*] Release Date: 2014
+[*] Genre: Science Fiction / Adventure / Survival
+[*] ASIN: B00B5HZGUG
+[*] Language: English
+
+[b]Release Info[/b]
+[*] Container: AAC
+[*] Size: 350.00 MB
+[*] Bitrate: 64 kb/s (CBR)
+[*] Codec: AAC
+[*] Sample Rate: 44 kHz
+[*] Channels: 2 (Stereo)
+[*] Duration: 10h 53m
+[*] Chapters: No
+[*] Source: Digital
+
+[b]Lineage / Encoding Notes[/b]
+Digital Release
+```
+
+### Benefits
+
+- **Professional Quality**: Tracker moderators appreciate well-formatted, detailed descriptions
+- **Maintainable**: Template changes update all descriptions without code modifications
+- **Type Safety**: Pydantic models prevent template rendering errors
+- **Cross-Platform**: Same system works for RED, MAM, and other trackers
+- **Fallback Support**: Graceful degradation when templates unavailable
 
 ---
 * **rich.logging.RichHandler** — readable, structured logs in dev.

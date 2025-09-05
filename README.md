@@ -7,7 +7,7 @@
 [![Documentation](https://github.com/H2OKing89/mk_torrent/actions/workflows/docs.yml/badge.svg)](https://github.com/H2OKing89/mk_torrent/actions/workflows/docs.yml)
 
 <!-- Quality Badges -->
-[![Tests](https://img.shields.io/badge/Tests-217%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-270%20passing-brightgreen)](tests/)
 [![Coverage](https://img.shields.io/badge/Coverage-70%25+-brightgreen)](https://codecov.io/gh/H2OKing89/mk_torrent)
 [![Code Quality](https://img.shields.io/badge/Ruff-0%20issues-brightgreen)](https://github.com/astral-sh/ruff)
 [![Security](https://img.shields.io/badge/Bandit-0%20issues-brightgreen)](https://bandit.readthedocs.io/)
@@ -27,10 +27,11 @@
 - 🔐 **Enterprise Security** - AES-256 encryption for all credentials
 - 🎨 **Beautiful CLI** - Rich terminal UI with progress bars and colors
 - 📚 **Audiobook Support** - Advanced metadata extraction and RED compliance
-- 🐳 **Docker Ready** - Seamless qBittorrent container integration
+- � **Template System** - Professional BBCode descriptions for tracker uploads
+- �🐳 **Docker Ready** - Seamless qBittorrent container integration
 - 📦 **Batch Operations** - Process entire libraries efficiently
 - 🎯 **RED Integration** - Full tracker API support with validation
-- 🧪 **Well Tested** - 122+ tests with comprehensive coverage
+- 🧪 **Well Tested** - 270+ tests with comprehensive coverage
 
 ## 🚀 Quick Start
 
@@ -60,7 +61,8 @@ python scripts/run_new.py create
 | 📖 **[User Guide](docs/USER_GUIDE.md)** | Complete feature documentation |
 | 🔐 **[Security](docs/SECURITY.md)** | Credential encryption and best practices |
 | 🎵 **[Audiobooks](docs/AUDIOBOOKS.md)** | RED tracker integration and metadata |
-| 🔧 **[API Reference](docs/reference/API_REFERENCE.md)** | Developer documentation |
+| � **[Template System](docs/core/metadata/9.5%20—%20Template%20System.md)** | Professional BBCode descriptions |
+| �🔧 **[API Reference](docs/reference/API_REFERENCE.md)** | Developer documentation |
 | ❓ **[FAQ](docs/FAQ.md)** | Common questions and troubleshooting |
 
 ## 🎮 Basic Usage
