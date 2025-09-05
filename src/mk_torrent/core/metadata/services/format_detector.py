@@ -16,9 +16,13 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 logger = logging.getLogger(__name__)
+
+# Type aliases for Mutagen objects to handle the untyped library
+MutagenFile = Any  # Mutagen file objects (FLAC, MP3, MP4, etc.)
+MutagenInfo = Any  # Mutagen info objects (various audio info types)
 
 
 class AudioFormat:
@@ -180,16 +184,17 @@ class FormatDetector:
             Duration in seconds, None if unavailable
         """
         try:
-            if self._mutagen_available:
-                from mutagen._file import File as MutagenFile
+            from mutagen._file import File as MutagenFileClass  # type: ignore[import-untyped]
 
-                audio_file = MutagenFile(file_path)
-                if (
-                    audio_file
-                    and hasattr(audio_file, "info")
-                    and hasattr(audio_file.info, "length")
-                ):
-                    return int(audio_file.info.length)
+            audio_file = cast(MutagenFile, MutagenFileClass(file_path))
+            if (
+                audio_file
+                and hasattr(audio_file, "info")
+                and audio_file.info
+                and hasattr(audio_file.info, "length")
+                and audio_file.info.length is not None
+            ):
+                return int(audio_file.info.length)
             return None
         except Exception:
             return None
@@ -197,9 +202,9 @@ class FormatDetector:
     def _detect_with_mutagen(self, file_path: Path) -> AudioFormat:
         """Detect format using Mutagen for detailed analysis."""
         try:
-            from mutagen._file import File as MutagenFile
+            from mutagen._file import File as MutagenFileClass  # type: ignore[import-untyped]
 
-            audio_file = MutagenFile(file_path)
+            audio_file = cast(MutagenFile, MutagenFileClass(file_path))
 
             if audio_file is None:
                 return self._detect_basic(file_path)
@@ -208,13 +213,15 @@ class FormatDetector:
             format_name = self._get_format_name_mutagen(audio_file)
 
             # Extract technical information
-            info = audio_file.info if hasattr(audio_file, "info") else None
+            info = cast(
+                MutagenInfo, audio_file.info if hasattr(audio_file, "info") else None
+            )
 
             # Basic properties
-            duration = getattr(info, "length", None)
-            bitrate = getattr(info, "bitrate", None)
-            sample_rate = getattr(info, "sample_rate", None)
-            channels = getattr(info, "channels", None)
+            duration = getattr(info, "length", None) if info else None
+            bitrate = getattr(info, "bitrate", None) if info else None
+            sample_rate = getattr(info, "sample_rate", None) if info else None
+            channels = getattr(info, "channels", None) if info else None
 
             # Advanced properties
             bit_depth = self._get_bit_depth(info)
@@ -270,10 +277,10 @@ class FormatDetector:
             source="extension",
         )
 
-    def _get_format_name_mutagen(self, audio_file) -> str:
+    def _get_format_name_mutagen(self, audio_file: MutagenFile) -> str:
         """Extract format name from Mutagen file object."""
         # Get the class name and map to readable format
-        class_name = audio_file.__class__.__name__.lower()
+        class_name = str(audio_file.__class__.__name__).lower()
 
         format_map = {
             "mp3": "MP3",
@@ -288,26 +295,26 @@ class FormatDetector:
             "trueaudio": "TTA",
         }
 
-        return format_map.get(class_name) or class_name.upper()
+        return format_map.get(class_name) or str(class_name).upper()
 
-    def _get_bit_depth(self, info) -> int | None:
+    def _get_bit_depth(self, info: MutagenInfo) -> int | None:
         """Extract bit depth information."""
-        if hasattr(info, "bits_per_sample"):
-            return info.bits_per_sample
-        elif hasattr(info, "bitspersample"):
-            return info.bitspersample
+        if info and hasattr(info, "bits_per_sample"):
+            return getattr(info, "bits_per_sample", None)
+        elif info and hasattr(info, "bitspersample"):
+            return getattr(info, "bitspersample", None)
         return None
 
-    def _detect_vbr(self, info) -> bool | None:
+    def _detect_vbr(self, info: MutagenInfo) -> bool | None:
         """Detect if audio uses variable bitrate."""
-        if hasattr(info, "bitrate_mode"):
+        if info and hasattr(info, "bitrate_mode"):
             # Some formats explicitly indicate VBR mode
-            return "vbr" in str(info.bitrate_mode).lower()
-        elif hasattr(info, "mode"):
-            return "vbr" in str(info.mode).lower()
+            return "vbr" in str(getattr(info, "bitrate_mode", "")).lower()
+        elif info and hasattr(info, "mode"):
+            return "vbr" in str(getattr(info, "mode", "")).lower()
         return None
 
-    def _detect_lossless(self, format_name: str, info) -> bool | None:
+    def _detect_lossless(self, format_name: str, info: MutagenInfo) -> bool | None:
         """Detect if format is lossless."""
         # Check format-based lossless detection
         if format_name.lower() in self.LOSSLESS_FORMATS:
@@ -319,20 +326,20 @@ class FormatDetector:
 
         # For M4A, could be ALAC (lossless) or AAC (lossy)
         if format_name.lower() in {"m4a", "m4b"}:
-            if hasattr(info, "codec"):
-                return "alac" in str(info.codec).lower()
+            if info and hasattr(info, "codec"):
+                return "alac" in str(getattr(info, "codec", "")).lower()
 
         return None
 
-    def _get_codec_info(self, audio_file, info) -> str | None:
+    def _get_codec_info(self, audio_file: MutagenFile, info: MutagenInfo) -> str | None:
         """Extract codec information."""
-        if hasattr(info, "codec"):
-            return str(info.codec)
-        elif hasattr(info, "codec_name"):
-            return str(info.codec_name)
+        if info and hasattr(info, "codec"):
+            return str(getattr(info, "codec", ""))
+        elif info and hasattr(info, "codec_name"):
+            return str(getattr(info, "codec_name", ""))
 
         # Infer from format
-        class_name = audio_file.__class__.__name__.lower()
+        class_name = str(audio_file.__class__.__name__).lower()
         if "mp3" in class_name:
             return "MPEG-1 Layer 3"
         elif "mp4" in class_name:
@@ -343,7 +350,7 @@ class FormatDetector:
     def _classify_encoding(
         self,
         format_name: str,
-        info,
+        info: MutagenInfo,
         bitrate: int | None,
         is_vbr: bool | None,
         is_lossless: bool | None,
@@ -449,10 +456,10 @@ class FormatDetector:
             return {}
 
         # Count formats
-        format_counts = {}
+        format_counts: dict[str, int] = {}
         lossless_count = 0
-        total_duration = 0
-        bitrates = []
+        total_duration = 0.0
+        bitrates: list[int] = []
 
         for fmt in formats:
             format_counts[fmt.format_name] = format_counts.get(fmt.format_name, 0) + 1
@@ -466,7 +473,7 @@ class FormatDetector:
             if fmt.bitrate:
                 bitrates.append(fmt.bitrate)
 
-        summary = {
+        summary: dict[str, Any] = {
             "total_files": len(formats),
             "formats": format_counts,
             "lossless_files": lossless_count,
