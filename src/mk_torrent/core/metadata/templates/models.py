@@ -7,7 +7,14 @@ ensuring consistent and well-formatted descriptions across different trackers.
 
 from __future__ import annotations
 from typing import TYPE_CHECKING
-from pydantic import BaseModel, Field, HttpUrl, field_validator, ValidationInfo
+from pydantic import (
+    BaseModel,
+    Field,
+    HttpUrl,
+    field_validator,
+    ValidationInfo,
+    ConfigDict,
+)
 import re
 
 if TYPE_CHECKING:
@@ -148,7 +155,8 @@ class TemplateData(BaseModel):
     description: Description
     release: Release
 
-    class Config:
-        extra = "forbid"  # Prevent accidental extra fields
-        validate_assignment = True  # Validate on assignment
-        str_strip_whitespace = True  # Auto-strip whitespace
+    model_config = ConfigDict(
+        extra="forbid",  # Prevent accidental extra fields
+        validate_assignment=True,  # Validate on assignment
+        str_strip_whitespace=True,  # Auto-strip whitespace
+    )

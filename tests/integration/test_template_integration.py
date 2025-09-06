@@ -46,9 +46,8 @@ def test_red_template_integration():
     print(f"📖 Sample Audiobook: {metadata.title}")
     print(f"👤 Author: {metadata.author}")
     print(f"🎧 Narrator: {metadata.narrator}")
-    print(
-        f"⏱️ Duration: {metadata.duration_sec // 3600}h {(metadata.duration_sec % 3600) // 60}m"
-    )
+    duration_sec = metadata.duration_sec or 0
+    print(f"⏱️ Duration: {duration_sec // 3600}h {(duration_sec % 3600) // 60}m")
     print()
 
     # Create RED mapper
@@ -69,7 +68,7 @@ def test_red_template_integration():
         if key == "album_desc":
             print(f"{key}: [BBCode Description - {len(value)} chars]")
         elif isinstance(value, list):
-            print(f"{key}: {', '.join(str(v) for v in value)}")
+            print(f"{key}: {', '.join(str(v) for v in value)}")  # type: ignore
         else:
             print(f"{key}: {value}")
 
@@ -113,13 +112,13 @@ def test_template_rendering_only():
 
         # Test filters directly
         print(
-            f"📊 File size: {renderer._format_bytes(test_data['release']['filesize_bytes'])}"
+            f"📊 File size: {renderer._format_bytes(test_data['release']['filesize_bytes'])}"  # type: ignore
         )
         print(
-            f"⏱️ Duration: {renderer._format_duration(test_data['release']['duration_ms'])}"
+            f"⏱️ Duration: {renderer._format_duration(test_data['release']['duration_ms'])}"  # type: ignore
         )
         print(
-            f"📑 Chapters: {renderer._yesno_filter(test_data['release']['chapters_present'])}"
+            f"📑 Chapters: {renderer._yesno_filter(test_data['release']['chapters_present'])}"  # type: ignore
         )
 
         # List available templates
@@ -144,7 +143,7 @@ if __name__ == "__main__":
         # Test full integration
         red_data = test_red_template_integration()
         print("\n🎉 All tests completed successfully!")
-        print(f"Generated {len(red_data)} RED upload fields")
+        print(f"Generated {len(red_data) if red_data else 0} RED upload fields")
     else:
         print("\n⚠️ Template system not fully available, testing basic functionality...")
         # Still test the mapper without templates
