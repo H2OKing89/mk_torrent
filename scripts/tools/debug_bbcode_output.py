@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 # Add src to path
-sys.path.append("src")
+sys.path.append(str(Path(__file__).parent.parent.parent / "src"))
 
 from mk_torrent.core.metadata import AudiobookMeta
 from mk_torrent.core.metadata.mappers.red import REDMapper
@@ -16,7 +16,7 @@ from mk_torrent.core.metadata.processors.audiobook import AudiobookProcessor
 def main():
     # Test file path
     file_path = Path(
-        "tests/samples/audiobook/The World of Otome Games Is Tough for Mobs - vol_05 (2025) (Yomu Mishima) {ASIN.B0FPXQH971} [H2OKing]/The World of Otome Games Is Tough for Mobs - vol_05 (2025) (Yomu Mishima) {ASIN.B0FPXQH971}.m4b"
+        "/mnt/cache/scripts/mk_torrent/tests/samples/audiobook/The World of Otome Games Is Tough for Mobs - vol_05 (2025) (Yomu Mishima) {ASIN.B0FPXQH971} [H2OKing]/The World of Otome Games Is Tough for Mobs - vol_05 (2025) (Yomu Mishima) {ASIN.B0FPXQH971}.m4b"
     )
 
     if not file_path.exists():

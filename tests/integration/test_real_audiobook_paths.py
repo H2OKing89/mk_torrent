@@ -76,10 +76,9 @@ def test_path_validation():
             folder_name = path_obj.name
             folder_length = len(folder_name)
 
-            # Test with the validation function
-            metadata = {"path": test_path}
-            validation = red_api.validate_metadata(metadata)
-            actual_result = validation["valid"]
+            # Test with the path compliance function directly
+            # (rather than full metadata validation which needs many fields)
+            actual_result = red_api.check_path_compliance(folder_name)
 
             # Check if result matches expected
             status = "✅ PASS" if actual_result == expected else "❌ FAIL"
@@ -112,11 +111,11 @@ def test_path_validation():
             f"• Warning threshold: {int(red_api.config.max_path_length * 0.9)} characters (90%)"
         )
 
-        return all_passed
+        assert all_passed, "Some path validation tests failed"
 
     except Exception as e:
         console.print(f"[red]❌ Test failed: {e}[/red]")
-        return False
+        assert False, f"Test failed with exception: {e}"
 
 
 def test_real_metadata_extraction():
@@ -152,7 +151,8 @@ def test_real_metadata_extraction():
             console.print(f"✅ Found: {m4b_file.name}")
 
             # Extract metadata
-            metadata = engine.process(m4b_file, content_type="audiobook")
+            engine.setup_default_processors()  # Initialize processors
+            metadata = engine.extract_metadata(m4b_file, content_type="audiobook")
 
             # Show key fields
             console.print(f"  • Title: {metadata.get('title', 'Unknown')}")
@@ -163,11 +163,11 @@ def test_real_metadata_extraction():
             console.print(f"  • ASIN: {metadata.get('asin', 'Unknown')}")
 
         console.print("✅ Metadata extraction test completed")
-        return True
+        assert True  # Test completed successfully
 
     except Exception as e:
         console.print(f"[red]❌ Metadata extraction test failed: {e}[/red]")
-        return False
+        assert False, f"Metadata extraction test failed: {e}"
 
 
 def main():

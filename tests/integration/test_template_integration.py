@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 # Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent / "src"))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from mk_torrent.core.metadata.base import AudiobookMeta
 from mk_torrent.core.metadata.mappers.red import REDMapper
@@ -85,7 +85,10 @@ def test_red_template_integration():
     print("🏷️ Tags for RED:")
     print(f"   {red_data.get('tags', 'No tags')}")
 
-    return red_data
+    # Assert that we got a valid result
+    assert red_data is not None
+    assert isinstance(red_data, dict)
+    assert len(red_data) > 0
 
 
 def test_template_rendering_only():
@@ -123,11 +126,11 @@ def test_template_rendering_only():
         templates = renderer.list_templates()
         print(f"📁 Available templates: {templates}")
 
-        return True
+        assert renderer is not None  # Template renderer working
 
     except ImportError as e:
         print(f"❌ Template system not available: {e}")
-        return False
+        assert False, f"Template system not available: {e}"
 
 
 if __name__ == "__main__":

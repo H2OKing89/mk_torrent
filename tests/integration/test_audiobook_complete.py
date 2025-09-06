@@ -28,20 +28,21 @@ console = Console()
 # Add current directory to path for imports
 sys.path.append(os.path.dirname(__file__))
 
-# Add the project root to the path to import from examples
+# Add the project root to the path to import from src
 project_root = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(project_root))
+sys.path.insert(0, str(project_root / "src"))
 
 try:
     from mutagen.mp4 import MP4
     from mutagen._file import File
-    from ..core.secure_credentials import get_secure_tracker_credential
+    from mk_torrent.core.secure_credentials import get_secure_tracker_credential
     from examples.audiobook_upload_workflow import AudiobookUploader
-except ImportError:
+except ImportError as e:
     console.print(
-        "[red]❌ Mutagen not installed. Please run: pip install mutagen[/red]"
+        f"[red]❌ Import error: {e}. This script requires mutagen and other dependencies.[/red]"
     )
-    sys.exit(1)
+    # Don't exit - let pytest handle it gracefully
+    pass
 
 
 @dataclass
