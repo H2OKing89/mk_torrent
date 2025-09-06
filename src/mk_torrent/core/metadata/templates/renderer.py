@@ -9,7 +9,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 from typing import Any
-from jinja2 import Environment, FileSystemLoader, StrictUndefined
+from jinja2 import Environment, FileSystemLoader, StrictUndefined, select_autoescape
 
 
 class TemplateRenderer:
@@ -27,12 +27,22 @@ class TemplateRenderer:
         )
 
         # Create Jinja2 environment with strict settings
-        self.env = Environment(  # nosec B701 # BBCode generation requires no autoescaping
+        # Note: autoescape is disabled for BBCode templates as we need raw BBCode output
+        # This is safe because:
+        # 1. Templates are controlled (not user-provided)
+        # 2. Data is from trusted metadata sources (Audnexus, embedded tags)
+        # 3. HTML cleaning is performed separately in HTMLCleaner service
+        self.env = Environment(  # nosec B701
             loader=FileSystemLoader(str(self.template_dir)),
             undefined=StrictUndefined,  # Fail on missing variables
             trim_blocks=True,  # Remove trailing newlines
             lstrip_blocks=True,  # Remove leading whitespace from blocks
-            autoescape=False,  # Don't escape BBCode - safe for BBCode generation
+            # Use select_autoescape for security - disable only for BBCode templates
+            autoescape=select_autoescape(
+                enabled_extensions=("html", "xml"),
+                default_for_string=False,  # Don't escape BBCode strings
+                default=False,  # Don't escape BBCode templates (.jinja)
+            ),
         )
 
         # Register custom filters
