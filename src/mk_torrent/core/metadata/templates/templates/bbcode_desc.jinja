@@ -1,64 +1,30 @@
 [b][size=4]{{ description.title }}[/size][/b]
-{% if description.subtitle -%}
-[i]{{ description.subtitle }}[/i]
-{%- endif %}
+{% if description.subtitle %}[i]{{ description.subtitle }}[/i]
 
-{% if description.series -%}
-[b]Series:[/b] {{ description.series | map(attribute='name') | join(' • ') }} (Vol. {{ description.series[0].number }})
-{%- endif %}
+{% endif %}{% if description.series %}[b]Series:[/b] {{ description.series[0].name }} (Vol. {{ description.series[0].number }}: Light Novel)
 
-[b]Summary[/b]
-{% if description.summary -%}
-{%- for p in description.summary %}
-{%- if loop.first %}
-[b]{{ p }}[/b]
-{%- else %}
-{{ p }}
-{%- endif %}
-{%- endfor %}
-{%- endif %}
-{% if description.narration_notes -%}
+{% endif %}[b]Summary[/b]
+{% if description.summary %}{% for p in description.summary %}{% if loop.first %}{{ p }}
 
-[i]{{ description.narration_notes }}[/i]
-{%- endif %}
+{% else %}{{ p }}
 
-[b]Book Info[/b]
+{% endif %}{% endfor %}{% endif %}{% if description.narration_notes %}[i]{{ description.narration_notes }}[/i]
+
+{% endif %}[b]Book Info[/b]
 [*] Authors: {{ description.book_info.authors | join_authors }}
-{%- if description.book_info.narrators %}
-[*] Narrators: {{ description.book_info.narrators | join(', ') }}
-{%- endif %}
-{%- if description.book_info.publisher %}
-[*] Publisher: {{ description.book_info.publisher }}
-{%- endif %}
-{%- if description.book_info.release_date %}
-[*] Release Date: {{ description.book_info.release_date }}
-{%- endif %}
-{%- if description.book_info.copyright_year %}
-[*] Copyright: {{ description.book_info.copyright_year }}
-{%- endif %}
-{%- if description.book_info.genre %}
-[*] Genre: {{ description.book_info.genre | join(' / ') }}
-{%- endif %}
-{%- if description.book_info.audible_url %}
-[*] Audible: [url={{ description.book_info.audible_url }}]{{ description.book_info.audible_url }}[/url]
-{%- endif %}
-{%- if description.book_info.identifiers.asin %}
-[*] ASIN: {{ description.book_info.identifiers.asin }}
-{%- endif %}
-{%- if description.book_info.identifiers.isbn13 %}
-[*] ISBN: {{ description.book_info.identifiers.isbn13 }}
-{%- elif description.book_info.identifiers.isbn10 %}
-[*] ISBN: {{ description.book_info.identifiers.isbn10 }}
-{%- endif %}
-{%- if description.book_info.identifiers.goodreads_id %}
-[*] Goodreads: [url=https://www.goodreads.com/book/show/{{ description.book_info.identifiers.goodreads_id }}]{{ description.book_info.identifiers.goodreads_id }}[/url]
-{%- endif %}
-[*] Language: {{ description.book_info.language | replace('en','English') | replace('es','Spanish') | replace('fr','French') | replace('de','German') | replace('it','Italian') }}
+{% if description.book_info.narrators %}[*] Narrator: {{ description.book_info.narrators | join(', ') }}
+{% endif %}{% if description.book_info.publisher %}[*] Publisher: {{ description.book_info.publisher }}
+{% endif %}{% if description.book_info.release_date %}[*] Release Date: {{ description.book_info.release_date }}
+{% endif %}{% if description.book_info.copyright_year %}[*] Copyright: {{ description.book_info.copyright_year }}
+{% endif %}{% if description.book_info.genre %}[*] Genre: {{ description.book_info.genre | join(' / ') }}
+{% endif %}{% if description.book_info.audible_url %}[*] Audible: [url={{ description.book_info.audible_url }}]{{ description.book_info.audible_url }}[/url]
+{% endif %}{% if description.book_info.identifiers.asin %}[*] ASIN: {{ description.book_info.identifiers.asin }}
+{% endif %}{% if description.book_info.identifiers.isbn13 %}[*] ISBN: {{ description.book_info.identifiers.isbn13 }}
+{% elif description.book_info.identifiers.isbn10 %}[*] ISBN: {{ description.book_info.identifiers.isbn10 }}
+{% endif %}{% if description.book_info.identifiers.goodreads_id %}[*] Goodreads: [url=https://www.goodreads.com/book/show/{{ description.book_info.identifiers.goodreads_id }}]{{ description.book_info.identifiers.goodreads_id }}[/url]
+{% endif %}[*] Language: {{ description.book_info.language | title }}
+{% if description.chapters %}
 
-{%- if description.chapters %}
-
-[b]Chapters ({{ description.chapter_count or description.chapters | length }})[/b]
-{%- for c in description.chapters %}
-[#] {{ c.start | format_timestamp }} — {{ c.title }}
-{%- endfor %}
-{%- endif %}
+[b]Chapters{% if description.chapter_count %} ({{ description.chapter_count }}){% endif %}[/b]
+{% for c in description.chapters %}[*] {{ c.start | format_timestamp }} — {{ c.title }}
+{% endfor %}{% endif %}

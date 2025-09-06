@@ -125,11 +125,8 @@ def mock_dependencies():
     """Mock external dependencies that might not be available in test environment"""
     with pytest.MonkeyPatch().context() as m:
         # Mock optional dependencies
-        m.setattr("src.mk_torrent.features.metadata_engine.NH3_AVAILABLE", True)
-        m.setattr("src.mk_torrent.features.metadata_engine.MUTAGEN_AVAILABLE", True)
-        m.setattr(
-            "src.mk_torrent.features.metadata_engine.MUSICBRAINZ_AVAILABLE", False
-        )
+        m.setattr("src.mk_torrent.integrations.audnexus.NH3_AVAILABLE", True)
+        # Note: MUTAGEN_AVAILABLE and MUSICBRAINZ_AVAILABLE are handled per-class, not globally
         yield
 
 

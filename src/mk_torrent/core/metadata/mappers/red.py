@@ -84,6 +84,10 @@ class REDMapper:
         if templates_available and TemplateRenderer:
             self.template_renderer = TemplateRenderer(template_dir)
 
+    def map_to_tracker(self, metadata: AudiobookMeta) -> dict[str, Any]:
+        """Map AudiobookMeta to RED tracker format (Protocol implementation)."""
+        return self.map_to_red_upload(metadata, include_description=True)
+
     def map_to_red_upload(
         self, metadata: AudiobookMeta, include_description: bool = True
     ) -> dict[str, Any]:
@@ -103,7 +107,7 @@ class REDMapper:
         upload_data = {
             "type": self.CATEGORY_AUDIOBOOKS,
             "artists[]": self._map_authors(metadata),
-            "title": metadata.album or metadata.title,
+            "title": f"{metadata.author} - {metadata.title}",  # RED audiobook format: Author - Title
             "year": self._map_year(metadata),
             "releasetype": self.RELEASE_TYPE_AUDIOBOOK,
             "format": self._map_format(metadata),
@@ -147,8 +151,14 @@ class REDMapper:
     def _map_year(self, metadata: AudiobookMeta) -> int:
         """Map year, ensuring it's valid."""
         year = metadata.year
-        if year and 1800 <= year <= 2100:
-            return year
+        if year:
+            # Convert to int if it's a string
+            try:
+                year_int = int(year) if isinstance(year, str) else year
+                if 1800 <= year_int <= 2100:
+                    return year_int
+            except (ValueError, TypeError):
+                pass
         return 2024  # Default fallback
 
     def _map_format(self, metadata: AudiobookMeta) -> str:
@@ -189,19 +199,39 @@ class REDMapper:
         elif "lossless" in encoding_lower or "flac" in encoding_lower:
             return "Lossless"
 
-        return "Other"
+        # Default to 192 for audiobooks instead of "Other"
+        return "192"
 
     def _map_media(self, metadata: AudiobookMeta) -> str:
-        """Map media source to RED media field."""
-        media = getattr(metadata, "media_source", "web")
-        if not media:
-            return "WEB"
+        """Map media source to RED format."""
+        media = getattr(metadata, "media_source", "web").lower()
+        return self.MEDIA_MAPPINGS.get(media, "WEB")
 
-        media_lower = media.lower()
-        return self.MEDIA_MAPPINGS.get(media_lower, "WEB")
+    def _get_bitrate_kbps(self, metadata: AudiobookMeta) -> int:
+        """Get bitrate in kbps from metadata, converting from bps if needed."""
+        if metadata.bitrate:
+            # Convert from bits per second to kilobits per second
+            return int(metadata.bitrate / 1000)
 
-    def _map_tags(self, metadata: AudiobookMeta) -> str:
-        """Map genres and tags to comma-separated string."""
+        # Fallback to parsing from encoding string if available
+        if metadata.encoding:
+            encoding_lower = metadata.encoding.lower()
+            if "320" in encoding_lower:
+                return 320
+            elif "256" in encoding_lower:
+                return 256
+            elif "192" in encoding_lower:
+                return 192
+            elif "128" in encoding_lower:
+                return 128
+            elif "64" in encoding_lower:
+                return 64
+
+        # Default for audiobooks
+        return 64
+
+    def _map_tags(self, metadata: AudiobookMeta) -> list[str]:
+        """Map genres and tags to list of strings."""
         tags: list[str] = []
 
         # Add genres
@@ -225,7 +255,7 @@ class REDMapper:
                 clean_tags.append(str(tag).strip())
                 seen.add(clean_tag)
 
-        return ", ".join(clean_tags)
+        return clean_tags
 
     def _generate_detailed_description(self, metadata: AudiobookMeta) -> str:
         """Generate detailed BBCode description using templates."""
@@ -286,11 +316,18 @@ class REDMapper:
 
     def _build_template_data(self, metadata: AudiobookMeta) -> dict[str, Any]:
         """Build template data structure from AudiobookMeta."""
-        # This is a simplified mapping - in practice you'd want more comprehensive mapping
+        # Format publisher properly
+        publisher_formatted = self._format_publisher(metadata)
+
+        # Generate Audible URL if we have ASIN
+        audible_url = None
+        if metadata.asin:
+            audible_url = f"https://www.audible.com/pd/{metadata.asin}"
+
         template_data = {
             "description": {
                 "title": metadata.title,
-                "subtitle": getattr(metadata, "subtitle", None),
+                "subtitle": self._format_subtitle(metadata),
                 "series": self._map_series(metadata),
                 "summary": self._split_summary(metadata.description or ""),
                 "narration_notes": getattr(metadata, "narration_notes", None),
@@ -305,43 +342,184 @@ class REDMapper:
                     else [metadata.narrator]
                     if metadata.narrator
                     else [],
-                    "publisher": metadata.publisher or "",
+                    "publisher": publisher_formatted,
                     "release_date": self._format_date(metadata.year),
                     "copyright_year": getattr(metadata, "copyright_year", None),
-                    "genre": metadata.genres
+                    "genre": self._clean_genres(metadata.genres)
                     if hasattr(metadata, "genres") and metadata.genres
                     else [],
-                    "audible_url": getattr(metadata, "audible_url", None),
+                    "audible_url": audible_url,
                     "identifiers": {
                         "asin": metadata.asin,
                         "isbn10": getattr(metadata, "isbn10", None),
                         "isbn13": getattr(metadata, "isbn13", None),
                         "goodreads_id": getattr(metadata, "goodreads_id", None),
                     },
-                    "language": metadata.language or "en",
+                    "language": self._clean_language(metadata.language) or "en",
                 },
                 "chapters": self._map_chapters(metadata),
                 "chapter_count": getattr(metadata, "chapter_count", None),
             },
             "release": {
                 "container": self._get_container_format(metadata),
-                "codec": metadata.format or "AAC",
-                "bitrate_kbps": 64,  # Default for audiobooks
-                "bitrate_mode": getattr(metadata, "bitrate_mode", "cbr"),
-                "sample_rate_hz": getattr(metadata, "sample_rate_hz", 44100),
-                "channels": getattr(metadata, "channels", 2),
-                "channel_layout": getattr(metadata, "channel_layout", "stereo"),
+                "codec": self._get_codec_with_profile(metadata),
+                "codec_profile": self._get_codec_profile(metadata),
+                "bitrate_kbps": self._get_bitrate_kbps(metadata),
+                "bitrate_mode": metadata.bitrate_mode.lower()
+                if metadata.bitrate_mode
+                else "cbr",
+                "sample_rate_hz": metadata.sample_rate or 44100,
+                "channels": metadata.channels or 2,
+                "channel_layout": metadata.channel_layout or "stereo",
                 "duration_ms": (metadata.duration_sec or 0) * 1000,
-                "filesize_bytes": getattr(metadata, "filesize_bytes", 0),
-                "chapters_present": bool(getattr(metadata, "chapter_count", 0) > 0),
+                "filesize_bytes": metadata.file_size_bytes or 0,
+                "chapters_present": bool(len(metadata.chapters) > 0),
+                "chapter_count": len(metadata.chapters) if metadata.chapters else None,
+                "artwork_info": self._get_artwork_info(metadata),
+                "extras": self._get_extras_info(metadata),
                 "encoder": getattr(metadata, "encoder", None),
                 "encoder_settings": getattr(metadata, "encoder_settings", None),
-                "source_type": getattr(metadata, "media_source", "Digital"),
-                "lineage": getattr(metadata, "lineage", ["Digital Release"]),
+                "lineage": self._get_lineage(metadata),
             },
         }
 
         return template_data
+
+    def _format_publisher(self, metadata: AudiobookMeta) -> str:
+        """Format publisher with imprint in parentheses."""
+        if not metadata.publisher:
+            return ""
+
+        # Check if publisher contains both publisher and imprint
+        if "," in metadata.publisher:
+            parts = [p.strip() for p in metadata.publisher.split(",")]
+            if len(parts) == 2:
+                return f"{parts[0]} ({parts[1]})"
+
+        return metadata.publisher
+
+    def _format_subtitle(self, metadata: AudiobookMeta) -> str:
+        """Format subtitle in the pattern Series Name (Book X)."""
+        if metadata.series and metadata.volume:
+            return f"{metadata.series} (Book {metadata.volume})"
+        elif metadata.series:
+            return f"{metadata.series} (Book 1)"
+        else:
+            # Fallback to just title if no series
+            return metadata.title
+
+    def _clean_genres(self, genres: list[str]) -> list[str]:
+        """Clean and format genre list."""
+        if not genres:
+            return []
+
+        cleaned: list[str] = []
+        for genre in genres:
+            # Clean up common separators and normalize
+            clean_genre = str(genre).strip()
+            if clean_genre:
+                cleaned.append(clean_genre)
+
+        return cleaned
+
+    def _get_codec_with_profile(self, metadata: AudiobookMeta) -> str:
+        """Get codec name with profile information."""
+        codec = metadata.format or "AAC"
+        codec_upper = codec.upper()
+
+        # Add LC profile for AAC if not specified
+        if codec_upper == "AAC":
+            return "AAC LC"
+
+        return codec_upper
+
+    def _get_codec_profile(self, metadata: AudiobookMeta) -> str | None:
+        """Get codec profile separately (not used in current template)."""
+        codec = metadata.format or "AAC"
+        if codec.upper() == "AAC":
+            return None  # Don't return profile separately to avoid duplication
+        return None
+
+    def _get_artwork_info(self, metadata: AudiobookMeta) -> str | None:
+        """Get artwork information."""
+        if metadata.artwork_url or hasattr(metadata, "artwork_width"):
+            width = getattr(metadata, "artwork_width", 2400)
+            height = getattr(metadata, "artwork_height", 2400)
+            return f"Embedded cover ({width}×{height})"
+        return None
+
+    def _get_extras_info(self, metadata: AudiobookMeta) -> str | None:
+        """Get extras information."""
+        extras: list[str] = []
+
+        # Check for common M4B extras
+        if self._get_container_format(metadata) == "M4B":
+            extras.append("Embedded Apple text/chapters stream")
+
+        return ", ".join(extras) if extras else None
+
+    def _get_lineage(self, metadata: AudiobookMeta) -> list[str] | None:
+        """Get encoding lineage information."""
+        lineage_parts: list[str] = []
+
+        # Start with source
+        media_source = getattr(metadata, "media_source", "digital").lower()
+        if media_source == "digital" or media_source == "web":
+            lineage_parts.append("Digital retail source")
+        else:
+            lineage_parts.append(f"{media_source.title()} source")
+
+        # Add encoding info
+        container = self._get_container_format(metadata)
+        codec = self._get_codec_with_profile(metadata)
+        bitrate_kbps = self._get_bitrate_kbps(metadata)
+        bitrate_mode = metadata.bitrate_mode.upper() if metadata.bitrate_mode else "CBR"
+        sample_rate = (metadata.sample_rate or 44100) / 1000
+        channels = metadata.channel_layout or "stereo"
+
+        encoding_info = f"Packaged as {container} ({codec} {bitrate_mode} ~{bitrate_kbps} kb/s, {sample_rate} kHz, {channels})"
+
+        # Add artwork info if available
+        artwork_info = self._get_artwork_info(metadata)
+        if artwork_info:
+            encoding_info += f". {artwork_info.replace('Embedded cover', 'Chapters and cover embedded')}"
+        else:
+            encoding_info += ". Chapters embedded" if len(metadata.chapters) > 0 else ""
+
+        # Add extras info
+        extras = self._get_extras_info(metadata)
+        if extras:
+            encoding_info += f"; {extras}"
+
+        lineage_parts.append(encoding_info)
+
+        return lineage_parts
+
+    def _clean_language(self, language: str | None) -> str | None:
+        """Clean and normalize language field."""
+        if not language:
+            return None
+
+        # Clean up common issues
+        clean_lang = str(language).strip().lower()
+
+        # Fix common duplications like "englishglish"
+        if "englishglish" in clean_lang:
+            return "english"
+        elif "english" in clean_lang:
+            return "english"
+        elif clean_lang in ["en", "eng"]:
+            return "english"
+        elif clean_lang in ["es", "spa", "spanish"]:
+            return "spanish"
+        elif clean_lang in ["fr", "fra", "french"]:
+            return "french"
+        elif clean_lang in ["de", "ger", "german"]:
+            return "german"
+        elif clean_lang in ["it", "ita", "italian"]:
+            return "italian"
+
+        return clean_lang
 
     def _map_series(self, metadata: AudiobookMeta) -> list[dict[str, Any]]:
         """Map series information."""
@@ -369,20 +547,49 @@ class REDMapper:
         return str(year) if year else None
 
     def _map_chapters(self, metadata: AudiobookMeta) -> list[dict[str, Any]]:
-        """Map chapter information."""
-        # This would need to be enhanced based on your actual chapter data structure
+        """Map chapter information from actual chapter data."""
         chapters: list[dict[str, Any]] = []
-        chapter_count = getattr(metadata, "chapter_count", 0)
 
-        if chapter_count and chapter_count > 0:
-            # Generate placeholder chapters if we don't have detailed chapter info
-            for i in range(min(chapter_count, 20)):  # Limit display
+        if metadata.chapters:
+            # Use actual chapter data if available
+            for i, chapter_data in enumerate(
+                metadata.chapters[:20]
+            ):  # Limit display to 20
+                # Extract start time from chapter data (try both formats)
+                start_time = chapter_data.get("startOffsetSec") or chapter_data.get(
+                    "start_time", 0
+                )
+                if isinstance(start_time, (int, float)):
+                    # Convert seconds to HH:MM:SS format
+                    hours = int(start_time // 3600)
+                    minutes = int((start_time % 3600) // 60)
+                    seconds = int(start_time % 60)
+                    start_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+                else:
+                    start_str = f"{i * 30 // 60:02d}:{(i * 30) % 60:02d}:00"  # Fallback
+
+                # Extract title from chapter data
+                title = chapter_data.get("title", f"Chapter {i + 1}")
+
+                # Extract or calculate duration (try multiple formats)
+                duration_ms = chapter_data.get("lengthMs") or chapter_data.get(
+                    "duration", 0
+                )
+                if (
+                    not duration_ms
+                    and chapter_data.get("end_time")
+                    and chapter_data.get("start_time")
+                ):
+                    duration_ms = (
+                        chapter_data["end_time"] - chapter_data["start_time"]
+                    ) * 1000
+
                 chapters.append(
                     {
                         "index": i + 1,
-                        "start": f"{i * 30 // 60:02d}:{(i * 30) % 60:02d}:00",  # Placeholder timestamps
-                        "title": f"Chapter {i + 1}",
-                        "duration_ms": 30 * 60 * 1000,  # 30 min placeholder
+                        "start": start_str,
+                        "title": title,
+                        "duration_ms": int(duration_ms) if duration_ms else None,
                     }
                 )
 
@@ -390,8 +597,15 @@ class REDMapper:
 
     def _get_container_format(self, metadata: AudiobookMeta) -> str:
         """Get container format from metadata."""
+        # For audiobooks, the container is typically M4B even if format shows AAC
         format_str = metadata.format or "M4B"
-        return format_str.upper()
+        format_upper = format_str.upper()
+
+        # Map codec formats to proper container formats
+        if format_upper in ["AAC", "M4A"]:
+            return "M4B"  # Audiobooks are typically M4B containers
+
+        return format_upper
 
     def _format_duration(self, duration_ms: int) -> str:
         """Format duration for display."""

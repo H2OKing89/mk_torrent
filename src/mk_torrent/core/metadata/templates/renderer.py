@@ -9,7 +9,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 from typing import Any
-from jinja2 import Environment, FileSystemLoader, StrictUndefined, select_autoescape
+from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
 
 class TemplateRenderer:
@@ -27,22 +27,12 @@ class TemplateRenderer:
         )
 
         # Create Jinja2 environment with strict settings
-        # Note: autoescape is disabled for BBCode templates as we need raw BBCode output
-        # This is safe because:
-        # 1. Templates are controlled (not user-provided)
-        # 2. Data is from trusted metadata sources (Audnexus, embedded tags)
-        # 3. HTML cleaning is performed separately in HTMLCleaner service
-        self.env = Environment(  # nosec B701
+        self.env = Environment(
             loader=FileSystemLoader(str(self.template_dir)),
             undefined=StrictUndefined,  # Fail on missing variables
             trim_blocks=True,  # Remove trailing newlines
             lstrip_blocks=True,  # Remove leading whitespace from blocks
-            # Use select_autoescape for security - disable only for BBCode templates
-            autoescape=select_autoescape(
-                enabled_extensions=("html", "xml"),
-                default_for_string=False,  # Don't escape BBCode strings
-                default=False,  # Don't escape BBCode templates (.jinja)
-            ),
+            autoescape=False,  # Don't escape BBCode - intentional for BBCode generation  # nosec B701
         )
 
         # Register custom filters
@@ -98,7 +88,7 @@ class TemplateRenderer:
             duration_ms: Duration in milliseconds
 
         Returns:
-            Formatted duration string (e.g., "2h 34m" or "1:23:45")
+            Formatted duration string (e.g., "7h 54m 06s")
         """
         if duration_ms < 0:
             return "0:00:00"
@@ -107,13 +97,8 @@ class TemplateRenderer:
         hours, remainder = divmod(total_seconds, 3600)
         minutes, seconds = divmod(remainder, 60)
 
-        if hours > 0:
-            if seconds == 0:
-                return f"{hours}h {minutes:02d}m"
-            else:
-                return f"{hours}:{minutes:02d}:{seconds:02d}"
-        else:
-            return f"{minutes}:{seconds:02d}"
+        # Always show hours format with zero-padded minutes and seconds
+        return f"{hours}h {minutes:02d}m {seconds:02d}s"
 
     @staticmethod
     def _yesno_filter(value: Any, yes: str = "Yes", no: str = "No") -> str:

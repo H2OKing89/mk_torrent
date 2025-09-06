@@ -143,7 +143,6 @@ addopts = [
     "--verbose",
     "--tb=short",
     "--strict-markers",
-    "--disable-warnings",
     "--html=test_results/report.html",
     "--self-contained-html",
     "--junitxml=test_results/junit.xml",
@@ -163,10 +162,13 @@ markers = [
     "asyncio: marks tests as async tests",
     "network: marks tests that require internet connection (skipped in CI by default)"
 ]
+# Configure asyncio default fixture loop scope to avoid deprecation warning
+asyncio_default_fixture_loop_scope = "function"
 # Skip network tests in CI by default, run them manually with --network
 filterwarnings = [
     "ignore::DeprecationWarning",
-    "ignore::PendingDeprecationWarning"
+    "ignore::PendingDeprecationWarning",
+    "ignore::pytest.PytestDeprecationWarning"
 ]
 
 [tool.coverage.run]

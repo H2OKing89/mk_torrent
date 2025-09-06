@@ -13,6 +13,8 @@ import pytest
 
 from mk_torrent.core.metadata.engine import MetadataEngine
 from mk_torrent.core.metadata.mappers.red import REDMapper
+from mk_torrent.core.metadata.processors.audiobook import AudiobookProcessor
+from mk_torrent.core.metadata.base import AudiobookMeta
 from mk_torrent.trackers.red_adapter import REDAdapter, REDConfig
 from mk_torrent.trackers.upload_spec import (
     BitrateEncoding,
@@ -53,7 +55,7 @@ class TestREDPipelineIntegration:
         torrent_path = (
             samples_dir
             / "torrent_files"
-            / "How a Realist Hero Rebuilt the Kingdom - vol_03 (2023) (Dojyomaru) {ASIN.B0C8ZW5N6Y} [H2OKing].torrent"
+            / "The World of Otome Games Is Tough for Mobs - vol_05 (2025) (Yomu Mishima) {ASIN.B0FPXQH971} [H2OKing].torrent"
         )
         assert torrent_path.exists(), f"Torrent file not found: {torrent_path}"
         return torrent_path
@@ -83,23 +85,25 @@ class TestREDPipelineIntegration:
 
         # Initialize metadata engine
         engine = MetadataEngine()
+        audiobook_processor = AudiobookProcessor()
+        engine.register_processor("audiobook", audiobook_processor)
+        engine.set_default_processor("audiobook")
 
         # Extract metadata
-        metadata = engine.extract_metadata(audiobook_dir)
+        metadata_dict = engine.extract_metadata(audiobook_dir)
+        metadata = AudiobookMeta.from_dict(metadata_dict)
 
         # Verify core metadata fields
         assert metadata is not None, "Metadata extraction failed"
         assert metadata.title, "Title not extracted"
-        assert metadata.authors, "Authors not extracted"
+        assert metadata.author, "Author not extracted"
 
         logger.info(f"Extracted metadata - Title: {metadata.title}")
-        logger.info(f"Extracted metadata - Authors: {metadata.authors}")
+        logger.info(f"Extracted metadata - Author: {metadata.author}")
 
         # Log full metadata for inspection
         logger.info("Full metadata structure:")
-        logger.info(json.dumps(metadata.model_dump(), indent=2, default=str))
-
-        return metadata
+        logger.info(json.dumps(metadata.to_dict(), indent=2, default=str))
 
     def test_red_mapping(self, audiobook_dir: Path):
         """Test RED mapper can generate upload fields."""
@@ -107,19 +111,27 @@ class TestREDPipelineIntegration:
 
         # Extract metadata
         engine = MetadataEngine()
-        metadata = engine.extract_metadata(audiobook_dir)
+        audiobook_processor = AudiobookProcessor()
+        engine.register_processor("audiobook", audiobook_processor)
+        engine.set_default_processor("audiobook")
+        metadata_dict = engine.extract_metadata(audiobook_dir)
+        metadata = AudiobookMeta.from_dict(metadata_dict)
 
         # Initialize RED mapper
         red_mapper = REDMapper()
 
         # Generate RED fields
-        red_fields = red_mapper.map_metadata(metadata)
+        red_fields = red_mapper.map_to_tracker(metadata)
 
         # Verify essential RED fields
-        assert "artist" in red_fields, "Artist field missing"
+        assert (
+            "artists[]" in red_fields
+        ), "Artists field missing"  # Note: RED uses 'artists[]' not 'artist'
         assert "title" in red_fields, "Title field missing"
         assert "year" in red_fields, "Year field missing"
-        assert "description" in red_fields, "Description field missing"
+        assert (
+            "album_desc" in red_fields
+        ), "Description field missing"  # Note: RED uses 'album_desc' not 'description'
 
         logger.info("Generated RED fields:")
         for key, value in red_fields.items():
@@ -128,28 +140,34 @@ class TestREDPipelineIntegration:
             else:
                 logger.info(f"  {key}: {value}")
 
-        return red_fields
-
     def test_upload_spec_creation(self, audiobook_dir: Path, torrent_file: Path):
         """Test creation of upload specification."""
         logger.info("Testing upload spec creation")
 
         # Extract metadata
         engine = MetadataEngine()
-        metadata = engine.extract_metadata(audiobook_dir)
+        audiobook_processor = AudiobookProcessor()
+        engine.register_processor("audiobook", audiobook_processor)
+        engine.set_default_processor("audiobook")
+        metadata_dict = engine.extract_metadata(audiobook_dir)
+        metadata = AudiobookMeta.from_dict(metadata_dict)
 
         # Generate RED fields
         red_mapper = REDMapper()
-        red_fields = red_mapper.map_metadata(metadata)
+        red_fields = red_mapper.map_to_tracker(metadata)
 
         # Create upload specification
         upload_spec = UploadSpec(
             category=Category.AUDIOBOOKS,
             release_info=ReleaseInfo(
-                artist=red_fields["artist"],
+                artist=red_fields["artists[]"][0]
+                if red_fields.get("artists[]")
+                else "",  # Use first artist from array
                 title=red_fields["title"],
                 year=int(red_fields["year"]) if red_fields.get("year") else None,
-                label=red_fields.get("label"),
+                label=red_fields.get(
+                    "remaster_record_label"
+                ),  # Use the correct field name
                 catalog_number=red_fields.get("catalog_number"),
             ),
             bitrate_encoding=BitrateEncoding(
@@ -162,7 +180,7 @@ class TestREDPipelineIntegration:
                 encoder="H2OKing",
                 uploader="mk_torrent_test",
             ),
-            description=red_fields["description"],
+            description=red_fields["album_desc"],  # Use the correct field name
             tags=red_fields.get("tags", []),
             torrent=TorrentFile(
                 file_path=torrent_file,
@@ -180,8 +198,6 @@ class TestREDPipelineIntegration:
         logger.info(f"Description length: {len(upload_spec.description)} characters")
         logger.info(f"Credits: {upload_spec.credits.to_credits_string()}")
 
-        return upload_spec
-
     @pytest.mark.asyncio
     async def test_red_dry_run(
         self, audiobook_dir: Path, torrent_file: Path, red_config: REDConfig
@@ -190,7 +206,47 @@ class TestREDPipelineIntegration:
         logger.info("Testing RED dry run upload")
 
         # Create upload specification
-        upload_spec = self.test_upload_spec_creation(audiobook_dir, torrent_file)
+        # Extract metadata
+        engine = MetadataEngine()
+        audiobook_processor = AudiobookProcessor()
+        engine.register_processor("audiobook", audiobook_processor)
+        engine.set_default_processor("audiobook")
+        metadata_dict = engine.extract_metadata(audiobook_dir)
+        metadata = AudiobookMeta.from_dict(metadata_dict)
+
+        # Generate RED fields
+        red_mapper = REDMapper()
+        red_fields = red_mapper.map_to_tracker(metadata)
+
+        # Create upload specification
+        upload_spec = UploadSpec(
+            category=Category.AUDIOBOOKS,
+            release_info=ReleaseInfo(
+                artist=red_fields["artists[]"][0]
+                if red_fields.get("artists[]")
+                else "",
+                title=red_fields["title"],
+                year=int(red_fields["year"]) if red_fields.get("year") else None,
+                label=red_fields.get("remaster_record_label"),
+                catalog_number=red_fields.get("catalog_number"),
+            ),
+            bitrate_encoding=BitrateEncoding(
+                bitrate=128,
+                encoding="MP3",
+                vbr=False,
+            ),
+            credits=Credits(
+                ripper="H2OKing",
+                encoder="H2OKing",
+                uploader="mk_torrent_test",
+            ),
+            description=red_fields["album_desc"],
+            tags=red_fields.get("tags", []),
+            torrent=TorrentFile(
+                file_path=torrent_file,
+                data_path=audiobook_dir,
+            ),
+        )
 
         # Initialize RED adapter
         red_adapter = REDAdapter(red_config)
@@ -213,7 +269,6 @@ class TestREDPipelineIntegration:
 
         # For now, we don't assert success=True since we might not have valid RED credentials
         # But we can verify the upload specification was properly formatted
-        return result
 
     @pytest.mark.asyncio
     async def test_complete_pipeline(
@@ -226,19 +281,53 @@ class TestREDPipelineIntegration:
 
         # Step 1: Extract metadata
         logger.info("Step 1: Extracting metadata...")
-        metadata = self.test_metadata_extraction(audiobook_dir)
+        engine = MetadataEngine()
+        audiobook_processor = AudiobookProcessor()
+        engine.register_processor("audiobook", audiobook_processor)
+        engine.set_default_processor("audiobook")
+        metadata_dict = engine.extract_metadata(audiobook_dir)
+        metadata = AudiobookMeta.from_dict(metadata_dict)
 
         # Step 2: Generate RED fields
         logger.info("\nStep 2: Generating RED fields...")
-        red_fields = self.test_red_mapping(audiobook_dir)
+        red_mapper = REDMapper()
+        red_fields = red_mapper.map_to_tracker(metadata)
 
         # Step 3: Create upload spec
         logger.info("\nStep 3: Creating upload specification...")
-        upload_spec = self.test_upload_spec_creation(audiobook_dir, torrent_file)
+        upload_spec = UploadSpec(
+            category=Category.AUDIOBOOKS,
+            release_info=ReleaseInfo(
+                artist=red_fields["artists[]"][0]
+                if red_fields.get("artists[]")
+                else "",
+                title=red_fields["title"],
+                year=int(red_fields["year"]) if red_fields.get("year") else None,
+                label=red_fields.get("remaster_record_label"),
+                catalog_number=red_fields.get("catalog_number"),
+            ),
+            bitrate_encoding=BitrateEncoding(
+                bitrate=128,
+                encoding="MP3",
+                vbr=False,
+            ),
+            credits=Credits(
+                ripper="H2OKing",
+                encoder="H2OKing",
+                uploader="mk_torrent_test",
+            ),
+            description=red_fields["album_desc"],
+            tags=red_fields.get("tags", []),
+            torrent=TorrentFile(
+                file_path=torrent_file,
+                data_path=audiobook_dir,
+            ),
+        )
 
         # Step 4: Dry run upload
         logger.info("\nStep 4: Performing RED dry run...")
-        result = await self.test_red_dry_run(audiobook_dir, torrent_file, red_config)
+        red_adapter = REDAdapter(red_config)
+        result = await red_adapter.dry_run_upload(upload_spec)
 
         # Summary
         logger.info("\n" + "=" * 60)
@@ -252,10 +341,3 @@ class TestREDPipelineIntegration:
         logger.info(f"Dry run success: {result.success}")
         logger.info(f"Message: {result.message}")
         logger.info("=" * 60)
-
-        return {
-            "metadata": metadata,
-            "red_fields": red_fields,
-            "upload_spec": upload_spec,
-            "dry_run_result": result,
-        }

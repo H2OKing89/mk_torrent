@@ -32,6 +32,7 @@ nh3>=0.3.0  # Modern HTML sanitization (replacement for deprecated bleach)
 pydantic>=2.8
 pydantic-settings>=2.4
 fastjsonschema>=2.20
+python-dotenv>=1.0.0  # For environment variable loading
 
 # Rendering & Template System
 Jinja2>=3.1

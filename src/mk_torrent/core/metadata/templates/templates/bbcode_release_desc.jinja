@@ -1,24 +1,22 @@
 [b]Release Info[/b]
 [*] Container: {{ release.container | upper }}
 [*] Size: {{ release.filesize_bytes | fmt_bytes }}
-[*] Bitrate: {%- if release.bitrate_mode == 'vbr' %}~{% endif -%}{{ release.bitrate_kbps }} kb/s ({{ release.bitrate_mode | upper }})
+[*] Bitrate: {% if release.bitrate_mode == 'vbr' %}~{% endif %}{{ release.bitrate_kbps }} kb/s ({{ release.bitrate_mode | upper }})
 [*] Codec: {{ release.codec | upper }}
-[*] Sample Rate: {{ (release.sample_rate_hz / 1000) | int }} kHz
-[*] Channels: {{ release.channels }}{% if release.channel_layout %} ({{ release.channel_layout | title }}){% endif %}
+[*] Sample Rate: {{ (release.sample_rate_hz / 1000) | round(1) }} kHz
+[*] Channels: {{ release.channels }} ({{ release.channel_layout | lower }})
 [*] Duration: {{ release.duration_ms | fmt_duration }}
-[*] Chapters: {{ release.chapters_present | yesno('Yes','No') }}
-{%- if release.encoder %}
-[*] Encoder: {{ release.encoder }}
-{%- endif %}
-{%- if release.encoder_settings %}
-[*] Settings: {{ release.encoder_settings }}
-{%- endif %}
-{%- if release.source_type %}
-[*] Source: {{ release.source_type }}
-{%- endif %}
+[*] Chapters: {% if release.chapters_present %}Yes{% if release.chapter_count %} ({{ release.chapter_count }}){% endif %}{% else %}No{% endif %}
 
-{%- if release.lineage %}
+{% if release.artwork_info %}[*] Artwork: {{ release.artwork_info }}
+{% endif %}
+{% if release.extras %}[*] Extras: {{ release.extras }}
+{% endif %}
+{% if release.encoder %}[*] Encoder: {{ release.encoder }}
+{% endif %}
+{% if release.encoder_settings %}[*] Settings: {{ release.encoder_settings }}
+{% endif %}
 
-[b]Lineage / Encoding Notes[/b]
+{% if release.lineage %}[b]Lineage / Encoding Notes[/b]
 {{ release.lineage | join(' → ') }}
-{%- endif %}
+{% endif %}

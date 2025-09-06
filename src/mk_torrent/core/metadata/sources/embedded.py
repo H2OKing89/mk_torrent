@@ -299,9 +299,19 @@ class EmbeddedSource:
                     )
                     result["bitrate_variance"] = round(variance, 1)
 
-                    # Determine encoding mode (CBR vs VBR)
-                    # Less than 5% variance typically indicates CBR
-                    result["bitrate_mode"] = "CBR" if variance < 5.0 else "VBR"
+                    # Determine encoding mode (CBR vs VBR) with format-specific thresholds
+                    # AAC/M4B files are almost always VBR even with low variance
+                    # MP3 files typically need higher variance to be considered VBR
+                    file_ext = file_path.suffix.lower()
+                    if file_ext in [".m4b", ".m4a", ".aac"]:
+                        # AAC files: even small variance usually indicates VBR/CVBR
+                        result["bitrate_mode"] = "CBR" if variance < 1.0 else "VBR"
+                    elif file_ext == ".mp3":
+                        # MP3 files: need more variance to be considered VBR
+                        result["bitrate_mode"] = "CBR" if variance < 5.0 else "VBR"
+                    else:
+                        # Other formats: use conservative threshold
+                        result["bitrate_mode"] = "CBR" if variance < 3.0 else "VBR"
 
             # Sample rate
             if hasattr(info, "sample_rate") and info.sample_rate:
