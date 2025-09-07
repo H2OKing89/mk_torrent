@@ -170,7 +170,7 @@ class AudiobookMetaRich:
     artwork_url: str = ""  # kept for convenience
 
     # Provenance (keep originals for troubleshooting)
-    provenance: list[Provenance] = field(default_factory=list)  # type: ignore[valid-type]
+    provenance: list[Provenance] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
