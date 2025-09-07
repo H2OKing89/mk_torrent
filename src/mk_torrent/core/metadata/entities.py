@@ -103,7 +103,7 @@ class Provenance:
     source: str  # "mediainfo" | "audnexus" | "pathinfo"
     fetched_at: datetime | None = None
     version: str | None = None
-    raw: dict[str, Any] = field(default_factory=dict)  # type: ignore[valid-type]
+    raw: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
