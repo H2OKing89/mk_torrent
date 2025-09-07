@@ -99,9 +99,9 @@ class TagNormalizer:
         """Apply smart title casing with special handling for known patterns."""
         # Handle special cases
         special_cases = {
-            "lgbtq+": "LGBTQ+",
+            "lgbtq+": "LGBTQ+",  # cspell:disable-line
             "tv": "TV",
-            "nsfk": "NSFK",
+            "nsfk": "NSFK",  # cspell:disable-line
             "r&b": "R&B",
             "hip-hop": "Hip-Hop",
             "sci-fi": "Sci-Fi",
@@ -247,7 +247,7 @@ class TagNormalizer:
             "first contact": "First Contact",
             "folk tales & myths": "Folk Tales & Myths",
             "friendship": "Friendship",
-            "gaslamp": "Gaslamp",
+            "gaslamp": "Gaslamp",  # cspell:disable-line
             "genetic engineering": "Genetic Engineering",
             "genre fiction": "Genre Fiction",
             "ghosts": "Ghosts",
@@ -260,7 +260,7 @@ class TagNormalizer:
             "humor": "Humor",
             "humorous": "Humor",  # Consolidate
             "international mystery & crime": "International Mystery & Crime",
-            "lgbtq+": "LGBTQ+",
+            "lgbtq+": "LGBTQ+",  # cspell:disable-line
             "literary fiction": "Literary Fiction",
             "literature & fiction": "Literature & Fiction",
             "magical realism": "Magical Realism",
@@ -269,7 +269,7 @@ class TagNormalizer:
             "multicultural": "Multicultural",
             "mysteries & detectives": "Mystery",  # Consolidate
             "mystery": "Mystery",
-            "nsfk": "NSFK",
+            "nsfk": "NSFK",  # cspell:disable-line
             "occult": "Occult",
             "paranormal": "Paranormal",
             "paranormal & urban": "Urban Fantasy",  # More specific
@@ -294,7 +294,7 @@ class TagNormalizer:
             "supernatural": "Supernatural",
             "suspense": "Suspense",
             "sword & sorcery": "Sword & Sorcery",
-            "technothrillers": "Technothrillers",
+            "technothrillers": "Technothrillers",  # cspell:disable-line
             "thriller & suspense": "Thriller & Suspense",
             "thrillers & suspense": "Thriller & Suspense",  # Consolidate pluralization
             "time travel": "Time Travel",
@@ -323,7 +323,7 @@ class TagNormalizer:
         return [
             {
                 "primary": "Science Fiction",
-                "alternates": ["Sci-Fi", "Scifi", "Sci Fi"],
+                "alternates": ["Sci-Fi", "Scifi", "Sci Fi"],  # cspell:disable-line
             },
             {
                 "primary": "Post-Apocalyptic",
