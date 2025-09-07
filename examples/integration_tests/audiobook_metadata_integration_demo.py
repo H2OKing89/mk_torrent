@@ -287,7 +287,7 @@ def test_audiobook_processor():
     ).parent.parent.parent  # Go up from examples/integration_tests/ to project root
     sample_file = (
         project_root
-        / "tests/samples/audiobook/The World of Otome Games Is Tough for Mobs - vol_05 (2025) (Yomu Mishima) {ASIN.B0FPXQH971} [H2OKing]/The World of Otome Games Is Tough for Mobs - vol_05 (2025) (Yomu Mishima) {ASIN.B0FPXQH971}.m4b"
+        / "/mnt/cache/scripts/mk_torrent/tests/samples/audiobook/How a Realist Hero Rebuilt the Kingdom - vol_09 (2023) (Dojyomaru) {ASIN.B0CPML76KX} [H2OKing]/How a Realist Hero Rebuilt the Kingdom - vol_09 {ASIN.B0CPML76KX}.m4b"
     )
 
     if not sample_file.exists():

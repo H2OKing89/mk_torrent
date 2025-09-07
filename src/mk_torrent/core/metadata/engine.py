@@ -10,6 +10,35 @@ registry patterns for maximum flexibility and testability.
 This is the "one true engine" that provides a clean interface for extracting,
 validating, and mapping metadata across different content types.
 
+⚠️  METADATA ENGINE FIELD STRATEGY WARNINGS ⚠️
+
+THREE-SOURCE ARCHITECTURE OVERVIEW:
+🔄 Engine coordinates three specialized sources for optimal field coverage:
+   1️⃣ API (Audnexus): Authoritative descriptive metadata
+   2️⃣ Embedded: Precise technical file properties
+   3️⃣ Path: Compliance-focused structural data
+
+INTELLIGENT MERGING PREVENTS DATA LOSS:
+✅ Each source contributes what it does best
+✅ Smart precedence rules avoid field conflicts
+✅ Post-processing resolves ambiguous cases (description vs summary)
+✅ Technical data preserved without degradation
+
+FIELD SELECTION STRATEGY:
+📚 Descriptive: API → Path → Embedded (completeness priority)
+🔧 Technical: Embedded only (accuracy priority)
+📁 Structural: Path → API → Embedded (compliance priority)
+
+CRITICAL POST-PROCESSING:
+🚨 Description field intelligently selects between API's 'description' vs 'summary'
+🚨 Technical fields routed to TechnicalAudio container for precision
+🚨 Legacy field compatibility maintained via to_dict() mirrors
+
+DO NOT BYPASS THE ENGINE:
+❌ Direct source access loses intelligent merging benefits
+❌ Manual field selection risks data loss and conflicts
+❌ Missing post-processing leads to truncated descriptions
+
 Architecture Documentation:
 - Engine Pipeline: docs/core/metadata/06 — Engine Pipeline.md
 - Services Overview: docs/core/metadata/07 — Services Details.md

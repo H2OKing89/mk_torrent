@@ -32,6 +32,36 @@ from collections.abc import Iterable
 
 Scalar = Any
 
+"""
+⚠️  FIELD SOURCE USAGE GUIDELINES ⚠️
+
+CRITICAL: Different sources provide different quality/completeness for the same fields.
+Follow these guidelines to avoid data loss and field mix-ups:
+
+API SOURCE (Audnexus):
+✅ PREFER: description, summary, year, narrator, publisher, genres, asin, isbn
+✅ RELIABLE: Complete text content, accurate metadata, structured data
+⚠️  WARNING: API provides BOTH 'description' (truncated ~200 chars) AND 'summary' (full text)
+   → Use 'summary' for complete content, 'description' may be truncated with "..."
+❌ AVOID: Technical audio specs (bitrate, sample_rate, etc.) - often missing/inaccurate
+
+EMBEDDED SOURCE (File metadata):
+✅ PREFER: All technical fields (bitrate, sample_rate, channels, duration_sec, file_size)
+✅ RELIABLE: Precise technical measurements, actual file properties
+❌ AVOID: Descriptive fields (description, narrator, publisher) - often missing/minimal
+
+PATH SOURCE (Filename parsing):
+✅ PREFER: series, volume, asin (for compliance), structured identifiers
+✅ RELIABLE: Series/volume extraction, ASIN from filename patterns
+❌ AVOID: Technical specs, long descriptions - not available in filenames
+
+COMMON PITFALLS TO AVOID:
+🚨 description vs summary: API gives both, summary is usually complete, description may be truncated
+🚨 bitrate from API: Often missing or rounded, use embedded source for precision
+🚨 duration_sec: API often in minutes, embedded gives precise seconds
+🚨 Empty/null values: Always check _is_meaningful() before using field values
+"""
+
 # Updated precedence for three-source strategy
 DEFAULT_PRECEDENCE: dict[str, list[str]] = {
     # Descriptive fields (path + API primary, embedded fallback)
@@ -45,6 +75,7 @@ DEFAULT_PRECEDENCE: dict[str, list[str]] = {
     "asin": ["path", "api", "embedded"],  # Path for tracker compliance
     "isbn": ["api", "embedded"],  # API primary, embedded fallback
     "description": ["api", "embedded"],  # API primary, embedded fallback
+    "summary": ["api", "embedded"],  # API primary, embedded fallback
     "artwork_url": ["api", "embedded"],  # API primary, embedded fallback
     # Technical fields (embedded wins - most accurate)
     "duration_sec": [
@@ -370,4 +401,18 @@ def merge_metadata(
         Merged metadata dictionary
     """
     merger = FieldMerger(precedence)
-    return merger.merge(candidates)
+    merged = merger.merge(candidates)
+
+    # Post-processing: Smart description field selection
+    # If both 'description' and 'summary' exist, prefer the longer one as 'description'
+    # This handles cases where API provides both truncated description and full summary
+    if "summary" in merged and "description" in merged:
+        summary_len = len(str(merged.get("summary", "")))
+        description_len = len(str(merged.get("description", "")))
+
+        # If summary is significantly longer, use it as the canonical description
+        if summary_len > description_len * 1.5:  # 50% longer threshold
+            merged["description"] = merged["summary"]
+            # Keep both fields for backward compatibility, but description is now canonical
+
+    return merged

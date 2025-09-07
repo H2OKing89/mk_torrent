@@ -8,6 +8,30 @@ three-source extraction strategy.
 Implements the MetadataSource protocol to fetch data from api.audnex.us
 following the official API documentation (v1.8.0).
 
+⚠️  AUDNEXUS API FIELD USAGE WARNINGS ⚠️
+
+FIELDS TO PREFER FROM AUDNEXUS:
+✅ description, summary, title, author, narrator, publisher, genres
+✅ year, asin, isbn, artwork_url, series information
+✅ chapter_count, has_chapters (structured data)
+
+CRITICAL WARNING - DESCRIPTION vs SUMMARY:
+🚨 API provides BOTH fields with different content:
+   - 'description': Often truncated (~200 chars) ending with "..."
+   - 'summary': Complete full text content (may be 500+ chars)
+   → ALWAYS prefer 'summary' for complete content
+   → Use post-processing to select the longer/better field
+
+FIELDS TO AVOID FROM AUDNEXUS:
+❌ Technical audio specs (bitrate, sample_rate, channels, duration_sec)
+❌ File properties (file_size_bytes, codec, format)
+❌ Encoding details - API doesn't have access to actual files
+
+RELIABILITY NOTES:
+✅ Very reliable for: Book metadata, descriptions, identifiers
+⚠️  Sometimes missing: Narrator info, exact technical specs
+❌ Never has: File-specific technical details
+
 Architecture Documentation:
 - Source Specification: docs/core/metadata/07.3 — Audnexus Source.md
 - Three-Source Strategy: docs/core/metadata/06 — Engine Pipeline.md

@@ -8,6 +8,35 @@ Orchestrates metadata extraction from multiple sources (Audnexus API, embedded
 metadata, filename parsing) and uses sophisticated merging to combine them into
 a comprehensive audiobook metadata record.
 
+⚠️  AUDIOBOOK PROCESSOR SOURCE INTEGRATION WARNINGS ⚠️
+
+THREE-SOURCE STRATEGY OVERVIEW:
+1️⃣ AUDNEXUS API: Descriptive metadata (title, description, genres, etc.)
+2️⃣ EMBEDDED: Technical metadata (bitrate, codec, duration, file size)
+3️⃣ PATH INFO: Compliance metadata (series, volume, ASIN, structure)
+
+INTEGRATION PRINCIPLES:
+🔄 Each source provides what it does BEST
+🔄 Intelligent merging prevents data loss
+🔄 Post-processing resolves field conflicts (e.g., description vs summary)
+🔄 Technical fields ALWAYS come from embedded source for accuracy
+
+CRITICAL SOURCE RESPONSIBILITIES:
+📚 API Source → Complete descriptions, book info, identifiers
+🔧 Embedded Source → Precise technical specs, file properties
+📁 Path Source → Series structure, compliance naming, ASIN extraction
+
+MERGER HANDLES CONFLICTS:
+✅ Smart field selection based on source strengths
+✅ Post-processing for description vs summary field confusion
+✅ Technical field preservation without data loss
+✅ List union for genres/tags from all sources
+
+AVOID MANUAL FIELD SELECTION:
+❌ Don't bypass the merger - it handles complex precedence rules
+❌ Don't assume any single source has all needed fields
+❌ Don't ignore technical fields - they're critical for release info
+
 Architecture Documentation:
 - Overview: docs/core/metadata/06 — Engine Pipeline.md
 - Processor Details: docs/core/metadata/07 — Services Details.md (Section 7.0)

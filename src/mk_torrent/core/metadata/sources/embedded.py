@@ -8,6 +8,38 @@ exclusively on reliable technical data, avoiding inconsistent descriptive tags.
 Extracts technical file properties (duration, bitrate, codec, chapters) using
 ffprobe (preferred) or mutagen (fallback). Avoids unreliable descriptive tags.
 
+⚠️  EMBEDDED METADATA FIELD USAGE WARNINGS ⚠️
+
+FIELDS TO PREFER FROM EMBEDDED:
+✅ ALL technical fields: bitrate, sample_rate, channels, duration_sec
+✅ File properties: file_size_bytes, codec, format, container
+✅ Encoding details: bitrate_mode (VBR/CBR), encoder, profile
+✅ Chapter information: chapter timing, has_chapters
+✅ Cover art: has_embedded_cover, cover_dimensions, cover_codec
+
+CRITICAL - TECHNICAL ACCURACY:
+🔧 Embedded source provides PRECISE measurements from actual file analysis
+🔧 Duration is in exact seconds (not rounded minutes like API)
+🔧 Bitrate includes mode detection (VBR/CBR) and variance analysis
+🔧 Sample rate and channels are exact from stream properties
+
+FIELDS TO AVOID FROM EMBEDDED:
+❌ Descriptive metadata: title, author, narrator, description
+❌ Series/volume info: Inconsistent between encoders
+❌ Publisher/year: Often missing or incorrect in tags
+❌ Genre/tags: Highly variable, prefer API sources
+
+RELIABILITY NOTES:
+✅ 100% reliable for: File size, duration, codec specs, technical properties
+⚠️  Sometimes missing: Embedded cover art, chapter names
+❌ Unreliable for: Any descriptive text fields
+
+WHY AVOID DESCRIPTIVE FIELDS:
+🚨 Different encoders use different tag standards
+🚨 Tags often truncated, corrupted, or missing
+🚨 Series/volume parsing inconsistent across tools
+🚨 API sources provide much more complete descriptive data
+
 Architecture Documentation:
 - Source Specification: docs/core/metadata/07.6 — Embedded Source (Technical Focus).md
 - Three-Source Strategy: docs/core/metadata/06 — Engine Pipeline.md

@@ -29,8 +29,12 @@
   ],
 
   "words": [
-    "Pydantic","pydantic","Dataclass","dataclass","dataclasses","asdict","pathlib","bbcode",
+    "Pydantic","pydantic","Dataclass","dataclass",    "dataclasses","dedupe","asdict","Amidonia","Friedonia","pathlib","bbcode",
     "pytest","Pytest","pyproject","Audnexus","audnexus","pathinfo","ffprobe","kwargs","asyncio",
-    "venv","maindata","Goodreads","urlencode","Traefik","releasetype"
+    "venv","maindata","Goodreads","urlencode","Traefik","rprint","monokai",
+    "releasetype","CPML","CVBR","APIC","covr","trkn",
+    "qbittorrent","qbittorrentapi","adminadmin","HTTPADAPTER","WEBUI","NOTIMPLEMENTEDERROR",
+    "QBITTORRENT","QBITTORRENTAPI","RSSAPI","prefs","ifaces","addrs","descr","btih","backoffs",
+    "torrentcreator","libfdk","qaac","technicals","englishglish"
   ]
 }

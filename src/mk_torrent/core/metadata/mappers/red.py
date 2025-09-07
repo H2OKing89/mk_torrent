@@ -3,6 +3,39 @@ RED Tracker metadata mapper.
 
 Converts AudiobookMeta to RED upload fields with detailed BBCode descriptions
 using the template system.
+
+⚠️  RED MAPPER FIELD USAGE WARNINGS ⚠️
+
+WHEN USING FIELDS FROM AudiobookMeta:
+
+DESCRIPTION/TEXT CONTENT:
+🚨 CRITICAL: Use metadata.description (post-processed by merger)
+   - Merger automatically selects best text field (summary vs description)
+   - description field is canonical after intelligent selection
+   ❌ DO NOT use raw 'summary' field directly - may cause inconsistency
+
+TECHNICAL FIELDS:
+✅ ALWAYS use metadata.technical.* for audio specs:
+   - metadata.technical.bitrate_kbps (not metadata.bitrate)
+   - metadata.technical.sample_rate (not metadata.sample_rate)
+   - metadata.technical.channels (not metadata.channels)
+   - metadata.technical.codec (not metadata.format)
+
+FILE PROPERTIES:
+✅ Use technical fields for file info:
+   - metadata.technical.file_size_bytes
+   - metadata.technical.duration_ms
+   - metadata.technical.container
+
+AVOID LEGACY FIELD ACCESS:
+❌ Don't use metadata.bitrate directly - use metadata.technical.bitrate_kbps
+❌ Don't use metadata.format directly - use metadata.technical.codec
+❌ Don't use metadata.duration_sec - use metadata.technical.duration_ms
+
+TEMPLATE DATA BUILDING:
+📝 Templates expect specific field structure - use _build_template_data()
+📝 Technical fields go to release section, descriptive to description section
+📝 Post-processed description field contains best available text content
 """
 
 from __future__ import annotations
@@ -140,6 +173,21 @@ class REDMapper:
         logger.debug(f"Mapped {len(upload_data)} fields for RED upload")
         return upload_data
 
+    def build_template_data(self, metadata: AudiobookMeta) -> dict[str, Any]:
+        """
+        Build template data structure from AudiobookMeta (public interface).
+
+        This is a public wrapper around the internal _build_template_data method
+        for use in demos and testing.
+
+        Args:
+            metadata: Audiobook metadata to convert
+
+        Returns:
+            Dictionary with description and release template data
+        """
+        return self._build_template_data(metadata)
+
     def _map_authors(self, metadata: AudiobookMeta) -> list[str]:
         """Map authors to RED artists array."""
         if metadata.author:
@@ -208,10 +256,16 @@ class REDMapper:
         return self.MEDIA_MAPPINGS.get(media, "WEB")
 
     def _get_bitrate_kbps(self, metadata: AudiobookMeta) -> int:
-        """Get bitrate in kbps from metadata, converting from bps if needed."""
-        if metadata.bitrate:
-            # Convert from bits per second to kilobits per second
-            return int(metadata.bitrate / 1000)
+        """Get bitrate in kbps from metadata technical fields."""
+        # Try technical fields first (preferred)
+        if metadata.technical.bitrate_kbps:
+            return metadata.technical.bitrate_kbps
+
+        if metadata.technical.calculated_bitrate_kbps:
+            return metadata.technical.calculated_bitrate_kbps
+
+        if metadata.technical.bitrate_bps:
+            return int(metadata.technical.bitrate_bps / 1000)
 
         # Fallback to parsing from encoding string if available
         if metadata.encoding:
@@ -365,14 +419,15 @@ class REDMapper:
                 "codec": self._get_codec_with_profile(metadata),
                 "codec_profile": self._get_codec_profile(metadata),
                 "bitrate_kbps": self._get_bitrate_kbps(metadata),
-                "bitrate_mode": metadata.bitrate_mode.lower()
-                if metadata.bitrate_mode
+                "bitrate_mode": metadata.technical.bitrate_mode.lower()
+                if metadata.technical.bitrate_mode
                 else "cbr",
-                "sample_rate_hz": metadata.sample_rate or 44100,
-                "channels": metadata.channels or 2,
-                "channel_layout": metadata.channel_layout or "stereo",
-                "duration_ms": (metadata.duration_sec or 0) * 1000,
-                "filesize_bytes": metadata.file_size_bytes or 0,
+                "sample_rate_hz": metadata.technical.sample_rate or 44100,
+                "channels": metadata.technical.channels or 2,
+                "channel_layout": metadata.technical.channel_layout or "stereo",
+                "duration_ms": metadata.technical.duration_ms
+                or (metadata.duration_sec or 0) * 1000,
+                "filesize_bytes": metadata.technical.file_size_bytes or 0,
                 "chapters_present": bool(len(metadata.chapters) > 0),
                 "chapter_count": len(metadata.chapters) if metadata.chapters else None,
                 "artwork_info": self._get_artwork_info(metadata),
@@ -424,12 +479,18 @@ class REDMapper:
 
     def _get_codec_with_profile(self, metadata: AudiobookMeta) -> str:
         """Get codec name with profile information."""
-        codec = metadata.format or "AAC"
-        codec_upper = codec.upper()
+        # Try technical codec first, then format fallback
+        codec = metadata.technical.codec or metadata.format or "AAC"
 
-        # Add LC profile for AAC if not specified
-        if codec_upper == "AAC":
-            return "AAC LC"
+        # Get profile if available
+        profile = metadata.technical.profile
+
+        # Build codec string with profile
+        codec_upper = codec.upper()
+        if profile and "LC" not in codec_upper:
+            return f"{codec_upper} {profile.upper()}"
+        elif codec_upper == "AAC" and not profile:
+            return "AAC LC"  # Default profile for AAC
 
         return codec_upper
 
@@ -442,9 +503,13 @@ class REDMapper:
 
     def _get_artwork_info(self, metadata: AudiobookMeta) -> str | None:
         """Get artwork information."""
-        if metadata.artwork_url or hasattr(metadata, "artwork_width"):
-            width = getattr(metadata, "artwork_width", 2400)
-            height = getattr(metadata, "artwork_height", 2400)
+        if metadata.artwork_url or metadata.cover_dimensions:
+            # Use cover dimensions if available, otherwise default
+            if metadata.cover_dimensions:
+                width = metadata.cover_dimensions.get("width", 2400)
+                height = metadata.cover_dimensions.get("height", 2400)
+            else:
+                width, height = 2400, 2400
             return f"Embedded cover ({width}×{height})"
         return None
 
@@ -473,9 +538,13 @@ class REDMapper:
         container = self._get_container_format(metadata)
         codec = self._get_codec_with_profile(metadata)
         bitrate_kbps = self._get_bitrate_kbps(metadata)
-        bitrate_mode = metadata.bitrate_mode.upper() if metadata.bitrate_mode else "CBR"
-        sample_rate = (metadata.sample_rate or 44100) / 1000
-        channels = metadata.channel_layout or "stereo"
+        bitrate_mode = (
+            metadata.technical.bitrate_mode.upper()
+            if metadata.technical.bitrate_mode
+            else "CBR"
+        )
+        sample_rate = (metadata.technical.sample_rate or 44100) / 1000
+        channels = metadata.technical.channel_layout or "stereo"
 
         encoding_info = f"Packaged as {container} ({codec} {bitrate_mode} ~{bitrate_kbps} kb/s, {sample_rate} kHz, {channels})"
 
@@ -597,15 +666,15 @@ class REDMapper:
 
     def _get_container_format(self, metadata: AudiobookMeta) -> str:
         """Get container format from metadata."""
-        # For audiobooks, the container is typically M4B even if format shows AAC
-        format_str = metadata.format or "M4B"
-        format_upper = format_str.upper()
+        # Try technical container first, then format fallback
+        container = metadata.technical.container or metadata.format or "M4B"
+        container_upper = container.upper()
 
         # Map codec formats to proper container formats
-        if format_upper in ["AAC", "M4A"]:
+        if container_upper in ["AAC", "M4A"]:
             return "M4B"  # Audiobooks are typically M4B containers
 
-        return format_upper
+        return container_upper
 
     def _format_duration(self, duration_ms: int) -> str:
         """Format duration for display."""

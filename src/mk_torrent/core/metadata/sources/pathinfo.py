@@ -8,6 +8,38 @@ as one of three sources in the intelligent merging strategy.
 Extracts metadata from standardized audiobook filenames and directory structures.
 Zero I/O design for fast, deterministic parsing.
 
+⚠️  PATH SOURCE FIELD USAGE WARNINGS ⚠️
+
+FIELDS TO PREFER FROM PATH:
+✅ series, volume, asin (for tracker compliance)
+✅ Structured identifiers from standardized filenames
+✅ Uploader information [Uploader] tags
+✅ Directory-based organization clues
+
+CRITICAL - COMPLIANCE PRIORITY:
+🎯 Path parsing ensures tracker naming compliance
+🎯 ASIN extraction from {ASIN.ABC} patterns is authoritative
+🎯 Volume numbers from vol_XX patterns are precise
+🎯 Series names follow standardized formats
+
+FIELDS TO AVOID FROM PATH:
+❌ Technical specs: bitrate, sample_rate, duration - NOT in filenames
+❌ Long descriptions: Filenames can't contain full text
+❌ Detailed metadata: publisher, narrator details not in filenames
+❌ File properties: Only filename structure, not file content
+
+RELIABILITY NOTES:
+✅ 100% reliable for: Structured identifiers (ASIN, volume, series)
+✅ Very reliable for: Title, author, year (when following standards)
+⚠️  Limited by: Filename standardization quality
+❌ Cannot provide: File-specific or detailed descriptive content
+
+PARSING PATTERNS SUPPORTED:
+📋 Primary: "Title - vol_XX (YYYY) (Author) {ASIN.ABC} [Uploader]"
+📋 Series: "Series Name Book/Vol 01 - Title"
+📋 Simple: "Author - Title (Year)"
+📋 ASIN-focused: Any pattern with {ASIN.XXXXXXXXXX}
+
 Architecture Documentation:
 - Source Specification: docs/core/metadata/07.4 — Path Info Source.md
 - Three-Source Strategy: docs/core/metadata/06 — Engine Pipeline.md
