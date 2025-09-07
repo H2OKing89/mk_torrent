@@ -67,7 +67,7 @@ def non_empty(value: Any) -> bool:
     if isinstance(value, str):
         return bool(value.strip())
     if isinstance(value, (list, dict)):
-        return bool(value)  # type: ignore[arg-type]
+        return bool(value)
     return True
 
 
