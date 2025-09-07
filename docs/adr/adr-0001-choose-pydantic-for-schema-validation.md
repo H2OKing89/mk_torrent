@@ -4,7 +4,7 @@ status: accepted
 deciders: [H2OKing89]
 date: 2025-09-06
 tags: [ADR, architecture, validation, pydantic]
-updated: 2025-09-06T19:14:05-05:00
+updated: 2025-09-07T04:23:39-05:00
 ---
 
 ## Status

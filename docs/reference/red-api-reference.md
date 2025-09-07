@@ -119,7 +119,7 @@ cat /tmp/red_body.out | jq . 2>/dev/null || cat /tmp/red_body.out
 }
 ```
 
-updated: 2025-09-06T19:14:05-05:00
+updated: 2025-09-07T04:23:39-05:00
 ---
 
 ## 🔐 **Authentication**

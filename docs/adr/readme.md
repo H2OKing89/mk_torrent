@@ -15,7 +15,7 @@ date: YYYY-MM-DD
 tags: [ADR, architecture, relevant-tags]
 supersedes: ADR-NNNN (if applicable)
 superseded-by: ADR-NNNN (if applicable)
-updated: 2025-09-06T19:14:05-05:00
+updated: 2025-09-07T04:23:39-05:00
 ---
 
 ## Status

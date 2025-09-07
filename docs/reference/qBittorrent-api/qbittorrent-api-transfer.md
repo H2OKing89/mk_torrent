@@ -42,7 +42,7 @@
 
 The **Transfer** endpoints expose global status from the qBittorrent status bar (current speeds, totals, DHT nodes, etc.) and let you **set bandwidth limits**, **toggle “alt speed” mode**, and **ban peers**. You can call methods directly (e.g., `client.transfer_info()`) or use the object-style wrapper (`client.transfer.*`) with properties that read/write live values.
 
-updated: 2025-09-06T19:14:05-05:00
+updated: 2025-09-07T04:23:39-05:00
 ---
 
 ## Quick Start

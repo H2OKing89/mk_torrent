@@ -40,7 +40,7 @@
 * **Supported** here means the library has explicit knowledge of that version’s behavior and endpoints.
 * **Reality check:** even if a version isn’t listed as “supported,” **most methods often still work**—the Web API is largely backward/forward compatible, with occasional exceptions.
 
-updated: 2025-09-06T19:14:05-05:00
+updated: 2025-09-07T04:23:39-05:00
 ---
 
 ## Quick Start

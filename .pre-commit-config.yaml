@@ -67,6 +67,19 @@ repos:
 
   - repo: local
     hooks:
+      # Documentation organization hooks - DISABLED to prevent commit loops
+      # Use VS Code tasks or run manually instead:
+      # - python scripts/organize_docs.py (all-in-one)
+      # - python scripts/rename_docs.py --apply
+      # - python scripts/update_doc_timestamps.py
+      # - python scripts/gen_docs_index.py
+      #
+      # - id: docs-organize
+      #   name: Organize documentation files
+      #   entry: python scripts/rename_docs.py --apply
+      #   language: system
+      #   files: docs/.*\.md$
+      #   pass_filenames: false
       # - id: docs-index
       #   name: Generate docs index
       #   entry: python scripts/gen_docs_index.py

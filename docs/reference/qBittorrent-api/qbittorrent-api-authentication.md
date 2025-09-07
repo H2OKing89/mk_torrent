@@ -39,7 +39,7 @@
 
 The **Authentication** endpoints let you create and destroy sessions against the qBittorrent Web UI and perform a low-overhead check to see whether your current session cookie is still accepted. Because qBittorrent invalidates cookies when they expire, the only reliable way to confirm an existing session is to attempt a request. ([qbittorrent-api.readthedocs.io][1])
 
-updated: 2025-09-06T19:14:05-05:00
+updated: 2025-09-07T04:23:39-05:00
 ---
 
 ## Quick Start

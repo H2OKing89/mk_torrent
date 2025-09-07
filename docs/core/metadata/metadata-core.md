@@ -17,7 +17,7 @@ This document serves as the conductor for the metadata architecture refactor. Ea
 1. **[Goals](./1%20—%20Goals.md)** - Core objectives and design principles
 2. **[High-level Archit**Result**: A crisp, plug-and-play metadata core that's easy to reason about, test, and extend—without surprising knock-on effects in trackers or torrent creation.
 
-updated: 2025-09-06T19:14:05-05:00
+updated: 2025-09-07T04:23:39-05:00
 ---
 
 ## Changelog

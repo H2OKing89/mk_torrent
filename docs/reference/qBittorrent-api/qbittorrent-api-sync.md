@@ -39,7 +39,7 @@
 
 The **Sync** API provides *partial* updates based on a **response ID** (aka `rid`). Each call returns either a **full snapshot** or a **diff** since the last `rid`. Responses include flags/fields like `full_update`, `torrents` (changed), `torrents_removed`, `categories[_removed]`, `tags[_removed]`, and `server_state`, letting you update a UI efficiently without re-pulling everything. ([GitHub][1])
 
-updated: 2025-09-06T19:14:05-05:00
+updated: 2025-09-07T04:23:39-05:00
 ---
 
 ## Quick Start

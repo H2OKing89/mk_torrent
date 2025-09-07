@@ -23,7 +23,7 @@ status: draft | under-review | accepted | rejected | implemented
 author: [author-name]
 reviewers: [list, of, reviewers]
 created: YYYY-MM-DD
-updated: 2025-09-06T19:14:05-05:00
+updated: 2025-09-07T04:23:39-05:00
 tags: [RFC, design, relevant-tags]
 related:
   - ../adr/ADR-NNNN-related-decision.md

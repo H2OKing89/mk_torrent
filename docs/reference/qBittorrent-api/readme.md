@@ -43,7 +43,7 @@ This directory contains detailed documentation for the `qbittorrent-api` Python 
 - Environment variables and credentials
 - Production deployment tips
 
-updated: 2025-09-06T19:14:05-05:00
+updated: 2025-09-07T04:23:39-05:00
 ---
 
 ### 🔧 **Core Components**

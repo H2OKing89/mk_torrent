@@ -39,7 +39,7 @@
 | **DEVELOPMENT_GUIDE.md** | Updated ongoing | 🔄 Living Doc | Development procedures | `docs/reference/` |
 | **CONFIGURATION_GUIDE.md** | Updated ongoing | 🔄 Living Doc | Configuration options | `docs/reference/` |
 
-updated: 2025-09-06T19:14:05-05:00
+updated: 2025-09-07T04:23:39-05:00
 ---
 
 ## ⚠️ **Deprecation Tracking**

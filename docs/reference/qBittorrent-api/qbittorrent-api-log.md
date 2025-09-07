@@ -48,7 +48,7 @@ The **Log** endpoints provide two streams:
 * Direct methods on the client (`client.log_main(...)`, `client.log_peers(...)`)
 * A namespaced, chainable interface (`client.log.main.*`, `client.log.peers(...)`)
 
-updated: 2025-09-06T19:14:05-05:00
+updated: 2025-09-07T04:23:39-05:00
 ---
 
 ## Quick Start
