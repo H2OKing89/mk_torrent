@@ -52,7 +52,7 @@ The `qbittorrent-api` client wraps responses in ergonomic containers and enums. 
 * Typed list/dict wrappers that still behave like native Python containers
 * Lightweight “client-aware” wrappers so objects can call back into the API when it makes sense
 
-updated: 2025-09-06T19:00:01-05:00
+updated: 2025-09-06T19:09:40-05:00
 ---
 
 ## Type Aliases

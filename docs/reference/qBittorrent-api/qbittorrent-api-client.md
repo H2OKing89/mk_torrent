@@ -33,7 +33,7 @@
 
 `Client` is the main entry point to qBittorrent’s Web API in Python. It aggregates major endpoint groups (torrents, transfer, search, RSS, torrent creator, logs/sync) and exposes ergonomic helpers plus lower-level controls for HTTP behavior, TLS validation, headers, and more. (See mixins list below.)
 
-updated: 2025-09-06T19:00:01-05:00
+updated: 2025-09-06T19:09:40-05:00
 ---
 
 ## Quick Start

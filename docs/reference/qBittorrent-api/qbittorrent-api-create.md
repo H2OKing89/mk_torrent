@@ -46,7 +46,7 @@ The **Torrent Creator** endpoints let you ask the qBittorrent Web UI to build a 
 
 These methods are exposed in `qbittorrent-api` via the `Client.torrentcreator` namespace and corresponding mixin methods.
 
-updated: 2025-09-06T19:00:01-05:00
+updated: 2025-09-06T19:09:40-05:00
 ---
 
 ## Quick Start

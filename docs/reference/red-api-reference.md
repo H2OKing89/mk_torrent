@@ -119,7 +119,7 @@ cat /tmp/red_body.out | jq . 2>/dev/null || cat /tmp/red_body.out
 }
 ```
 
-updated: 2025-09-06T19:00:01-05:00
+updated: 2025-09-06T19:10:09-05:00
 ---
 
 ## 🔐 **Authentication**
@@ -1983,7 +1983,7 @@ Response format:
           "class": "Member",
           "addedTime": "2012-07-10 09:02:34",
           "avatar": "http:\/\/majastevanovich.files.wordphpss.com\/2009\/10\/a20toilet20paper.jpg",
-          "comment": "Can someone explain what is the attractiveness of a vinyl rip as opposed to a CD rip? CD should be direct from the source with no conversions, while on vinyl is has to be converted to analog and digital again.. isn't it loosing fidelity?",
+          "comment": "Can someone explain what is the attractiveness of a vinyl rip as opposed to a CD rip? CD should be direct from the source with no conversions, while on vinyl is has to be converted to analog and digital again.. isn't it losing fidelity?",
           "editedUserId": 0,
           "editedUsername": "",
           "editedTime": ""

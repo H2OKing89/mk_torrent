@@ -157,6 +157,7 @@ dev = [
 Our enhanced `requirements.txt` includes most recommended packages:
 
 ### ✅ **IMPLEMENTED PACKAGES**
+
 * **Template System**: Jinja2, bbcode for professional BBCode generation
 * **Data Validation**: Pydantic v2, pydantic-settings, fastjsonschema
 * **Text Processing**: nh3, beautifulsoup4, python-slugify, regex
@@ -168,6 +169,7 @@ Our enhanced `requirements.txt` includes most recommended packages:
 * **Development**: black, ruff, pre-commit
 
 ### 🔄 **FUTURE ENHANCEMENTS**
+
 * **Async Support**: httpx, aiolimiter, anyio (when we add async processors)
 * **Advanced Testing**: hypothesis, pytest-cov, pytest-mock, respx
 * **Enhanced Caching**: cachetools (for TTL/LRU patterns)

@@ -37,21 +37,25 @@
 ## Pipeline Characteristics
 
 ### Deterministic
+
 * Same input always produces same output
 * Reproducible results
 * Debuggable behavior
 
 ### Configurable
+
 * Precedence rules can be adjusted
 * Sources can be enabled/disabled
 * Validation rules can be customized
 
 ### Extensible
+
 * New sources integrate seamlessly
 * Additional processing steps can be added
 * Custom mappers for new trackers
 
 ### Error-Tolerant
+
 * Continues processing even if some sources fail
 * Graceful degradation
 * Comprehensive error reporting
@@ -59,16 +63,19 @@
 ## Source Integration
 
 ### Parallel vs Serial
+
 * Sources can be processed in parallel for speed
 * Or serially for simpler debugging
 * Configurable execution model
 
 ### Source Discovery
+
 * ASIN extraction drives API lookups
 * Path parsing provides fallback values
 * Embedded tags offer high-precision data
 
 ### Data Flow Control
+
 * Each source provides structured data
 * Merger handles conflicts intelligently
 * Services clean and normalize results

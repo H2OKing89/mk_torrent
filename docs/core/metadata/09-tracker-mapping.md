@@ -10,18 +10,21 @@
 ## Mapping Responsibilities
 
 ### Field Transformation
+
 * Rename fields to match tracker expectations
 * Convert data types (lists to comma-separated strings)
 * Apply tracker-specific formatting rules
 * Handle field combinations and derivations
 
 ### Data Sanitization
+
 * Ensure HTML-free descriptions
 * Apply character encoding requirements
 * Remove or escape problematic characters
 * Validate field length constraints
 
 ### RED-Specific Logic
+
 * Map internal model to RED form fields
 * Apply RED naming conventions
 * Handle RED-specific requirements
@@ -30,18 +33,21 @@
 ## Mapping Benefits
 
 ### Separation of Concerns
+
 * Keeps tracker APIs clean and focused
 * Isolates tracker-specific logic
 * Maintains clean internal data model
 * Simplifies tracker API maintenance
 
 ### Extensibility
+
 * Easy to add new trackers
 * Reusable mapping patterns
 * Configurable mapping rules
 * Version-specific mapping support
 
 ### Testability
+
 * Pure transformation functions
 * Predictable input/output
 * Easy mocking and validation
@@ -66,6 +72,7 @@ class REDMapper:
 ## Future Tracker Support
 
 The mapping pattern easily extends to new trackers:
+
 * `mappers/orpheus.py`
 * `mappers/bibliotik.py`
 * `mappers/myanonamouse.py`

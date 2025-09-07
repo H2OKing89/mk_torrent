@@ -87,6 +87,7 @@ class AudiobookMeta:
 - **Conflicts & precedence**: Field Merger service ([See 07.5 — Audiobook Metadata Field Merger](./07.5%20—%20Audiobook%20Metadata%20Field%20Merger.md))
 
 **Common transformations:**
+
 - `rating`: string → float, clamp 0..5
 - `language`: map common names → ISO-639-1 (e.g., "english" → `en`)
 - `genres`: dedupe case-insensitively; track source `type` ("genre" vs "tag")
@@ -163,7 +164,7 @@ chapters_response["isAccurate"] → metadata for chapter reliability
 }
 ```
 
-updated: 2025-09-06T19:00:01-05:00
+updated: 2025-09-06T19:09:40-05:00
 ---
 
 ## 4.5 Enhanced Model - Rich Entities (Now Available)
