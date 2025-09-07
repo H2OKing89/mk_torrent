@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "mk-torrent"
 version = "1.0.0"
 description = "A comprehensive torrent creation and upload tool"
-readme = "README.md"
+readme = "readme.md"
 license = {file = "LICENSE"}
 authors = [
     {name = "H2OKing89", email = "h2oking89@example.com"}

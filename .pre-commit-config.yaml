@@ -50,6 +50,41 @@ repos:
               htmlcov/.*
           )$
 
+  # Documentation quality gates
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.42.0
+    hooks:
+      - id: markdownlint
+        args: ["--fix"]
+        files: docs/.*\.md$
+
+  - repo: https://github.com/streetsidesoftware/cspell-cli
+    rev: v8.13.1
+    hooks:
+      - id: cspell
+        args: ["--no-must-find-files"]
+        files: docs/.*\.md$
+
+  - repo: local
+    hooks:
+      - id: docs-index
+        name: Generate docs index
+        entry: python scripts/gen_docs_index.py
+        language: system
+        files: docs/.*\.md$
+        pass_filenames: false
+      - id: docs-touch-updated
+        name: Update doc timestamps
+        entry: python scripts/update_doc_timestamps.py
+        language: system
+        files: docs/.*\.md$
+        pass_filenames: false
+      - id: enforce-readme-lowercase
+        name: Enforce readme lowercase
+        entry: bash -c 'git ls-files | grep -E "(^|/)README\.md$" && { echo "❌ Use readme.md (lowercase) instead of README.md"; exit 1; } || true'
+        language: system
+        pass_filenames: false
+
 # Configure which hooks run at which stages
 default_stages: [pre-commit]
 fail_fast: false

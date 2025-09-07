@@ -1,0 +1,13 @@
+{
+  "timeout": "8s",
+  "retryOn429": true,
+  "aliveStatusCodes": [200, 206, 302],
+  "ignorePatterns": [
+    {
+      "pattern": "^https://img\\.shields\\.io"
+    },
+    {
+      "pattern": "^file://"
+    }
+  ]
+}
