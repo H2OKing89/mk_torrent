@@ -48,7 +48,7 @@ The **request layer** is the internal, reusable scaffolding that all endpoint mi
 * Manages **retries** (notably when the first attempt reveals the wrong scheme), **re-authentication**, and **response casting** into typed objects.
 * Gates calls against **Web API version** (introduced/removed) to prevent unsupported usage.
 
-updated: 2025-09-06T19:09:40-05:00
+updated: 2025-09-06T19:14:05-05:00
 ---
 
 ## Architecture at a Glance

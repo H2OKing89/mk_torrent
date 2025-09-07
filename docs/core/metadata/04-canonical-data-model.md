@@ -164,7 +164,7 @@ chapters_response["isAccurate"] → metadata for chapter reliability
 }
 ```
 
-updated: 2025-09-06T19:09:40-05:00
+updated: 2025-09-06T19:14:05-05:00
 ---
 
 ## 4.5 Enhanced Model - Rich Entities (Now Available)

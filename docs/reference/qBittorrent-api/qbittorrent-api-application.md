@@ -52,7 +52,7 @@ The **Application** endpoints expose global qBittorrent capabilities: applicatio
 
 In `qbittorrent-api`, these are accessible either as **methods** (e.g., `client.app_version()`) or via the object-style **`client.application`** interface with properties and helpers.
 
-updated: 2025-09-06T19:09:40-05:00
+updated: 2025-09-06T19:14:05-05:00
 ---
 
 ## Quick Start

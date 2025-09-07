@@ -35,7 +35,7 @@ _Auto-generated dashboard. Run `python scripts/gen_docs_index.py` to update._
 | [Configuration Guide](reference/configuration-guide.md) |  | 2025-09-06 | reference |  |
 | [Performance Guide](reference/performance-guide.md) |  | 2025-09-06 | reference |  |
 
-updated: 2025-09-06T19:10:09-05:00
+updated: 2025-09-06T19:14:05-05:00
 ---
 
 ## 📊 By Status
@@ -121,4 +121,4 @@ updated: 2025-09-06T19:10:09-05:00
 | [RFC-0001: Metadata Caching Strategy](rfc/rfc-0001-metadata-caching-strategy.md) | ![draft](https://img.shields.io/badge/-draft-yellow) | 2025-09-06 | RFC, design, metadata... |
 
 ---
-_Generated on 2025-09-06 19:10:09 by `scripts/gen_docs_index.py`_
+_Generated on 2025-09-06 19:14:05 by `scripts/gen_docs_index.py`_

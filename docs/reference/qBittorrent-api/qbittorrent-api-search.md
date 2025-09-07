@@ -55,7 +55,7 @@ You can use either:
 * **Method-style** calls (e.g., `client.search_start(...)`)
 * The **object-style** namespace (e.g., `client.search.start(...)`)
 
-updated: 2025-09-06T19:09:40-05:00
+updated: 2025-09-06T19:14:05-05:00
 ---
 
 ## Quick Start

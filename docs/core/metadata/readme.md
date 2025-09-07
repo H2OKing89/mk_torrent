@@ -44,7 +44,7 @@ The **Metadata Core** is a sophisticated, extensible system designed to extract,
 
 </div>
 
-updated: 2025-09-06T19:09:40-05:00
+updated: 2025-09-06T19:14:05-05:00
 ---
 
 ## 🚀 Quick Start
