@@ -14,6 +14,7 @@ Architecture Documentation:
 
 import logging
 import re
+import importlib.util
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +39,6 @@ class HTMLCleaner:
 
     def _init_cleaner(self) -> str:
         """Initialize HTML cleaner backend (nh3 preferred, bs4 fallback)."""
-        import importlib.util
 
         if importlib.util.find_spec("nh3") is not None:
             logger.debug("Initialized nh3 HTML cleaner")

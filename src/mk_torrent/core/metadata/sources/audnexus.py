@@ -49,7 +49,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 import re
 from datetime import datetime
 
@@ -57,6 +57,24 @@ from ..exceptions import SourceUnavailable
 from ..services.html_cleaner import HTMLCleaner
 
 logger = logging.getLogger(__name__)
+
+# JSON handling with orjson (preferred) or standard json (fallback)
+try:
+    import orjson
+
+    json_loads: Callable[[str | bytes], Any] = orjson.loads
+
+    def json_dumps(data: Any) -> str:
+        """Dump data to JSON string using orjson."""
+        return orjson.dumps(data).decode("utf-8")
+
+    logger.debug("Using orjson for JSON operations")
+except ImportError:
+    import json
+
+    json_loads = json.loads
+    json_dumps = json.dumps  # type: ignore[assignment]
+    logger.debug("Using standard json for JSON operations (orjson unavailable)")
 
 
 class AudnexusSource:
@@ -207,11 +225,11 @@ class AudnexusSource:
             if self._client_type == "httpx":
                 response = self._client.get(url, params=params)
                 response.raise_for_status()
-                return response.json()
+                return json_loads(response.text)
             else:  # requests
                 response = self._client.get(url, params=params, timeout=self.timeout)
                 response.raise_for_status()
-                return response.json()
+                return json_loads(response.text)
 
         try:
             result = _do_request()
@@ -596,7 +614,7 @@ class AudnexusSource:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 response = await client.get(url, params=params)
                 response.raise_for_status()
-                result = response.json()
+                result = json_loads(response.text)
 
                 # Cache the result
                 if hasattr(self._cache, "__setitem__"):
