@@ -60,7 +60,7 @@ AUDIOBOOK_PATHS = {
 
 # Real torrent file for testing
 REAL_TORRENT_FILE = Path(
-    "/mnt/cache/scripts/mk_torrent/test_audiobooks/The World of Otome Games Is Tough for Mobs - vol_05 (2025) (Yomu Mishima) {ASIN.B0FPXQH971} [H2OKing].torrent"
+    "/mnt/cache/scripts/mk_torrent/tests/samples/torrent_files/The World of Otome Games Is Tough for Mobs - vol_05 (2025) (Yomu Mishima) {ASIN.B0FPXQH971} [H2OKing].torrent"
 )
 
 
@@ -399,11 +399,14 @@ def test_upload_preparation_with_real_metadata(
         rich_print(f"\n[bold]📋 Preparing upload data for {name}...[/bold]")
 
         # Use real torrent file for testing
-        torrent_file = (
-            REAL_TORRENT_FILE
-            if REAL_TORRENT_FILE.exists()
-            else Path(f"/tmp/{name}_test.torrent")
-        )
+        torrent_file = REAL_TORRENT_FILE
+        if not torrent_file.exists():
+            # Create a simple dummy torrent for testing if the real one doesn't exist
+            torrent_file = Path(f"/tmp/{name}_test.torrent")
+            # Create minimal dummy torrent content
+            dummy_content = b"d8:announce23:https://example.com/announce13:creation datei1694000000e4:infod4:name5:dummy12:piece lengthi32768e6:pieces0:ee"
+            with open(torrent_file, "wb") as f:
+                f.write(dummy_content)
 
         # Prepare upload data
         upload_data = red_api.prepare_upload_data(metadata, torrent_file)
@@ -457,11 +460,14 @@ def test_dry_run_upload_with_real_metadata(audiobook_files: Dict[str, Dict[str, 
 
     for name, metadata in metadata_results.items():
         # Use real torrent file for testing
-        torrent_file = (
-            REAL_TORRENT_FILE
-            if REAL_TORRENT_FILE.exists()
-            else Path(f"/tmp/{name}_test.torrent")
-        )
+        torrent_file = REAL_TORRENT_FILE
+        if not torrent_file.exists():
+            # Create a simple dummy torrent for testing if the real one doesn't exist
+            torrent_file = Path(f"/tmp/{name}_test.torrent")
+            # Create minimal dummy torrent content
+            dummy_content = b"d8:announce23:https://example.com/announce13:creation datei1694000000e4:infod4:name5:dummy12:piece lengthi32768e6:pieces0:ee"
+            with open(torrent_file, "wb") as f:
+                f.write(dummy_content)
 
         # Perform dry run upload
         result = red_api.upload_torrent(torrent_file, metadata, dry_run=True)

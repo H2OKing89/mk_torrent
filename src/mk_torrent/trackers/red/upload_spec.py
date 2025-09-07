@@ -259,12 +259,16 @@ class REDFormAdapter:
             form_data["bitrate"] = "Other"
             # Use the real bitrate string from upload spec if available
             if hasattr(spec, "other_bitrate") and spec.other_bitrate:
-                form_data["other_bitrate"] = spec.other_bitrate
-                # Determine VBR flag from the bitrate string
+                # Clean the bitrate string - remove VBR/CBR suffixes since they go in separate field
+                clean_bitrate = spec.other_bitrate.replace(" VBR", "").replace(
+                    " CBR", ""
+                )
+                form_data["other_bitrate"] = clean_bitrate
+                # Determine VBR flag from the original bitrate string
                 form_data["vbr"] = "true" if "VBR" in spec.other_bitrate else "false"
             else:
                 # Fallback to default for audiobooks
-                form_data["other_bitrate"] = "64k VBR"
+                form_data["other_bitrate"] = "64k"
                 form_data["vbr"] = "true"
         else:
             # Use the string value directly (e.g., "192", "V0 (VBR)", etc.)
@@ -293,9 +297,9 @@ class REDFormAdapter:
             if spec.remaster.catalogue_number:
                 form_data["remaster_catalogue_number"] = spec.remaster.catalogue_number
 
-        # Flags
-        form_data["scene"] = "1" if spec.scene else "0"
+        # Flags (only set vanity_house, skip scene for audiobooks)
         form_data["vanity_house"] = "1" if spec.vanity_house else "0"
+        # Note: scene flag not set for audiobooks as they are typically not scene releases
 
         return form_data
 
