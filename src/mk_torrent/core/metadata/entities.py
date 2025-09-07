@@ -125,8 +125,8 @@ class AudiobookMetaRich:
     # People
     author_primary: str = ""  # convenience field
     narrator_primary: str = ""  # convenience field
-    authors: list[PersonRef] = field(default_factory=list)  # type: ignore[valid-type]
-    narrators: list[PersonRef] = field(default_factory=list)  # type: ignore[valid-type]
+    authors: list[PersonRef] = field(default_factory=list)
+    narrators: list[PersonRef] = field(default_factory=list)
 
     # Publishing & identification
     asin: str = ""
