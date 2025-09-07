@@ -20,11 +20,8 @@ def is_year(value: Any) -> bool:
         return False
 
 
-def is_language_iso(value: str) -> bool:
+def is_language_iso(value: Any) -> bool:
     """Check if value is a valid ISO 639-1 language code."""
-    if not isinstance(value, str):
-        return False
-
     # Common language codes - extend as needed
     valid_codes = {
         "en",
@@ -48,6 +45,8 @@ def is_language_iso(value: str) -> bool:
         "fi",
         "he",
     }
+    if not isinstance(value, str):
+        return False
     return value.lower() in valid_codes
 
 
@@ -72,22 +71,23 @@ def non_empty(value: Any) -> bool:
     return True
 
 
-def is_valid_asin(value: str) -> bool:
-    """Check if value looks like a valid Amazon ASIN."""
-    if not isinstance(value, str):
-        return False
+def is_valid_asin(value: Any) -> bool:
+    """Check if value looks like a valid Amazon ASIN.
 
+    Accepts any input, but only string values will be validated.
+    """
     # ASIN is typically 10 characters, alphanumeric
     # Pattern: B followed by 9 alphanumeric characters
+    if not isinstance(value, str):
+        return False
     asin_pattern = re.compile(r"^B[A-Z0-9]{9}$")
     return bool(asin_pattern.match(value.upper()))
 
 
-def is_valid_isbn(value: str) -> bool:
+def is_valid_isbn(value: Any) -> bool:
     """Check if value looks like a valid ISBN (10 or 13 digits)."""
     if not isinstance(value, str):
         return False
-
     # Remove hyphens and spaces
     clean_isbn = re.sub(r"[-\s]", "", value)
 
@@ -147,26 +147,22 @@ def validate_year_drift(
     return True, None
 
 
-def clean_genre_tags(tags: list) -> list:
+def clean_genre_tags(tags: list[Any]) -> list[str]:
     """
     Normalize genre/tag list: lowercase, dedupe, ASCII-friendly.
 
     Args:
-        tags: List of genre/tag strings
+        tags: List of genre/tag strings (non-string values are ignored)
 
     Returns:
         Cleaned and normalized list
     """
-    if not isinstance(tags, list):
-        return []
-
-    cleaned = []
-    seen = set()
+    cleaned: list[str] = []
+    seen: set[str] = set()
 
     for tag in tags:
         if not isinstance(tag, str):
             continue
-
         # Clean and normalize
         normalized = tag.strip().lower()
         if normalized and normalized not in seen:
@@ -177,7 +173,7 @@ def clean_genre_tags(tags: list) -> list:
 
 
 def estimate_completeness(
-    metadata: dict, required_fields: list, recommended_fields: list
+    metadata: dict[str, Any], required_fields: list[str], recommended_fields: list[str]
 ) -> float:
     """
     Calculate completeness score based on required and recommended fields.

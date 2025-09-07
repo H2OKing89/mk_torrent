@@ -3,54 +3,45 @@
 
 # Type-based labels
 type/feature:
-  - "src/**"
-  - "examples/**"
-  - "scripts/**"
+  - changed-files:
+    - any-glob-to-any-file: ["src/**", "examples/**", "scripts/**"]
 
 type/refactor:
-  - "src/mk_torrent/core/**"
   - changed-files:
-    - any-glob-to-any-file: ["src/**"]
+    - any-glob-to-any-file: ["src/mk_torrent/core/**", "src/**"]
 
 type/tests:
-  - "tests/**"
-  - "**/test_*.py"
-  - "test_*.py"
+  - changed-files:
+    - any-glob-to-any-file: ["tests/**", "**/test_*.py", "test_*.py"]
 
 type/docs:
-  - "docs/**"
-  - "*.md"
-  - "README*"
+  - changed-files:
+    - any-glob-to-any-file: ["docs/**", "*.md", "README*"]
 
 type/ci:
-  - ".github/**"
-  - ".pre-commit-config.yaml"
-  - "pyproject.toml"
-  - "requirements*.txt"
+  - changed-files:
+    - any-glob-to-any-file: [".github/**", ".pre-commit-config.yaml", "pyproject.toml", "requirements*.txt"]
 
 # Area-based labels (specific to your project structure)
 area/metadata:
-  - "src/mk_torrent/core/metadata/**"
-  - "tests/**/metadata/**"
-  - "docs/core/metadata/**"
+  - changed-files:
+    - any-glob-to-any-file: ["src/mk_torrent/core/metadata/**", "tests/**/metadata/**", "docs/core/metadata/**"]
 
 area/trackers:
-  - "src/mk_torrent/api/trackers/**"
-  - "src/mk_torrent/api/red/**"
-  - "tests/**/trackers/**"
-  - "tests/**/red/**"
+  - changed-files:
+    - any-glob-to-any-file: ["src/mk_torrent/api/trackers/**", "src/mk_torrent/api/red/**", "tests/**/trackers/**", "tests/**/red/**"]
 
 area/qbittorrent:
-  - "src/mk_torrent/api/qbittorrent/**"
-  - "tests/**/qbittorrent/**"
+  - changed-files:
+    - any-glob-to-any-file: ["src/mk_torrent/api/qbittorrent/**", "tests/**/qbittorrent/**"]
 
 area/utils:
-  - "src/mk_torrent/utils/**"
-  - "tests/**/utils/**"
+  - changed-files:
+    - any-glob-to-any-file: ["src/mk_torrent/utils/**", "tests/**/utils/**"]
 
 area/cli:
-  - "src/mk_torrent/cli/**"
-  - "tests/**/cli/**"
+  - changed-files:
+    - any-glob-to-any-file: ["src/mk_torrent/cli/**", "tests/**/cli/**"]
 
 # Size indicators (helpful for reviewers)
 size/XS:

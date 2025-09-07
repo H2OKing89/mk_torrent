@@ -176,3 +176,7 @@ GIT_HOWTO.md
 NOTES.md
 LEARNING.md
 TODO_PERSONAL.md
+
+# Node.js dependencies
+node_modules/
+package-lock.json

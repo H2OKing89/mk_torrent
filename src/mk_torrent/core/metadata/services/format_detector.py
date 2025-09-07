@@ -286,13 +286,13 @@ class FormatDetector:
             "mp3": "MP3",
             "mp4": "M4A",
             "flac": "FLAC",
-            "oggvorbis": "OGG",
-            "oggopus": "Opus",
+            "oggvorbis": "OGG",  # cspell:disable-line
+            "oggopus": "Opus",  # cspell:disable-line
             "wave": "WAV",
             "aiff": "AIFF",
-            "monkeysaudio": "APE",
-            "wavpack": "WavPack",
-            "trueaudio": "TTA",
+            "monkeysaudio": "APE",  # cspell:disable-line
+            "wavpack": "WavPack",  # cspell:disable-line
+            "trueaudio": "TTA",  # cspell:disable-line
         }
 
         return format_map.get(class_name) or str(class_name).upper()
@@ -301,8 +301,8 @@ class FormatDetector:
         """Extract bit depth information."""
         if info and hasattr(info, "bits_per_sample"):
             return getattr(info, "bits_per_sample", None)
-        elif info and hasattr(info, "bitspersample"):
-            return getattr(info, "bitspersample", None)
+        elif info and hasattr(info, "bitspersample"):  # cspell:disable-line
+            return getattr(info, "bitspersample", None)  # cspell:disable-line
         return None
 
     def _detect_vbr(self, info: MutagenInfo) -> bool | None:
