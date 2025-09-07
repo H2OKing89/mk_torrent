@@ -161,7 +161,7 @@ class AudiobookMetaRich:
     audio: AudioStream = field(default_factory=AudioStream)
 
     # Files & paths
-    files: list[FileRef] = field(default_factory=list)  # type: ignore[valid-type]
+    files: list[FileRef] = field(default_factory=list)
     source_path: Path | None = None  # the "main" file's path
 
     # Derived for pipeline consumers (slugging, compliance, UI)
