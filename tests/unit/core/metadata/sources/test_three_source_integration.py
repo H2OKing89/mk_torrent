@@ -38,7 +38,7 @@ SAMPLE_AUDIOBOOK_DIR = Path(
 
 SAMPLE_AUDIOBOOK_FILE = (
     SAMPLE_AUDIOBOOK_DIR
-    / "How a Realist Hero Rebuilt the Kingdom - vol_03 (2023) (Dojyomaru) {ASIN.B0C8ZW5N6Y}.m4b"
+    / "How a Realist Hero Rebuilt the Kingdom - vol_03 {ASIN.B0C8ZW5N6Y}.m4b"
 )
 
 

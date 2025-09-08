@@ -14,13 +14,13 @@ from src.mk_torrent.core.metadata.sources.embedded import EmbeddedSource
 SAMPLE_AUDIOBOOK = Path(
     "/mnt/cache/scripts/mk_torrent/tests/samples/audiobook/"
     "How a Realist Hero Rebuilt the Kingdom - vol_03 (2023) (Dojyomaru) {ASIN.B0C8ZW5N6Y} [H2OKing]/"
-    "How a Realist Hero Rebuilt the Kingdom - vol_03 (2023) (Dojyomaru) {ASIN.B0C8ZW5N6Y}.m4b"
+    "How a Realist Hero Rebuilt the Kingdom - vol_03 {ASIN.B0C8ZW5N6Y}.m4b"
 )
 
 SAMPLE_ARTWORK = Path(
     "/mnt/cache/scripts/mk_torrent/tests/samples/audiobook/"
     "How a Realist Hero Rebuilt the Kingdom - vol_03 (2023) (Dojyomaru) {ASIN.B0C8ZW5N6Y} [H2OKing]/"
-    "How a Realist Hero Rebuilt the Kingdom - vol_03 (2023) (Dojyomaru) {ASIN.B0C8ZW5N6Y}.jpg"
+    "How a Realist Hero Rebuilt the Kingdom - vol_03 {ASIN.B0C8ZW5N6Y}.jpg"
 )
 
 
