@@ -39,23 +39,24 @@ updated: 2025-09-07T04:23:39-05:00
 7. **[Services Details](./7%20—%20Services%20Details.md)** - Generic utilities and service modules
    - **[Field Merger Specification](./7.5%20—%20Audiobook%20Metadata%20Field%20Merger.md)** - Detailed merge logic and precedence rules
    - **[Embedded Source (Technical Focus)](./7.6%20—%20Embedded%20Source%20(Technical%20Focus).md)** - Technical file metadata extraction
-8. **[Validators](./8%20—%20Validators.md)** - Quality assurance and completeness scoring
+8. **[Production-Grade Exception System](./08-production-grade-exceptions.md)** - Enhanced error handling with telemetry support (**ENHANCED**)
+9. **[Validators](./09-validators.md)** - Quality assurance and completeness scoring
 
 ### Integration & Output
-9. **[Tracker Mapping](./9%20—%20Tracker%20Mapping.md)** - Output formatting for tracker APIs
-9.5. **[Template System](./9.5%20—%20Template%20System.md)** - BBCode description generation with Jinja2 and Pydantic (**NEW**)
-10. **[Configuration](./10%20—%20Configuration.md)** - Settings, precedence rules, and runtime behavior
-10.5. **[Recommended Packages & Project Extras](./10.5%20—%20Recommended%20Packages%20&%20Project%20Extras.md)** - Dependencies and optional enhancements
+10. **[Tracker Mapping](./10-tracker-mapping.md)** - Output formatting for tracker APIs
+10.5. **[Template System](./10.5-template-system.md)** - BBCode description generation with Jinja2 and Pydantic (**NEW**)
+11. **[Configuration](./11-configuration.md)** - Settings, precedence rules, and runtime behavior
+11.5. **[Recommended Packages & Project Extras](./00.0-recommended-packages-project-extras.md)** - Dependencies and optional enhancements
 
 ### Development & Deployment
-11. **[Testing Strategy](./11%20—%20Testing%20Strategy.md)** - Test architecture and quality assurance
-12. **[Migration Plan](./12%20—%20Migration%20Plan.md)** - Low-risk incremental implementation steps
-13. **[Error Handling & Logging](./13%20—%20Error%20Handling%20&%20Logging.md)** - Exception hierarchy and monitoring
-14. **[Example: Processor Skeleton](./14%20—%20Example%20Processor%20Skeleton.md)** - Implementation patterns and examples
+12. **[Testing Strategy](./12-testing-strategy.md)** - Test architecture and quality assurance
+13. **[Migration Plan](./13-migration-plan.md)** - Low-risk incremental implementation steps
+14. **[Error Handling & Logging](./14-error-handling-logging.md)** - Exception hierarchy and monitoring
+15. **[Example: Processor Skeleton](./15-example-processor-skeleton.md)** - Implementation patterns and examples
 
 ### Extensibility & Future
-15. **[Extension Guide](./15%20—%20Extension%20Guide.md)** - Adding new sources, content types, and trackers
-16. **[Next Steps](./16%20—%20Next%20Steps.md)** - Implementation checklist and current priorities
+16. **[Extension Guide](./16-extension-guide.md)** - Adding new sources, content types, and trackers
+17. **[Next Steps](./17-next-steps.md)** - Implementation checklist and current priorities
 
 ### Change Management
 📝 **[CHANGELOG](./CHANGELOG.md)** - Detailed change tracking and implementation notes
@@ -597,7 +598,18 @@ self.processors["audiobook"] = AudiobookMetadata(
 
 ---
 
-## 8) Validators
+## 8) Production-Grade Exception System
+
+Enhanced error handling with machine-readable codes, retry semantics, and telemetry support. See detailed specification: [`08-production-grade-exceptions.md`](./08-production-grade-exceptions.md)
+
+Key features:
+- **Machine-readable codes**: Every exception has a stable `code` field for programmatic handling
+- **Retry semantics**: `temporary` boolean indicates if retry might succeed
+- **Structured details**: JSON-safe context for telemetry and debugging
+- **Secret redaction**: Automatic redaction of sensitive data in serialization
+- **CLI-friendly formatting**: `[CODE] message` format for terminal output
+
+## 9) Validators
 
 * `validators/common.py` – primitives (is\_year, is\_language\_iso, duration sanity, non-empty).
 * `validators/audiobook_validator.py` – content-specific checks + tracker hints (e.g., RED wants `album` present → we default to `title`).
@@ -615,7 +627,7 @@ Return shape:
 
 ---
 
-## 9) Tracker mapping (RED)
+## 10) Tracker mapping (RED)
 
 `mappers/red.py` converts `AudiobookMeta` → RED upload fields (no parsing here):
 
@@ -624,7 +636,7 @@ Return shape:
 
 ---
 
-## 10) Configuration
+## 11) Configuration
 
 Add metadata config under `config.py` or a `metadata.yaml`:
 
@@ -725,7 +737,7 @@ class AudiobookMetaModel(BaseModel):
 
 ---
 
-## 11) Testing strategy
+## 12) Testing strategy
 
 ```
 tests/
@@ -752,7 +764,7 @@ tests/
 
 ---
 
-## 12) Migration plan (low-risk, incremental)
+## 13) Migration plan (low-risk, incremental)
 
 1. **Introduce `core/metadata/base.py`** and switch both `engine.py` & `audiobook.py` to import the single Protocol/dataclass.
 2. **Extract services & sources** from `features/metadata_engine.py` into `core/metadata/services/*` and `sources/*`.
@@ -765,14 +777,14 @@ tests/
 
 ---
 
-## 13) Error handling & logging
+## 14) Error handling & logging
 
 * Use `exceptions.py` for typed failures: `SourceUnavailable`, `MetadataConflict`, `ValidationError`.
 * Structured logging (JSON-friendly): engine stages, chosen source for each field, validation summary, mapper output size.
 
 ---
 
-## 14) Example: Processor skeleton
+## 15) Example: Processor skeleton
 
 ```python
 # processors/audiobook.py
@@ -819,7 +831,7 @@ class AudiobookMetadata:
 
 ---
 
-## 15) Extension guide
+## 16) Extension guide
 
 * **Add a new source**: drop a file in `sources/`, expose a `lookup(...)` or `extract(...)`, register via DI in `engine.py`, then add to precedence in config.
 * **Add a new content type**: create `processors/<type>.py`, reuse services, create `<type>_validator.py`, and update engine registry.
@@ -827,7 +839,7 @@ class AudiobookMetadata:
 
 ---
 
-## 16) Next steps (for this repo)
+## 17) Next steps (for this repo)
 
 * [ ] Create `core/metadata/base.py` and port both engine & audiobook to it.
 * [ ] Extract `HTMLCleaner`, `FormatDetector`, `PathInfo`, `Audnexus` into `services/` & `sources/`.
