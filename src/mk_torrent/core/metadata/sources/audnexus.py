@@ -183,7 +183,9 @@ class AudnexusSource:
                 logger.debug("Initialized requests client (httpx unavailable)")
             except ImportError:
                 raise SourceUnavailable(
-                    "audnexus", "Neither httpx nor requests available"
+                    "audnexus",
+                    "Neither httpx nor requests available",
+                    temporary=False,  # Missing dependency - not transient
                 )
 
     def _get_retry_decorator(self) -> Any:
@@ -220,7 +222,11 @@ class AudnexusSource:
         @retry_decorator
         def _do_request():
             if not self._client:
-                raise SourceUnavailable("audnexus", "HTTP client not initialized")
+                raise SourceUnavailable(
+                    "audnexus",
+                    "HTTP client not initialized",
+                    temporary=False,  # Configuration issue
+                )
 
             if self._client_type == "httpx":
                 response = self._client.get(url, params=params)
@@ -242,7 +248,39 @@ class AudnexusSource:
 
         except Exception as e:
             logger.error(f"Request failed for {url}: {e}")
-            raise SourceUnavailable("audnexus", f"API request failed: {e}")
+
+            # Extract HTTP status code if available
+            http_status: int | None = None
+            temporary = True  # Default to temporary for network errors
+
+            # Handle different HTTP client error types safely
+            if hasattr(e, "response"):
+                response = getattr(e, "response", None)
+                if response and hasattr(response, "status_code"):
+                    http_status = getattr(response, "status_code", None)
+            elif hasattr(e, "status_code"):
+                http_status = getattr(e, "status_code", None)
+            else:
+                # Parse status from error message as fallback
+                error_str = str(e)
+                if "429" in error_str:
+                    http_status = 429
+                elif "503" in error_str:
+                    http_status = 503
+                elif "404" in error_str:
+                    http_status = 404
+                    temporary = False  # Not found is usually permanent
+
+            # Set permanent failure for certain status codes
+            if http_status == 404:
+                temporary = False
+
+            raise SourceUnavailable(
+                "audnexus",
+                f"API request failed: {e}",
+                temporary=temporary,
+                http_status=http_status,
+            ) from e
 
     def _clean_html(self, html_content: str) -> str:
         """Clean HTML content to plain text using HTMLCleaner service."""
@@ -270,7 +308,9 @@ class AudnexusSource:
                 asin = source_str
             else:
                 raise SourceUnavailable(
-                    "audnexus", f"No ASIN found in source: {source}"
+                    "audnexus",
+                    f"No ASIN found in source: {source}",
+                    temporary=False,  # Invalid input format
                 )
 
         # Fetch book metadata
