@@ -74,6 +74,40 @@ utils → core → {trackers, integrations} → workflows → cli
 | -------- | -------- | -----: | ----------- | ------------ | ----- |
 | `src/mk_torrent/trackers/red/upload_spec.py` enums | `src/mk_torrent/core/upload/spec.py` | Merge | 5684059 | N/A | Phase 3A.1: AudioFormat/MediaType/ReleaseType consolidated |
 | `src/mk_torrent/trackers/upload_spec.py` classes | `src/mk_torrent/core/upload/spec.py` | Merge | 5684059 | 2025-10-09 | Phase 3A.1: Category/UploadSpec/UploadResult consolidated |
+| `src/mk_torrent/trackers/red/adapter.py` | `src/mk_torrent/trackers/red_adapter.py` | Unify | 6f4144e | 2025-02-09 | Phase 3A.2: Enhanced red_adapter.py, created deprecation shim |
+| N/A | `src/mk_torrent/trackers/factory.py` | Create | e954f1b | N/A | Phase 3A.3: New adapter factory for centralized creation |
+| `src/mk_torrent/trackers/mam/adapter.py` | Same (clarified) | Update | e954f1b | N/A | Phase 3A.4: Documented MAM manual upload limitation |
+
+---
+
+## Phase 3A Tracker Consolidation Summary (COMPLETED 2025-01-09)
+
+**Status**: ✅ MERGED — All four sub-phases complete
+**Branch**: cleanup/2025-09-module-audit
+**Final Commit**: e954f1b
+
+### Achievements
+1. **3A.1: Upload Spec Enum Consolidation** — Single source: `core/upload/spec.py`
+2. **3A.2: RED Adapter Unification** — Enhanced `red_adapter.py`, deprecated `red/adapter.py`
+3. **3A.3: Adapter Factory Pattern** — Centralized creation via `TrackerAdapterFactory`
+4. **3A.4: MAM Implementation** — Clarified manual upload requirement
+
+### Key Results
+- Resolved enum conflicts across 3 modules (AudioFormat, MediaType, ReleaseType)
+- Consolidated duplicate adapter implementations
+- Standardized adapter instantiation patterns
+- Maintained backward compatibility via deprecation shims
+- 4-week deprecation timeline (removal: 2025-02-09)
+- All CLI functionality preserved and validated
+
+### Validation
+- ✅ CLI still works: `python -m mk_torrent --help`
+- ✅ Factory creates adapters: RED, MAM tested
+- ✅ Type checking passes across all modules
+- ✅ Deprecation warnings trigger correctly
+- ✅ Integration tests pass (RED upload workflows)
+
+**Next**: Phase 3B — Integration Layer Consolidation
 
 ---
 
