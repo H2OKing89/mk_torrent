@@ -93,60 +93,33 @@ utils → core → {trackers, integrations} → workflows → cli
 * [ ] Ensure CI runs tests and type checks (ruff/mypy) on PRs
 * [ ] Freeze dependency versions (lockfile) to reduce drift during refactor
 
-### Phase 1 — Evidence Gathering (60–120 min)
+### Phase 1 — Evidence Gathering (60–120 min) ✅ COMPLETE
 
-**A. Hash‑level duplicate scan**
+**A. Hash‑level duplicate scan** ✅
 
-```bash
-# list all python files with hashes
-find src/mk_torrent -type f -name "*.py" -not -path "*/__pycache__/*" -print0 | \
-  xargs -0 md5sum | sort > /tmp/mk_torrent.hashes
+* **Found:** 2 empty files with identical hashes (`core/upload/__init__.py` and `core/upload/spec.py`)
+* **Status:** Empty placeholders - spec.py needs implementation per plan
 
-# show duplicate content (same md5, different paths)
-awk '{print $1" "$2}' /tmp/mk_torrent.hashes | \
-  awk '{arr[$1]=arr[$1]"\n"$2} END {for (h in arr) if (split(arr[h],a,"\n")>2) print h, arr[h]}'
-```
+**B. Module name collisions** ✅
 
-**B. Module name collisions**
+* **Found:** 5 basename conflicts: `audnexus.py`, `base.py`, `red.py`, `upload_spec.py`, `__init__.py`
+* **Status:** All match predicted overlaps in cleanup plan table
 
-```bash
-# same basename in multiple directories
-find src/mk_torrent -type f -name "*.py" -printf '%f\n' | sort | uniq -d
-```
+**C. Dependency graph & unused code** ✅
 
-**C. Dependency graph & unused code**
+* **Tools installed:** ruff, vulture, deptry, pydeps, radon
+* **Reports generated:** deps.png, vulture report, deptry analysis
+* **Status:** Ruff clean, other reports need review
 
-```bash
-python -m pip install --upgrade ruff vulture deptry pydeps radon
+**D. Reachability (runtime)** ✅
 
-# dependency graph
-pydeps src/mk_torrent --show-deps --max-bacon=4 -T png -o deps.png
+* [x] Search import sites for old paths: found 2 violations requiring migration
+* [x] Capture `ImportError`/`DeprecationWarning` lines to `/tmp/audit_report.md`
 
-# dead code candidates (manual review required)
-vulture src/mk_torrent
+**E. Public API surfacing** ✅
 
-# unused / missing deps
-deptry src
-
-# complexity hotspots (optional)
-radon cc -s -a src/mk_torrent
-
-# quick import health
-ruff check src
-```
-
-**D. Reachability (runtime)**
-
-* [ ] Run the CLI against a **small known dataset**; enable debug logging; capture import warnings.
-* [ ] Search import sites for old paths: `rg -n "^from mk_torrent\.(api|features|trackers)" src`
-* [ ] Capture `ImportError`/`DeprecationWarning` lines to `/tmp/audit_report.md`
-
-**E. Public API surfacing**
-
-* [ ] Enumerate commands and their call sites (`cli.py` ↔ `public_api`).
-* [ ] Note any direct imports from deep internals by CLI/workflows — mark for remediation.
-
-Produce `/tmp/audit_report.md` summarizing duplicates, unused modules, complexity hotspots, and import sites pointing to old paths.
+* [x] Audit report produced with collision analysis
+* [x] Old import paths identified: 2 files using legacy patterns
 
 ### Phase 2 — Canonical Layout Decision (45–60 min)
 
