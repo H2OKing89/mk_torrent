@@ -495,9 +495,10 @@ def edit_config():
             "4. Default Directories",
             "5. Categories & Tags",
             "6. Tracker URLs",
-            "7. Default Behavior",
-            "8. View All Settings",
-            "9. Test Connection",
+            "7. Tracker API Keys",
+            "8. Default Behavior",
+            "9. View All Settings",
+            "10. Test Connection",
             "0. Exit",
         ]
 
@@ -506,7 +507,7 @@ def edit_config():
 
         choice = Prompt.ask(
             "\nSelect option",
-            choices=["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],
+            choices=["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
             default="0",
         )
 
@@ -525,10 +526,12 @@ def edit_config():
         elif choice == "6":
             edit_trackers()
         elif choice == "7":
-            edit_behavior(config)
+            edit_tracker_api_keys(config)
         elif choice == "8":
-            show_config()
+            edit_behavior(config)
         elif choice == "9":
+            show_config()
+        elif choice == "10":
             from .api.qbittorrent import run_health_check
 
             run_health_check(config)
@@ -726,6 +729,151 @@ def edit_trackers():
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
     with open(trackers_file, "w") as f:
         f.write("\n".join(trackers))
+
+
+def edit_tracker_api_keys(config: dict[str, Any]):
+    """Edit tracker API keys with secure storage"""
+    console.print("\n[cyan]Tracker API Keys[/cyan]")
+
+    # Show current API keys (masked)
+    api_keys = {}
+    for key in config:
+        if key.endswith("_api_key"):
+            tracker_name = key.replace("_api_key", "").upper()
+            api_keys[tracker_name] = config[key]
+
+    if api_keys:
+        console.print("\n[cyan]Current API Keys:[/cyan]")
+        for tracker, key in api_keys.items():
+            masked_key = key[:8] + "..." + key[-4:] if len(key) > 12 else "***masked***"
+            console.print(f"  • {tracker}: {masked_key}")
+    else:
+        console.print("\n[dim]No API keys configured[/dim]")
+
+    # Available trackers
+    available_trackers = ["red", "mam", "ops"]
+
+    while True:
+        console.print("\n[cyan]Available Actions:[/cyan]")
+        console.print("  1. Add/Update API Key")
+        console.print("  2. Remove API Key")
+        console.print("  3. Test API Key")
+        console.print("  4. Done")
+
+        action = Prompt.ask("Select action", choices=["1", "2", "3", "4"], default="4")
+
+        if action == "4":
+            break
+        elif action == "1":
+            # Add/Update API key
+            tracker = Prompt.ask(
+                "Tracker name", choices=available_trackers + ["other"], default="red"
+            )
+
+            if tracker == "other":
+                tracker = Prompt.ask("Custom tracker name").lower()
+
+            # Get API key securely
+            console.print(f"\n[yellow]Enter API key for {tracker.upper()}[/yellow]")
+            console.print("[dim]API key will be stored securely[/dim]")
+
+            api_key = getpass.getpass(f"{tracker.upper()} API Key (hidden): ")
+
+            if api_key:
+                # Store in config
+                config[f"{tracker}_api_key"] = api_key
+
+                # Also store securely if available
+                if SECURE_STORAGE_AVAILABLE:
+                    try:
+                        secure_manager.store_tracker_credential(
+                            tracker.upper(), "api_key", api_key
+                        )
+                        console.print(
+                            f"[green]✅ {tracker.upper()} API key stored securely[/green]"
+                        )
+                    except Exception as e:
+                        console.print(
+                            f"[yellow]⚠️ Could not store in secure storage: {e}[/yellow]"
+                        )
+                        console.print("[dim]API key saved in config file only[/dim]")
+                else:
+                    console.print(f"[green]✅ {tracker.upper()} API key saved[/green]")
+                    console.print(
+                        "[yellow]⚠️ Secure storage not available - stored in config file[/yellow]"
+                    )
+            else:
+                console.print("[red]No API key provided[/red]")
+
+        elif action == "2":
+            # Remove API key
+            if not api_keys:
+                console.print("[yellow]No API keys to remove[/yellow]")
+                continue
+
+            tracker = Prompt.ask(
+                "Remove API key for tracker",
+                choices=list(api_keys.keys()) + ["cancel"],
+                default="cancel",
+            )
+
+            if tracker != "cancel":
+                key_name = f"{tracker.lower()}_api_key"
+                if key_name in config:
+                    del config[key_name]
+                    console.print(f"[green]✅ {tracker} API key removed[/green]")
+
+                    # Also remove from secure storage if available
+                    if SECURE_STORAGE_AVAILABLE:
+                        try:
+                            secure_manager.remove_tracker_credential(tracker, "api_key")
+                        except Exception:
+                            pass  # Ignore errors when removing
+
+        elif action == "3":
+            # Test API key
+            if not api_keys:
+                console.print("[yellow]No API keys to test[/yellow]")
+                continue
+
+            tracker = Prompt.ask(
+                "Test API key for tracker",
+                choices=list(api_keys.keys()) + ["cancel"],
+                default="cancel",
+            )
+
+            if tracker != "cancel":
+                console.print(f"[cyan]Testing {tracker} API connection...[/cyan]")
+
+                try:
+                    # Import and test the specific tracker API
+                    if tracker.lower() == "red":
+                        from .api.trackers.red import RedactedAPI
+
+                        api_key = config.get(f"{tracker.lower()}_api_key")
+                        if api_key:
+                            api = RedactedAPI(api_key=api_key)
+                            if api.test_connection():
+                                console.print(
+                                    f"[green]✅ {tracker} API connection successful[/green]"
+                                )
+                            else:
+                                console.print(
+                                    f"[red]✗ {tracker} API connection failed[/red]"
+                                )
+                        else:
+                            console.print(
+                                f"[red]✗ No API key found for {tracker}[/red]"
+                            )
+                    else:
+                        console.print(
+                            f"[yellow]⚠️ API testing not implemented for {tracker} yet[/yellow]"
+                        )
+
+                except ImportError as e:
+                    console.print(f"[red]✗ Could not import {tracker} API: {e}[/red]")
+                except Exception as e:
+                    console.print(f"[red]✗ Error testing {tracker} API: {e}[/red]")
 
 
 def edit_behavior(config: dict[str, Any]):

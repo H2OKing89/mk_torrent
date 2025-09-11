@@ -5,12 +5,14 @@
 ## 📊 Project Health Dashboard
 
 ### ✅ **Code Quality & Security**
+
 - **Tests**: 270+ passing, 0 warnings [![Tests](https://img.shields.io/badge/Tests-270%20passing-brightgreen)](tests/)
 - **Coverage**: 70%+ maintained [![Coverage](https://img.shields.io/badge/Coverage-70%25+-brightgreen)](https://codecov.io/gh/H2OKing89/mk_torrent)
 - **Security**: CodeQL + Bandit + pip-audit [![Security](https://img.shields.io/badge/Security-Monitored-green)](https://github.com/H2OKing89/mk_torrent/security)
 - **Code Style**: Ruff + Black + pre-commit [![Code Quality](https://img.shields.io/badge/Ruff-0%20issues-brightgreen)](https://github.com/astral-sh/ruff)
 
 ### 🔄 **Automated Workflows**
+
 - **CI/CD**: ✅ Comprehensive testing across Python 3.10-3.12
 - **Security Scanning**: ✅ Weekly vulnerability scans
 - **Dependency Updates**: ✅ Automated via Dependabot
@@ -18,6 +20,7 @@
 - **Pre-commit**: ✅ 12 hooks ensuring code quality
 
 ### 🏷️ **PR Automation**
+
 - **Auto-labeling**: ✅ Type, area, and size-based labels
 - **Semantic PR titles**: ✅ Conventional commit enforcement
 - **Code owners**: ✅ Automatic review requests
@@ -26,6 +29,7 @@
 ## 🚀 **Implementation Status**
 
 ### ✅ **Core Metadata System**
+
 | Component | Status | Implementation |
 |-----------|--------|----------------|
 | **Three-Source Strategy** | ✅ **VALIDATED** | PathInfo + Embedded + Audnexus working |
@@ -37,12 +41,14 @@
 | **Path Parsing** | ✅ **COMPLETE** | Filename-based extraction |
 
 ### 🔄 **Next Development Phase**
+
 - **Phase 3**: Enhanced processor implementations (music.py, video.py)
 - **Advanced Configuration**: Runtime config system with user customization
 - **Multi-Tracker Templates**: Specific templates for different trackers
 - **Async Enhancements**: Migration to httpx for async API calls
 
 ## 📁 **Repository Structure**
+
 ```
 mk_torrent/                     # Enterprise-ready torrent toolkit
 ├── .github/                    # Automated workflows & templates
@@ -67,6 +73,7 @@ mk_torrent/                     # Enterprise-ready torrent toolkit
 ## 🔧 **Development Workflow**
 
 ### Quick Commands
+
 ```bash
 # Development setup
 pip install -r requirements.txt && pip install -e .
@@ -84,6 +91,7 @@ bandit -r src/                 # Security scan
 ```
 
 ### PR Process
+
 1. **Branch**: `git checkout -b feat/your-feature`
 2. **Semantic Title**: `feat(metadata): implement field merger`
 3. **Auto-labels**: Applied based on files changed
@@ -93,6 +101,7 @@ bandit -r src/                 # Security scan
 ## 📈 **Metrics & Monitoring**
 
 ### Current Stats
+
 - **Lines of Code**: ~17,000
 - **Test Coverage**: 70%+
 - **Security Issues**: 0 critical
@@ -100,6 +109,7 @@ bandit -r src/                 # Security scan
 - **Release Cadence**: Automated based on semantic commits
 
 ### Quality Gates
+
 - ✅ All tests must pass
 - ✅ Coverage must remain >70%
 - ✅ No high-severity security issues
@@ -109,6 +119,7 @@ bandit -r src/                 # Security scan
 ## 🎯 **Ready for Production**
 
 This repository now has enterprise-level standards:
+
 - **Automated everything**: From testing to releases
 - **Security first**: Multiple scanning layers
 - **Quality enforced**: Pre-commit + CI gates

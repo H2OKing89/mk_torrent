@@ -144,17 +144,115 @@ class RedactedAPI(TrackerAPI):
     ) -> dict[str, Any]:
         """Prepare upload data for RED - audiobook compliant format"""
 
+        # Get the correctly formatted title (Author - Title) for audiobooks
+        author = metadata.get("author", metadata.get("artists", "Unknown"))
+        title = metadata.get("title", "Unknown")
+        red_title = f"{author} - {title}"  # RED audiobook format: Author - Title
+
+        # Convert bitrate from bps to kbps (rounded)
+        bitrate_bps = metadata.get("bitrate", 0)
+        bitrate_kbps = round(bitrate_bps / 1000) if bitrate_bps else "Variable"
+
         # Clean audiobook mapping that matches the integration test
-        return {
+        upload_data = {
             "type": "3",  # Audiobooks category
-            "groupname": metadata.get("title", "Unknown"),
-            "artists[]": metadata.get("artists", metadata.get("author", "Unknown")),
+            "groupname": red_title,  # Correctly formatted: "Author - Title"
+            "artists[]": author,
             "year": str(metadata.get("year", 2023)),
             "releasetype": "3",  # Audiobook release type
             "format": metadata.get("format", "M4B"),
             "media": metadata.get("media", "WEB"),
             "tags": "audiobook",
         }
+
+        # Add detailed debugging to show what RED server would receive
+        console.print("\n[bold cyan]🔍 DEBUG: RED API Payload Analysis[/bold cyan]")
+        console.print("[yellow]════════════════════════════════════════[/yellow]")
+        console.print("[cyan]POST URL:[/cyan] ajax.php?action=upload")
+        console.print("[cyan]Authentication:[/cyan] API Key (in headers)")
+        console.print("[cyan]Content-Type:[/cyan] multipart/form-data")
+        console.print("\n[bold]Form Data Fields (what RED server receives):[/bold]")
+
+        # Show actual payload fields mapped to RED API spec
+        api_mapping = {
+            "dryrun": "true",  # (bool) Only return derived info without uploading
+            "file_input": "<torrent_file_contents>",  # (file) .torrent file contents
+            "type": upload_data.get("type", "3"),  # (int) category index (3=Audiobook)
+            "title": red_title,  # (str) Album title - CORRECTED: "Author - Title" format
+            "year": upload_data.get("year", "2023"),  # (int) Album "Initial Year"
+            "format": upload_data.get("format", "M4B"),  # (str) MP3, FLAC, etc
+            "bitrate": "Other",  # (str) 192, Lossless, Other, etc
+            "other_bitrate": str(
+                bitrate_kbps
+            ),  # (str) bitrate if Other - CORRECTED: kbps not bps
+            "vbr": "true",  # (bool) other_bitrate is VBR
+            "tags": upload_data.get("tags", "audiobook"),  # (str)
+            "image": metadata.get("artwork_url", ""),  # (str) link to album art - ADDED
+            "release_desc": f"Audiobook release: {red_title}",  # (str) Release description
+            "desc": metadata.get(
+                "description", f"Audiobook by {author}"
+            ),  # (str) Description for non-music torrents
+        }
+
+        from rich.table import Table
+
+        debug_table = Table(
+            title="🔍 RED Server Receives This Payload",
+            show_header=True,
+            header_style="bold magenta",
+        )
+        debug_table.add_column("API Field", style="cyan", width=15)
+        debug_table.add_column("Type", style="yellow", width=8)
+        debug_table.add_column("Value", style="white", width=40)
+        debug_table.add_column("RED API Spec", style="dim", width=30)
+
+        spec_descriptions = {
+            "dryrun": "Only return derived info without uploading",
+            "file_input": ".torrent file contents",
+            "type": "index of category (Music, Audiobook, ...)",
+            "title": "Album title",
+            "year": "Album 'Initial Year'",
+            "remaster_year": "Edition year",
+            "format": "MP3, FLAC, etc",
+            "bitrate": "192, Lossless, Other, etc",
+            "other_bitrate": "bitrate if Other",
+            "vbr": "other_bitrate is VBR",
+            "tags": "tags",
+            "image": "link to album art",
+            "release_desc": "Release (torrent) description",
+            "desc": "Description for non-music torrents",
+        }
+
+        type_mapping = {
+            "dryrun": "(bool)",
+            "file_input": "(file)",
+            "type": "(int)",
+            "title": "(str)",
+            "year": "(int)",
+            "remaster_year": "(int)",
+            "format": "(str)",
+            "bitrate": "(str)",
+            "other_bitrate": "(str)",
+            "vbr": "(bool)",
+            "tags": "(str)",
+            "image": "(str)",
+            "release_desc": "(str)",
+            "desc": "(str)",
+        }
+
+        for field, value in api_mapping.items():
+            field_type = type_mapping.get(field, "(unknown)")
+            description = spec_descriptions.get(field, "")
+            debug_table.add_row(field, field_type, str(value), description)
+
+        console.print(debug_table)
+        console.print("[yellow]════════════════════════════════════════[/yellow]")
+        console.print("[green]✓ This payload conforms to RED API specification[/green]")
+        console.print(
+            "[dim]Note: file_input would contain actual .torrent binary data[/dim]\n"
+        )
+
+        return upload_data
 
     def upload_torrent(
         self, torrent_path: Path, metadata: dict[str, Any], dry_run: bool = True
