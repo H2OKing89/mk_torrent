@@ -163,25 +163,83 @@ utils → core → {trackers, integrations} → workflows → cli
 * **Tested:** CLI functionality unchanged (python -m mk_torrent --help works)
 * **Status:** Clean working state ready for Phase 3
 
-### Phase 3 — Execute by Subsystem (Iterative PRs)
+### Phase 3 — Execute by Subsystem (Iterative PRs) 🚧 IN PROGRESS
 
-Order: **Trackers → Templates → Integrations → Upload Spec → Utils → Workflows**
+**Status:** Planning complete, ready for systematic execution
+**Order:** Trackers → Integrations → Upload Specs → Utils → Workflows
 
-For each PR:
+#### Phase 3A: Trackers Consolidation
 
-* [ ] Move files via `git mv <old> <new>`
-* [ ] Add shim with `DeprecationWarning` (if public)
-* [ ] Update imports across repo (`uvtool`/`ruff --fix`/`sed`)
-* [ ] Green tests + smoke run
-* [ ] Update docs (this file + `ARCHITECTURE.md` + `MIGRATIONS.md` + ADR if needed)
-* [ ] Add an item to `DEPRECATIONS.md` with a removal date (e.g., **+30 days**)
+**Goal:** Consolidate tracker specs and update adapters for consistency
 
-**Smoke tests (suggested):**
+* [ ] **Audit current tracker structure** - map RED/MAM spec overlaps and adapter patterns
+* [ ] **Consolidate RED upload specs** - merge redundant spec definitions, extend core/upload/spec.py
+* [ ] **Update MAM adapter** - align with RED patterns, ensure consistent interface
+* [ ] **Create tracker factory pattern** - standardize adapter instantiation and configuration
+* [ ] **Add tracker validation suite** - comprehensive tests for spec round-trip and API compatibility
+* [ ] **Update tracker documentation** - clear examples and integration patterns
+
+#### Phase 3B: Integrations Cleanup
+
+**Goal:** Clean up AudNexus/qBittorrent integrations, eliminate redundancy
+
+* [ ] **Audit AudNexus integration points** - ensure clean separation between HTTP client and metadata adapter
+* [ ] **Review qBittorrent client** - verify single canonical implementation in integrations/
+* [ ] **Consolidate external API patterns** - consistent error handling, retry logic, timeout management
+* [ ] **Add integration testing framework** - mock external services for reliable testing
+* [ ] **Document integration boundaries** - clear contracts between core and external services
+
+#### Phase 3C: Upload Specs Completion
+
+**Goal:** Complete shared upload specification system
+
+* [ ] **Extend core upload spec** - add remaining common fields and validation patterns
+* [ ] **Implement tracker-specific extensions** - RED/MAM specific fields as clean extensions
+* [ ] **Create spec validation framework** - comprehensive validation with clear error messages
+* [ ] **Add spec serialization/deserialization** - JSON/YAML round-trip with schema validation
+* [ ] **Build spec migration tools** - helpers to convert between spec versions
+* [ ] **Document spec architecture** - clear examples and extension patterns
+
+#### Phase 3D: Utils Consolidation
+
+**Goal:** Consolidate helper functions and eliminate duplicates
+
+* [ ] **Audit utils/* modules** - identify duplicate functions and consolidation opportunities
+* [ ] **Merge common patterns** - file handling, string processing, validation helpers
+* [ ] **Create focused utility modules** - clear separation of concerns (io, validation, formatting)
+* [ ] **Add comprehensive utils tests** - ensure all utility functions are well-tested
+* [ ] **Document utility patterns** - clear guidelines for when to add new utilities
+
+#### Phase 3E: Workflows Streamlining
+
+**Goal:** Streamline end-to-end workflow processes
+
+* [ ] **Map workflow dependencies** - understand current wizard and upload integration flows
+* [ ] **Eliminate workflow redundancy** - consolidate duplicate orchestration logic
+* [ ] **Standardize error handling** - consistent error propagation and user feedback
+* [ ] **Add workflow testing** - end-to-end testing with mocked external dependencies
+* [ ] **Document workflow architecture** - clear separation between orchestration and business logic
+
+**Per-Subsystem PR Template:**
+
+* [ ] Move files via `git mv <old> <new>` (preserve history)
+* [ ] Add shim with `DeprecationWarning` (if public API)
+* [ ] Update imports across repo (`ruff --fix` + manual verification)
+* [ ] Green tests + smoke run (`pytest` + CLI validation)
+* [ ] Update docs (`MIGRATIONS.md` + subsystem-specific docs)
+* [ ] Add deprecation timeline entry (30-day standard window)
+
+**Smoke tests (per subsystem):**
 
 ```bash
+# Core functionality
 python -m mk_torrent --help
 python -m mk_torrent wizard --dry-run --debug
-python -m mk_torrent upload --spec sample/spec.json --dry-run
+
+# Specific subsystem validation
+python -c "import mk_torrent.trackers.red.adapter; print('✅ RED adapter')"
+python -c "import mk_torrent.integrations.qbittorrent; print('✅ qBittorrent')"
+python -c "from mk_torrent.core.upload.spec import BaseUploadSpec; print('✅ Upload spec')"
 ```
 
 ### Phase 4 — Delete Legacy & Tighten Lint (Final)
