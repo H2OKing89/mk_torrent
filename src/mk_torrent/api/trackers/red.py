@@ -180,6 +180,7 @@ class RedactedAPI(TrackerAPI):
             "type": upload_data.get("type", "3"),  # (int) category index (3=Audiobook)
             "title": red_title,  # (str) Album title - CORRECTED: "Author - Title" format
             "year": upload_data.get("year", "2023"),  # (int) Album "Initial Year"
+            "remaster_year": upload_data.get("year", "2023"),  # (int) Edition year
             "format": upload_data.get("format", "M4B"),  # (str) MP3, FLAC, etc
             "bitrate": "Other",  # (str) 192, Lossless, Other, etc
             "other_bitrate": str(
@@ -187,7 +188,7 @@ class RedactedAPI(TrackerAPI):
             ),  # (str) bitrate if Other - CORRECTED: kbps not bps
             "vbr": "true",  # (bool) other_bitrate is VBR
             "tags": upload_data.get("tags", "audiobook"),  # (str)
-            "image": metadata.get("artwork_url", ""),  # (str) link to album art - ADDED
+            "image": metadata.get("cover_url", ""),  # (str) link to album art
             "release_desc": f"Audiobook release: {red_title}",  # (str) Release description
             "desc": metadata.get(
                 "description", f"Audiobook by {author}"
