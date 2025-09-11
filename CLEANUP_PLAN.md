@@ -85,11 +85,11 @@ utils → core → {trackers, integrations} → workflows → cli
 
 ## 4) Phased Plan & Checklists
 
-### Phase 0 — Safety Net (30–45 min)
+### Phase 0 — Safety Net (30–45 min) ✅ COMPLETE
 
-* [ ] Create branch: `git checkout -b cleanup/2025-09-module-audit`
-* [ ] Tag baseline: `git tag pre-cleanup-2025-09-11`
-* [ ] Ensure `.gitignore` includes `**/__pycache__/`, `*.pyc`, `.coverage/`, `.pytest_cache/`
+* [x] Create branch: `git checkout -b cleanup/2025-09-module-audit`
+* [x] Tag baseline: `git tag pre-cleanup-2025-09-11`
+* [x] Ensure `.gitignore` includes `**/__pycache__/`, `*.pyc`, `.coverage/`, `.pytest_cache/`
 * [ ] Ensure CI runs tests and type checks (ruff/mypy) on PRs
 * [ ] Freeze dependency versions (lockfile) to reduce drift during refactor
 
