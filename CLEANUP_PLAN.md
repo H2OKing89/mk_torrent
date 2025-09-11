@@ -9,10 +9,18 @@
 ## 0) TL;DR Action Path
 
 1. **Freeze & branch:** create `cleanup/2025-09-module-audit` and tag `pre-cleanup-2025-09-11`.
-2. **Evidence pass:** generate a dependency graph, list exact duplicate files (by hash), find dead/unused modules.
-3. **Decide canonical layout:** (below) and mark each overlap **Keep / Move / Merge / Delete**.
-4. **One subsystem at a time:** trackers → metadata/templates → integrations (AudNexus/qBittorrent) → upload spec → utils.
-5. **Ship small PRs:** add shims + deprecation warnings, flip imports to new paths, then delete legacy.
+2. **Evidence pass:** generate a dependency graph, list exact duplicate files (by hash), find dead/unused modules, and surface import‑path drift.
+3. **Decide canonical layout:** (below) and mark each overlap **Keep / Move / Merge / Delete** with rationale.
+4. **One subsystem at a time:** trackers → metadata/templates → integrations (AudNexus/qBittorrent) → upload spec → utils → workflows.
+5. **Ship small PRs:** add shims + deprecation warnings, flip imports to new paths, green CI, then delete legacy.
+6. **Enforce:** turn deprecations into errors, lock layering rules in CI, and document the final architecture.
+
+**Success criteria**
+
+* No duplicate modules by path **or** purpose.
+* All imports align to the canonical layout.
+* CLI and `wizard` smoke tests pass end‑to‑end.
+* A clean `deps.png` graph with acyclic core dependencies.
 
 ---
 
@@ -25,9 +33,17 @@
 * **`core/metadata/`** – Domain model and pipelines for metadata: sources, services, processors, validators, templates.
 * **`integrations/`** – Thin clients for *external* services (e.g., AudNexus, qBittorrent). No business logic.
 * **`trackers/`** – Tracker adapters and API clients (e.g., RED, MAM) + tracker‑specific upload specs/adapters.
-* **`features/`** – Optional glue/features (wizards, templates convenience, validation helpers). Candidate for merge into `core`.
+* **`features/`** – Optional glue/features (wizards, templates convenience, validation helpers). Candidate for merge into `core` or `workflows`.
 * **`utils/`** – Small helper utilities; keep tiny and generic.
 * **`workflows/`** – Orchestration/UX flows (wizard, end‑to‑end upload integration) that call into public APIs.
+
+**Layering rule (import direction only):**
+
+```
+utils → core → {trackers, integrations} → workflows → cli
+```
+
+* Lower layers **must not** import from higher layers. Trackers & integrations may import `core` & `utils`. The CLI only touches the public API.
 
 ---
 
@@ -39,7 +55,7 @@
 | **AudNexus**            | `integrations/audnexus*.py` vs `core/metadata/sources/audnexus.py`                  | Source client logic spread  | **`integrations/audnexus*.py`** for HTTP; `core/metadata/sources/audnexus.py` should *depend on* integrations, not reimplement | Move HTTP/client bits into `integrations`; keep `sources/audnexus.py` as thin adapter  |
 | **Templates**           | `features/templates.py` vs `core/metadata/templates/*`                              | Template helpers duplicated | **`core/metadata/templates/*`**                                                                                                | Inline/port helpers from `features/templates.py` and delete that file                  |
 | **Upload Spec**         | `core/upload/spec.py` vs `trackers/upload_spec.py` vs `trackers/red/upload_spec.py` | Three specs                 | **`core/upload/spec.py`** as the abstract schema; tracker‑specific deltas live in `trackers/<name>/upload_spec.py`             | Consolidate shared types in `core/upload/spec.py`; adapters import those               |
-| **qBittorrent**         | `api/qbittorrent.py` vs `integrations/audnexus/qbittorrent?` (check)                | Ensure a single client      | **`integrations/qbittorrent.py`**                                                                                              | If any other clients exist, merge them here                                            |
+| **qBittorrent**         | `api/qbittorrent.py` vs any other client                                            | Ensure a single client      | **`integrations/qbittorrent.py`**                                                                                              | Merge all client variants here                                                         |
 | **API vs Integrations** | `api/*` (general) vs `integrations/*`                                               | Two names for same concept  | Prefer **`integrations/*`**                                                                                                    | Move remaining `api/*` clients into `integrations/*` with shims                        |
 
 > NOTE: `__pycache__/` directories are build artifacts; ensure they’re git‑ignored and never committed.
@@ -57,6 +73,13 @@
 
 * Add a file in the old path that re‑exports from the new path and emits `DeprecationWarning`.
 * Log once at startup in dev mode to surface moved modules.
+* Document every shim in `DEPRECATIONS.md` with a planned removal date.
+
+**Acceptance criteria for each migration PR:**
+
+* CI green on `ruff`, `mypy` (or pyright), unit tests, and smoke tests.
+* No references to the old path remain (enforced with `rg` check + ruff rule).
+* `MIGRATIONS.md` updated with old→new mapping and rationale.
 
 ---
 
@@ -66,10 +89,11 @@
 
 * [ ] Create branch: `git checkout -b cleanup/2025-09-module-audit`
 * [ ] Tag baseline: `git tag pre-cleanup-2025-09-11`
-* [ ] Ensure `.gitignore` includes `**/__pycache__/` and `*.pyc`
+* [ ] Ensure `.gitignore` includes `**/__pycache__/`, `*.pyc`, `.coverage/`, `.pytest_cache/`
 * [ ] Ensure CI runs tests and type checks (ruff/mypy) on PRs
+* [ ] Freeze dependency versions (lockfile) to reduce drift during refactor
 
-### Phase 1 — Evidence Gathering (60–90 min)
+### Phase 1 — Evidence Gathering (60–120 min)
 
 **A. Hash‑level duplicate scan**
 
@@ -93,7 +117,7 @@ find src/mk_torrent -type f -name "*.py" -printf '%f\n' | sort | uniq -d
 **C. Dependency graph & unused code**
 
 ```bash
-python -m pip install --upgrade ruff vulture deptry pydeps
+python -m pip install --upgrade ruff vulture deptry pydeps radon
 
 # dependency graph
 pydeps src/mk_torrent --show-deps --max-bacon=4 -T png -o deps.png
@@ -104,6 +128,9 @@ vulture src/mk_torrent
 # unused / missing deps
 deptry src
 
+# complexity hotspots (optional)
+radon cc -s -a src/mk_torrent
+
 # quick import health
 ruff check src
 ```
@@ -112,16 +139,33 @@ ruff check src
 
 * [ ] Run the CLI against a **small known dataset**; enable debug logging; capture import warnings.
 * [ ] Search import sites for old paths: `rg -n "^from mk_torrent\.(api|features|trackers)" src`
+* [ ] Capture `ImportError`/`DeprecationWarning` lines to `/tmp/audit_report.md`
 
-Produce `/tmp/audit_report.md` summarizing duplicates, unused modules, and import sites that point to old paths.
+**E. Public API surfacing**
+
+* [ ] Enumerate commands and their call sites (`cli.py` ↔ `public_api`).
+* [ ] Note any direct imports from deep internals by CLI/workflows — mark for remediation.
+
+Produce `/tmp/audit_report.md` summarizing duplicates, unused modules, complexity hotspots, and import sites pointing to old paths.
 
 ### Phase 2 — Canonical Layout Decision (45–60 min)
 
-Select and lock the canonical structure (proposal below). For each overlap, add a line to **`MIGRATIONS.md`** with: *old path → new path, reason, PR link*.
+Select and lock the canonical structure (proposal below). For each overlap, add a line to **`MIGRATIONS.md`** with: *old path → new path, reason, PR link*. Create ADRs for any contested decisions.
+
+**ADR template (docs/adr/0001-title.md)**
+
+```
+# ADR-0001: Title
+Date: 2025-09-11
+Status: Accepted | Superseded by ADR-XXXX
+Context: (why this decision matters)
+Decision: (what we chose)
+Consequences: (trade-offs, risks, follow-ups)
+```
 
 ### Phase 3 — Execute by Subsystem (Iterative PRs)
 
-Order: **Trackers → Templates → Integrations → Upload Spec → Utils**
+Order: **Trackers → Templates → Integrations → Upload Spec → Utils → Workflows**
 
 For each PR:
 
@@ -129,13 +173,23 @@ For each PR:
 * [ ] Add shim with `DeprecationWarning` (if public)
 * [ ] Update imports across repo (`uvtool`/`ruff --fix`/`sed`)
 * [ ] Green tests + smoke run
-* [ ] Update docs (this file + `ARCHITECTURE.md` + `MIGRATIONS.md`)
+* [ ] Update docs (this file + `ARCHITECTURE.md` + `MIGRATIONS.md` + ADR if needed)
+* [ ] Add an item to `DEPRECATIONS.md` with a removal date (e.g., **+30 days**)
+
+**Smoke tests (suggested):**
+
+```bash
+python -m mk_torrent --help
+python -m mk_torrent wizard --dry-run --debug
+python -m mk_torrent upload --spec sample/spec.json --dry-run
+```
 
 ### Phase 4 — Delete Legacy & Tighten Lint (Final)
 
-* [ ] Remove shims after a deprecation window (or immediately if private)
-* [ ] Turn lint warnings into errors for import paths
+* [ ] Remove shims after the deprecation window
+* [ ] Turn lint warnings into errors for import paths (ruff rule or custom check)
 * [ ] Regenerate `deps.png` and commit
+* [ ] Enable CI gate that asserts **no files** under deprecated paths
 
 ---
 
@@ -146,6 +200,7 @@ src/mk_torrent/
 ├── __init__.py
 ├── __main__.py
 ├── cli.py
+├── public_api.py                # curated, stable surface for CLI/workflows
 ├── core/
 │   ├── health/
 │   │   └── checks.py
@@ -209,6 +264,13 @@ src/mk_torrent/
 * `core/*` = business rules and shared types.
 * `trackers/*` = per‑tracker adapters; depend on `core` types.
 * `workflows/*` = UX orchestration using public APIs.
+* `public_api.py` = the only import surface used by CLI & workflows.
+
+**Dependency boundaries:**
+
+* `core` MUST NOT import from `integrations` or `trackers`.
+* `trackers` SHOULD import `core.upload.spec` and provide tracker deltas.
+* `sources/*.py` SHOULD depend on `integrations/*` for IO.
 
 ---
 
@@ -237,6 +299,12 @@ warnings.warn(
 from mk_torrent.trackers.red import *
 ```
 
+**Deprecation timeline example**
+
+* **Week 0:** Add shim + warnings. CI allows but surfaces warnings.
+* **Week 2:** Warnings elevated to CI failures for new PRs.
+* **Week 4:** Remove shim and delete legacy paths.
+
 ---
 
 ## 7) Tooling & Commands (Copy/Paste)
@@ -261,6 +329,28 @@ rg -n "from mk_torrent\.api\.trackers" src
 # then carefully replace in small batches
 ```
 
+**Optional pre‑commit hooks:**
+
+```bash
+# .pre-commit-config.yaml snippet
+- repo: https://github.com/charliermarsh/ruff-pre-commit
+  rev: v0.6.0
+  hooks:
+    - id: ruff
+    - id: ruff-format
+- repo: https://github.com/pre-commit/mirrors-mypy
+  rev: v1.11.0
+  hooks:
+    - id: mypy
+```
+
+**CI gates (suggested):**
+
+* ruff + ruff‑format
+* mypy (or pyright)
+* pytest (unit + smoke)
+* custom check: fail if `src/mk_torrent/api/**` exists after Phase 4
+
 **Smoke test script idea:**
 
 ```bash
@@ -277,6 +367,15 @@ python -m mk_torrent wizard --dry-run --debug
 * `MIGRATIONS.md` (table: old → new + PR link + rationale)
 * `DEPRECATIONS.md` (list of shims and planned removal dates)
 * `deps.png` (dependency graph snapshot)
+* `docs/adr/*` (decision log)
+
+**`MIGRATIONS.md` example rows**
+
+```
+mk_torrent/api/trackers/red.py → mk_torrent/trackers/red/adapter.py | unify tracker adapters | PR #123
+mk_torrent/features/templates.py → mk_torrent/core/metadata/templates/renderer.py | consolidate templating | PR #124
+mk_torrent/api/qbittorrent.py → mk_torrent/integrations/qbittorrent.py | single client | PR #125
+```
 
 ---
 
@@ -286,6 +385,15 @@ python -m mk_torrent wizard --dry-run --debug
 * One‑subsystem PRs = limited blast radius.
 * Shims with `DeprecationWarning` = safe transition.
 * Keep `pre-cleanup-*` tags for at least 60 days.
+
+**Risks & mitigations**
+
+* *Risk:* Hidden runtime imports from legacy paths.
+  *Mitigation:* runtime log sniffer that fails CI on `DeprecationWarning` after grace period.
+* *Risk:* Tracker behavior divergence after merge.
+  *Mitigation:* record golden fixtures for RED/MAM upload specs; assert unchanged JSON after refactor.
+* *Risk:* Template rendering regressions.
+  *Mitigation:* snapshot tests for Jinja output; compare against committed `*.snap` files.
 
 ---
 
@@ -303,6 +411,101 @@ python -m mk_torrent wizard --dry-run --debug
 * [ ] Shims added + imports flipped
 * [ ] Legacy paths deleted
 * [ ] Docs & graph regenerated
+
+**Progress tracker (labels suggested)**
+
+* `status/triage`, `status/in-progress`, `status/review`, `status/blocked`
+* `scope/trackers`, `scope/templates`, `scope/integrations`, `scope/core`, `scope/workflows`
+
+---
+
+## 11) Coding Standards (Enforcement‑Ready)
+
+* **Style & lint:** ruff + ruff‑format; no `flake8` overlap.
+* **Typing:** aim for `from __future__ import annotations`; mypy strict on `core/*` and `trackers/*`.
+* **Logging:** `logging.getLogger(__name__)`; no `print()` in library code.
+* **Errors:** prefer explicit exceptions; no bare `except:`.
+* **Imports:** absolute within package; no reaching across layers (see layering rule).
+* **I/O boundaries:** network and filesystem confined to `integrations/*` and top‑level workflows.
+
+---
+
+## 12) Tracker‑Specific Guardrails (RED/MAM)
+
+* Keep a shared base in `trackers/base.py` for reusable behaviors (rate‑limit backoff, auth refresh).
+* Encode per‑tracker constraints as dataclasses layered over `core.upload.spec`.
+* Maintain fixtures under `tests/fixtures/trackers/{red,mam}/` to snapshot requests & responses.
+
+**Example spec layering (conceptual)**
+
+```
+core.upload.spec.Release → trackers.red.upload_spec.RedRelease
+                             └─ adds: ripper, media_format, lineage, tags
+```
+
+---
+
+## 13) Metadata Pipeline Notes
+
+**Flow (high‑level)**
+
+```
+pathinfo → format_detector → embedded/audnexus sources → processors.audiobook →
+validators → templates.renderer → upload_spec builder
+```
+
+* `sources.audnexus` **uses** `integrations.audnexus_api` for IO.
+* `services.tag_normalizer` should be pure (no IO) and unit tested with fixtures.
+
+**Common pitfalls**
+
+* Duplicated HTML cleaning across `services` and `features`; consolidate under `services/html_cleaner.py`.
+* Throw away partial metadata merges; use a `merge_audiobook.py` strategy that preserves provenance.
+
+---
+
+## 14) Migration Cheat‑Sheet
+
+**Move + shim**
+
+```bash
+git mv src/mk_torrent/api/trackers/red.py src/mk_torrent/trackers/red/adapter.py
+cat > src/mk_torrent/api/trackers/red.py <<'PY'
+import warnings
+warnings.warn("mk_torrent.api.trackers.red is deprecated; use mk_torrent.trackers.red",
+              DeprecationWarning, stacklevel=2)
+from mk_torrent.trackers.red import *
+PY
+```
+
+**Flip imports**
+
+```bash
+rg -l "from mk_torrent\.api\.trackers" src | xargs sed -i 's/from mk_torrent\.api\.trackers/from mk_torrent.trackers/g'
+```
+
+**Verify**
+
+```bash
+pytest -q && ruff check src && mypy src/mk_torrent
+```
+
+---
+
+## 15) Post‑Cleanup Enforcement
+
+* Add a CI job that fails if any path under `src/mk_torrent/api/**` or `features/templates.py` exists.
+* Add a custom `ruff` rule (or `pytest` check) that forbids imports against deprecated modules.
+* Document in `ARCHITECTURE.md` and link to ADRs.
+
+---
+
+## 16) Glossary
+
+* **Canonical layout** – The authoritative directory structure and module placement.
+* **Shim** – A thin compatibility layer re‑exporting from a new module while warning.
+* **Public API** – The stable set of functions imported by the CLI and workflows.
+* **Integration** – Code that talks to external systems (HTTP/RPC), kept separate from business logic.
 
 ---
 
