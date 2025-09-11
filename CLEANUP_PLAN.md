@@ -121,20 +121,47 @@ utils → core → {trackers, integrations} → workflows → cli
 * [x] Audit report produced with collision analysis
 * [x] Old import paths identified: 2 files using legacy patterns
 
-### Phase 2 — Canonical Layout Decision (45–60 min)
+### Phase 2 — Canonical Layout Decision (45–60 min) ✅ COMPLETE
 
-Select and lock the canonical structure (proposal below). For each overlap, add a line to **`MIGRATIONS.md`** with: *old path → new path, reason, PR link*. Create ADRs for any contested decisions.
+**A. Documentation Infrastructure** ✅
 
-**ADR template (docs/adr/0001-title.md)**
+* **Created:** `MIGRATIONS.md` with comprehensive migration tracking
+* **Created:** `docs/adr/0001-integrations-vs-api.md` documenting architectural decisions
+* **Status:** Documentation foundation established for systematic migration
 
-```
-# ADR-0001: Title
-Date: 2025-09-11
-Status: Accepted | Superseded by ADR-XXXX
-Context: (why this decision matters)
-Decision: (what we chose)
-Consequences: (trade-offs, risks, follow-ups)
-```
+**B. Core Upload Spec Implementation** ✅
+
+* **Implemented:** `core/upload/spec.py` with shared base classes and types
+* **Foundation:** BaseUploadSpec, Artist, RemasterInfo, AudioFormat, MediaType enums
+* **Status:** Shared types ready for tracker-specific extensions in Phase 3
+
+**C. Systematic File Moves (git mv)** ✅
+
+* **Completed:** api/trackers/base.py → trackers/base.py
+* **Completed:** api/trackers/red.py → trackers/red/adapter.py
+* **Completed:** api/trackers/mam.py → trackers/mam/adapter.py
+* **Completed:** api/qbittorrent.py → integrations/qbittorrent.py
+* **Status:** All file moves preserve git history
+
+**D. Deprecation Shims** ✅
+
+* **Created:** Shims at all old api/trackers/* paths with DeprecationWarning
+* **Created:** api/qbittorrent.py shim pointing to integrations/qbittorrent.py
+* **Status:** Backward compatibility maintained with 4-week deprecation timeline
+
+**E. Architecture Decisions** ✅
+
+* **Decision:** features/templates.py serves different purpose than core/metadata/templates/ (no consolidation needed)
+* **Decision:** AudNexus already properly separated (integrations/* for HTTP, core/metadata/sources/* for adapters)
+* **Decision:** Upload spec consolidation deferred to Phase 3 (requires careful RED compatibility work)
+* **Status:** Canonical layout locked in, migrations documented
+
+**F. Cleanup & Validation** ✅
+
+* **Removed:** Empty duplicate core/upload/__init__.py
+* **Verified:** No legacy import paths remain in codebase
+* **Tested:** CLI functionality unchanged (python -m mk_torrent --help works)
+* **Status:** Clean working state ready for Phase 3
 
 ### Phase 3 — Execute by Subsystem (Iterative PRs)
 

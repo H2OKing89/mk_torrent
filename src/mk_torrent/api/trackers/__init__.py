@@ -1,10 +1,35 @@
 """
-Tracker API implementations
+DEPRECATED: Tracker API implementations have moved.
+
+This entire module is deprecated. Please update your imports:
+- mk_torrent.api.trackers.base -> mk_torrent.trackers.base
+- mk_torrent.api.trackers.red -> mk_torrent.trackers.red.adapter
+- mk_torrent.api.trackers.mam -> mk_torrent.trackers.mam.adapter
 """
 
-from .base import TrackerAPI, TrackerConfig
-from .red import RedactedAPI
-from .mam import MyAnonaMouseAPI
+import warnings
+
+warnings.warn(
+    "mk_torrent.api.trackers is deprecated; use mk_torrent.trackers.*",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
+# Import through shims (which handle their own deprecation warnings)
+try:
+    from .base import TrackerAPI, TrackerConfig
+except ImportError:
+    from mk_torrent.trackers.base import TrackerAPI, TrackerConfig
+
+try:
+    from .red import RedactedAPI
+except ImportError:
+    from mk_torrent.trackers.red.adapter import RedactedAPI
+
+try:
+    from .mam import MyAnonaMouseAPI
+except ImportError:
+    from mk_torrent.trackers.mam.adapter import MyAnonaMouseAPI
 
 __all__ = ["TrackerAPI", "TrackerConfig", "RedactedAPI", "MyAnonaMouseAPI"]
 
