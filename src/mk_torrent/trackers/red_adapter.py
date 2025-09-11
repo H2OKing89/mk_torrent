@@ -14,7 +14,7 @@ from typing import Any
 import httpx
 from pydantic import BaseModel, Field
 
-from mk_torrent.trackers.upload_spec import Category, UploadResult, UploadSpec
+from mk_torrent.core.upload.spec import Category, UploadResult, UploadSpec
 
 logger = logging.getLogger(__name__)
 

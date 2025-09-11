@@ -81,6 +81,7 @@ core/upload/
 **Goal:** Single source of truth for shared types, clean tracker extensions
 
 **Actions:**
+
 1. **Audit enum overlaps** - merge AudioFormat/MediaType conflicts
 2. **Extend core/upload/spec.py** - add missing validation patterns
 3. **Create tracker extension pattern** - RED/MAM specs extend core cleanly
@@ -94,6 +95,7 @@ core/upload/
 **Goal:** Single RED adapter with clear separation of HTTP client vs upload logic
 
 **Actions:**
+
 1. **Analyze overlap** between `red_adapter.py` and `red/adapter.py`
 2. **Extract HTTP client** - ensure `red/api_client.py` handles all HTTP concerns
 3. **Merge upload logic** - consolidate conversion logic into single adapter
@@ -107,6 +109,7 @@ core/upload/
 **Goal:** Consistent adapter instantiation and configuration management
 
 **Actions:**
+
 1. **Create factory interface** - standardize adapter creation
 2. **Add configuration validation** - ensure required credentials/settings
 3. **Implement adapter registry** - dynamic adapter discovery by name
@@ -120,6 +123,7 @@ core/upload/
 **Goal:** Complete MAM adapter to match RED patterns and test consolidation
 
 **Actions:**
+
 1. **Implement MAM authentication** - cookie-based session management
 2. **Create MAM upload spec** - extend core types with MAM-specific fields
 3. **Add MAM API client** - HTTP wrapper matching RED patterns
@@ -131,18 +135,21 @@ core/upload/
 ## Success Criteria
 
 ### ✅ **Code Quality**
+
 - [ ] Single source for shared types (no enum duplicates)
 - [ ] Clear adapter interfaces with consistent patterns
 - [ ] Comprehensive test coverage (>80% for tracker modules)
 - [ ] All import path violations resolved
 
 ### ✅ **Architecture**
+
 - [ ] Clean separation: HTTP clients vs upload adapters vs specifications
 - [ ] Factory pattern for dynamic adapter creation
 - [ ] Shared validation framework across all trackers
 - [ ] Documentation with clear examples and extension patterns
 
 ### ✅ **Functional**
+
 - [ ] RED adapter fully functional with consolidated logic
 - [ ] MAM adapter implemented and tested
 - [ ] CLI integration unchanged (`python -m mk_torrent` still works)
@@ -156,6 +163,7 @@ core/upload/
 **Week 4:** MAM completion and comprehensive testing
 
 **Dependencies:**
+
 - Phase 2 completion ✅ (clean deprecation shims in place)
 - Core upload spec foundation ✅ (shared types implemented)
 - Git workflow established ✅ (systematic moves with history preservation)
@@ -163,12 +171,15 @@ core/upload/
 ## Risk Mitigation
 
 **🔥 High Risk:** Breaking RED upload functionality during consolidation
+
 - **Mitigation:** Comprehensive test suite before any moves, staging environment testing
 
 **⚠️ Medium Risk:** Import path confusion during transition
+
 - **Mitigation:** Systematic import updates with validation, deprecation shims
 
 **📊 Low Risk:** MAM implementation delays
+
 - **Mitigation:** MAM is lower priority, can be completed in parallel or after other consolidation
 
 ---

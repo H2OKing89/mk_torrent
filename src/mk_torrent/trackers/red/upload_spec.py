@@ -1,9 +1,9 @@
 """
 Clean JSON upload specification for RED tracker.
 
-This module provides a clean, tracker-agnostic JSON upload specification
-that maps to RED's multipart form data structure. Based on ChatGPT feedback
-for maintainable upload specifications.
+This module provides RED-specific upload specification extensions
+that build upon the shared core upload types. Imports common enums
+from core and adds RED-specific fields like AudioBitrate.
 """
 
 from __future__ import annotations
@@ -11,16 +11,7 @@ from __future__ import annotations
 from enum import Enum
 
 from pydantic import BaseModel, Field, field_validator
-
-
-class AudioFormat(str, Enum):
-    """Supported audio formats for RED."""
-
-    FLAC = "FLAC"
-    MP3 = "MP3"
-    AAC = "AAC"
-    AC3 = "AC-3"
-    DTS = "DTS"
+from mk_torrent.core.upload.spec import AudioFormat, MediaType, ReleaseType, ArtistType
 
 
 class AudioBitrate(str, Enum):
@@ -37,53 +28,6 @@ class AudioBitrate(str, Enum):
     LOSSLESS = "Lossless"
     LOSSLESS_24BIT = "24bit Lossless"
     OTHER = "Other"
-
-
-class MediaType(str, Enum):
-    """Supported media types for RED."""
-
-    CD = "CD"
-    DVD = "DVD"
-    VINYL = "Vinyl"
-    SOUNDBOARD = "Soundboard"
-    SACD = "SACD"
-    DAT = "DAT"
-    CASSETTE = "Cassette"
-    WEB = "WEB"
-
-
-class ReleaseType(str, Enum):
-    """RED release types."""
-
-    ALBUM = "Album"
-    SOUNDTRACK = "Soundtrack"
-    EP = "EP"
-    ANTHOLOGY = "Anthology"
-    COMPILATION = "Compilation"
-    SINGLE = "Single"
-    LIVE_ALBUM = "Live album"
-    REMIX = "Remix"
-    BOOTLEG = "Bootleg"
-    INTERVIEW = "Interview"
-    MIXTAPE = "Mixtape"
-    DEMO = "Demo"
-    CONCERT_RECORDING = "Concert Recording"
-    DJ_MIX = "DJ Mix"
-    UNKNOWN = "Unknown"
-
-
-class ArtistType(str, Enum):
-    """Artist type classifications."""
-
-    MAIN = "main"
-    GUEST = "guest"
-    COMPOSER = "composer"
-    CONDUCTOR = "conductor"
-    PRODUCER = "producer"
-    REMIXER = "remixer"
-    FEATURING = "featuring"
-    ARRANGER = "arranger"
-    WITH = "with"
 
 
 class Artist(BaseModel):
