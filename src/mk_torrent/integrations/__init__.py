@@ -48,6 +48,18 @@ from .workflows import (
 )
 from .qbittorrent_modern import QBittorrentClient, QBittorrentConfig
 from .upload_workflow_modern import ModernUploadWorkflow, modern_upload_workflow
+from .factory import IntegrationFactory, WorkflowFactory
+from .auth import (
+    AuthenticationType,
+    CredentialStorage,
+    AuthenticationConfig,
+    AuthenticationFactory,
+    StandardAuthenticationProtocol,
+)
+from .red_integration import (
+    REDIntegrationClient,
+    REDIntegrationConfig,
+)
 
 # Issue deprecation warning for the whole package when importing Audnexus
 warnings.warn(
@@ -82,4 +94,16 @@ __all__ = [
     "QBittorrentConfig",
     "ModernUploadWorkflow",
     "modern_upload_workflow",
+    # Factory pattern (Phase 3B.3)
+    "IntegrationFactory",
+    "WorkflowFactory",
+    # Authentication standardization (Phase 3B.3.4)
+    "AuthenticationType",
+    "CredentialStorage",
+    "AuthenticationConfig",
+    "AuthenticationFactory",
+    "StandardAuthenticationProtocol",
+    # RED tracker integration (Phase 3B.3.4)
+    "REDIntegrationClient",
+    "REDIntegrationConfig",
 ]

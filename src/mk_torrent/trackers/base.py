@@ -81,7 +81,7 @@ class TrackerAPI(ABC):
 
     def check_path_compliance(self, path: str) -> bool:
         """Check if path meets tracker requirements"""
-        return len(path) <= self.config.max_path_length
+        return len(path) <= self.get_tracker_config().max_path_length
 
     def get_compliance_report(self, paths: list[str]) -> dict[str, Any]:
         """Get detailed compliance report for multiple paths"""

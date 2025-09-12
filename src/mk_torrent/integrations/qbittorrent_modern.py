@@ -16,6 +16,7 @@ import logging
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from datetime import timedelta
 
 from qbittorrentapi import Client as QBittorrentAPIClient
 from qbittorrentapi.exceptions import APIConnectionError, LoginFailed
@@ -26,6 +27,12 @@ from .base import (
     IntegrationConfig,
     IntegrationResponse,
     IntegrationStatus,
+)
+from .auth import (
+    AuthenticationConfig,
+    AuthenticationType,
+    CredentialStorage,
+    AuthenticationFactory,
 )
 
 console = Console()
@@ -65,10 +72,29 @@ class QBittorrentClient(BaseIntegrationClient):
     """Modern qBittorrent client using base integration infrastructure"""
 
     def __init__(self, config: QBittorrentConfig):
+        self.qb_config = config  # Set this BEFORE calling super().__init__
         super().__init__(config)
-        self.qb_config = config
         self._qb_client: QBittorrentAPIClient | None = None
         self._authenticated = False
+
+        # Initialize standardized authentication
+        auth_config = AuthenticationConfig(
+            auth_type=AuthenticationType.USERNAME_PASSWORD,
+            storage_method=CredentialStorage.MEMORY_ONLY,  # For now, use memory
+            service_name="qBittorrent",
+            username=config.username,
+            password=config.password,
+            session_timeout=timedelta(
+                hours=24
+            ),  # qBittorrent sessions typically last long
+            auto_refresh=True,
+        )
+
+        self._auth_handler = AuthenticationFactory.create_handler(
+            auth_config,
+            login_endpoint=f"{config.base_url}/api/v2/auth/login",
+            client_session=None,  # Will be set when qb_client is created
+        )
 
     def _configure_session(self, **kwargs: Any) -> None:
         """Configure requests session for qBittorrent specifics"""
@@ -95,17 +121,29 @@ class QBittorrentClient(BaseIntegrationClient):
         return self._qb_client
 
     def authenticate(self) -> IntegrationResponse:
-        """Authenticate with qBittorrent"""
+        """Authenticate with qBittorrent using standardized authentication"""
         try:
-            # Try to authenticate using the qbittorrent-api library
-            self.qb_client.auth_log_in()
-            self._authenticated = True
+            # Use the standardized authentication handler
+            response = self._auth_handler.authenticate()
 
-            return IntegrationResponse(
-                status=IntegrationStatus.SUCCESS,
-                message="Authentication successful",
-                data={"authenticated": True},
-            )
+            if response.success:
+                # Also authenticate the underlying qb_client
+                self.qb_client.auth_log_in()
+                self._authenticated = True
+
+                return IntegrationResponse(
+                    status=IntegrationStatus.SUCCESS,
+                    message="Authentication successful",
+                    data={
+                        "authenticated": True,
+                        "expires_at": response.data.get("expires_at")
+                        if response.data
+                        else None,
+                    },
+                )
+            else:
+                self._authenticated = False
+                return response
 
         except LoginFailed as e:
             self._authenticated = False
@@ -128,8 +166,8 @@ class QBittorrentClient(BaseIntegrationClient):
             )
 
     def is_authenticated(self) -> bool:
-        """Check if currently authenticated"""
-        return self._authenticated
+        """Check authentication status using standardized handler"""
+        return self._auth_handler.is_authenticated() and self._authenticated
 
     def health_check(self) -> IntegrationResponse:
         """Perform comprehensive health check"""

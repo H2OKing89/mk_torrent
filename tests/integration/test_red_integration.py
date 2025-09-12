@@ -240,9 +240,9 @@ def test_path_validation(audiobook_files: Dict[str, Dict[str, Any]]):
     """Test RED path validation with real audiobook paths"""
     console.print("\n[bold cyan]📏 Testing RED Path Validation[/bold cyan]")
 
-    from mk_torrent.api.trackers.red import RedactedAPI
+    from mk_torrent.trackers.red_adapter import REDAdapter, REDConfig
 
-    red_api = RedactedAPI(api_key="test_key")
+    red_api = REDAdapter(REDConfig(api_key="test_key"))
 
     table = Table(title="RED Path Validation Results")
     table.add_column("Audiobook", style="cyan")
@@ -332,9 +332,9 @@ def test_red_validation_with_real_metadata(audiobook_files: Dict[str, Dict[str, 
     # Use cached metadata extraction
     metadata_results = extract_metadata_once(audiobook_files)
 
-    from mk_torrent.api.trackers.red import RedactedAPI
+    from mk_torrent.trackers.red_adapter import REDAdapter, REDConfig
 
-    red_api = RedactedAPI(api_key="test_key")
+    red_api = REDAdapter(REDConfig(api_key="test_key"))
 
     if SHOW_RICH:
         table = Table(title="RED Validation Results")
@@ -391,9 +391,9 @@ def test_upload_preparation_with_real_metadata(
     # Use cached metadata extraction
     metadata_results = extract_metadata_once(audiobook_files)
 
-    from mk_torrent.api.trackers.red import RedactedAPI
+    from mk_torrent.trackers.red_adapter import REDAdapter, REDConfig
 
-    red_api = RedactedAPI(api_key="test_key")
+    red_api = REDAdapter(REDConfig(api_key="test_key"))
 
     for name, metadata in metadata_results.items():
         rich_print(f"\n[bold]📋 Preparing upload data for {name}...[/bold]")
@@ -448,9 +448,9 @@ def test_dry_run_upload_with_real_metadata(audiobook_files: Dict[str, Dict[str, 
     # Use cached metadata extraction
     metadata_results = extract_metadata_once(audiobook_files)
 
-    from mk_torrent.api.trackers.red import RedactedAPI
+    from mk_torrent.trackers.red_adapter import REDAdapter, REDConfig
 
-    red_api = RedactedAPI(api_key="test_key")
+    red_api = REDAdapter(REDConfig(api_key="test_key"))
 
     if SHOW_RICH:
         table = Table(title="Dry Run Upload Results")

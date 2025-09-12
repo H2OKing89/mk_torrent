@@ -51,9 +51,9 @@ class ModernUploadWorkflow(BaseUploadWorkflow):
                 )
 
             # Initialize tracker API using existing system
-            from ..api.trackers import get_tracker_api
+            from ..trackers.factory import TrackerAdapterFactory
 
-            self.tracker_api = get_tracker_api(
+            self.tracker_api = TrackerAdapterFactory.create(
                 self.config.tracker, api_key=self.api_key
             )
 

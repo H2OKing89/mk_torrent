@@ -523,17 +523,17 @@ def test_comparison_with_old_system():
         # Test old system with caching
         rich_print("🔧 Testing existing integration...", "blue")
 
-        from mk_torrent.integrations.audnexus_api import fetch_metadata_by_asin
+        from mk_torrent.core.metadata.sources.audnexus import get_audnexus_metadata
 
         if cache_available:
 
             @cached(api_cache)  # type: ignore
             def cached_old_fetch(asin: str) -> Any:
-                return fetch_metadata_by_asin(asin)
+                return get_audnexus_metadata(asin)
 
             old_metadata = cached_old_fetch("B0C8ZW5N6Y")
         else:
-            old_metadata = fetch_metadata_by_asin("B0C8ZW5N6Y")
+            old_metadata = get_audnexus_metadata("B0C8ZW5N6Y")
 
         # Test new system with caching
         rich_print("🆕 Testing new core system...", "green")

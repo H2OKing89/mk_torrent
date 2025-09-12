@@ -23,7 +23,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 # Import RED-specific modules
-from mk_torrent.api.trackers.red import RedactedAPI
+from mk_torrent.trackers.red_adapter import REDAdapter, REDConfig
 
 from rich.console import Console
 from rich.panel import Panel
@@ -58,7 +58,8 @@ if test_env_path.exists():
 def red_api():
     """Fixture providing a RED API client for testing"""
     api_key = os.getenv("RED_API_KEY", "test_api_key")
-    return RedactedAPI(api_key=api_key)
+    config = REDConfig(api_key=api_key)
+    return REDAdapter(config)
 
 
 @pytest.fixture
@@ -99,8 +100,9 @@ def test_red_api_creation(red_api):
     assert hasattr(red_api, "prepare_upload_data")
 
     # Test configuration - don't hard-code magic numbers
-    assert isinstance(red_api.config.max_path_length, int)
-    assert red_api.config.max_path_length > 0
+    tracker_config = red_api.get_tracker_config()
+    assert isinstance(tracker_config.max_path_length, int)
+    assert tracker_config.max_path_length > 0
 
     rich_print("✅ RED API created successfully with proper configuration")
 
@@ -117,7 +119,7 @@ def test_red_path_compliance_boundaries(red_api, delta, expected):
     """Test RED path compliance at boundaries"""
     rich_print("[bold cyan]📏 Testing RED Path Compliance Boundaries[/bold cyan]")
 
-    limit = red_api.config.max_path_length
+    limit = red_api.get_tracker_config().max_path_length
     path = "A" * (limit + delta)
     result = red_api.check_path_compliance(path)
 
@@ -131,7 +133,7 @@ def test_unicode_path_counting(red_api, char):
     """Test Unicode character handling in path compliance"""
     rich_print(f"[bold cyan]🌐 Testing Unicode Path Counting with '{char}'[/bold cyan]")
 
-    limit = red_api.config.max_path_length
+    limit = red_api.get_tracker_config().max_path_length
     path = char * limit
     assert red_api.check_path_compliance(path) is True
     assert red_api.check_path_compliance(path + char) is False
@@ -163,7 +165,7 @@ def test_red_path_compliance_display(red_api):
 
     rich_print("[bold cyan]📏 Testing RED Path Compliance[/bold cyan]")
 
-    limit = red_api.config.max_path_length
+    limit = red_api.get_tracker_config().max_path_length
 
     # Test cases: (path, expected_result)
     test_cases = [
@@ -195,7 +197,9 @@ def test_red_path_compliance_display(red_api):
         )
 
     rich_print(table)
-    rich_print(f"🎯 RED path limit: {red_api.config.max_path_length} characters")
+    rich_print(
+        f"🎯 RED path limit: {red_api.get_tracker_config().max_path_length} characters"
+    )
 
 
 @pytest.mark.parametrize("missing_field", ["title", "year", "format", "media"])
@@ -343,9 +347,9 @@ def test_red_form_data_conversion(sample_metadata, tmp_path):
 
     # Use tmp_path for testing instead of real files
     try:
-        from mk_torrent.api.trackers.red import RedactedAPI
+        from mk_torrent.trackers.red_adapter import REDAdapter
 
-        api = RedactedAPI(api_key="test_key")
+        api = REDAdapter(REDConfig(api_key="test_key"))
 
         # Create dummy torrent file
         dummy_torrent = tmp_path / "test.torrent"
@@ -508,7 +512,7 @@ def test_red_error_handling(red_api):
 
     # Test with invalid API key - should handle gracefully or raise specific exception
     try:
-        invalid_api = RedactedAPI(api_key="invalid_key")
+        invalid_api = REDAdapter(REDConfig(api_key="invalid_key"))
         # If no exception, check that it behaves appropriately
         result = invalid_api.validate_metadata({"title": "test"})
         assert result is not None, "Invalid API should return error result, not None"
@@ -533,7 +537,7 @@ def main():
     )
 
     # Create test fixtures manually for running outside pytest
-    api = RedactedAPI(api_key=os.getenv("RED_API_KEY", "test_api_key"))
+    api = REDAdapter(REDConfig(api_key=os.getenv("RED_API_KEY", "test_api_key")))
     metadata = {
         "title": "Test Audiobook Title",
         "artists": ["Test Author"],

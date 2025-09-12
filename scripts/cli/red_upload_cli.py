@@ -209,13 +209,13 @@ def validate_with_red(
     metadata: Dict[str, Any], api_key: str
 ) -> tuple[bool, Optional[Any]]:
     """Validate metadata with RED requirements"""
-    from mk_torrent.api.trackers.red import RedactedAPI
+    from mk_torrent.trackers.red_adapter import REDAdapter, REDConfig
 
     console.print("[cyan]🎯 Validating with RED requirements...[/cyan]")
 
     try:
         # Initialize RED API
-        red_api = RedactedAPI(api_key=api_key)
+        red_api = REDAdapter(REDConfig(api_key=api_key))
 
         # Validate metadata
         validation = red_api.validate_metadata(metadata)

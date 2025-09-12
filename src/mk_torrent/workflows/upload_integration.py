@@ -7,19 +7,28 @@ from pathlib import Path
 from typing import Any
 from rich.console import Console
 
-from ..api.trackers import get_tracker_api
 from ..core.metadata.engine import MetadataEngine
 
 console = Console()
 
 
+def get_tracker_api(tracker: str, api_key: str):
+    """Get tracker API instance for the specified tracker"""
+    if tracker.lower() == "red":
+        from ..trackers.red_adapter import REDAdapter, REDConfig
+
+        return REDAdapter(REDConfig(api_key=api_key))
+    else:
+        raise ValueError(f"Unsupported tracker: {tracker}")
+
+
 def _validate_with_red_api(enhanced_metadata: dict, api_key: str) -> bool:
     """Validate metadata using RED API directly (same pattern as CLI script)"""
-    from ..api.trackers.red import RedactedAPI
+    from ..trackers.red_adapter import REDAdapter, REDConfig
 
     try:
         # Initialize RED API
-        red_api = RedactedAPI(api_key=api_key)
+        red_api = REDAdapter(REDConfig(api_key=api_key))
 
         # Prepare metadata in the format expected by CLI validation
         metadata_for_validation = {

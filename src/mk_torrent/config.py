@@ -848,11 +848,11 @@ def edit_tracker_api_keys(config: dict[str, Any]):
                 try:
                     # Import and test the specific tracker API
                     if tracker.lower() == "red":
-                        from .api.trackers.red import RedactedAPI
+                        from .trackers.red_adapter import REDAdapter, REDConfig
 
                         api_key = config.get(f"{tracker.lower()}_api_key")
                         if api_key:
-                            api = RedactedAPI(api_key=api_key)
+                            api = REDAdapter(REDConfig(api_key=api_key))
                             if api.test_connection():
                                 console.print(
                                     f"[green]✅ {tracker} API connection successful[/green]"

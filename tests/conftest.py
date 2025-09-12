@@ -123,10 +123,9 @@ def mock_requests_get():
 @pytest.fixture(autouse=True)
 def mock_dependencies():
     """Mock external dependencies that might not be available in test environment"""
-    with pytest.MonkeyPatch().context() as m:
-        # Mock optional dependencies
-        m.setattr("src.mk_torrent.integrations.audnexus.NH3_AVAILABLE", True)
+    with pytest.MonkeyPatch().context():
         # Note: MUTAGEN_AVAILABLE and MUSICBRAINZ_AVAILABLE are handled per-class, not globally
+        # NH3_AVAILABLE mock removed as audnexus module has been consolidated to core.metadata.sources.audnexus
         yield
 
 
