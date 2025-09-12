@@ -49,7 +49,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, TypedDict
 import re
 from datetime import datetime
 
@@ -57,6 +57,63 @@ from ..exceptions import SourceUnavailable
 from ..services.html_cleaner import HTMLCleaner
 
 logger = logging.getLogger(__name__)
+
+
+# Audnexus API Type Definitions (consolidated from integrations/audnexus_types.py)
+class AuthorData(TypedDict):
+    """Author information from Audnexus API"""
+
+    asin: str
+    name: str
+
+
+class NarratorData(TypedDict):
+    """Narrator information from Audnexus API"""
+
+    name: str
+
+
+class GenreData(TypedDict):
+    """Genre/tag information from Audnexus API"""
+
+    asin: str
+    name: str
+    type: str  # "genre" or "tag"
+
+
+class SeriesData(TypedDict):
+    """Series information from Audnexus API"""
+
+    asin: str
+    name: str
+    position: str | int
+
+
+class AudnexusBookResponse(TypedDict, total=False):
+    """Complete Audnexus API book response structure"""
+
+    asin: str
+    authors: list[AuthorData]
+    copyright: int
+    description: str
+    formatType: str  # "unabridged" or "abridged"
+    genres: list[GenreData]
+    image: str  # URL to cover image
+    isAdult: bool
+    isbn: str
+    language: str
+    literatureType: str  # "fiction" or "non-fiction"
+    narrators: list[NarratorData]
+    publisherName: str
+    rating: str  # "4.9" format
+    region: str  # "us", "uk", etc.
+    releaseDate: str  # ISO format "2021-05-04T00:00:00.000Z"
+    runtimeLengthMin: int
+    summary: str
+    title: str
+    subtitle: str | None
+    seriesPrimary: SeriesData | None
+
 
 # JSON handling with orjson (preferred) or standard json (fallback)
 try:
@@ -766,3 +823,76 @@ class AudnexusSource:
                 f"Failed to extract metadata from Audnexus for {asin} (async): {e}"
             )
             raise SourceUnavailable("audnexus", f"Extraction failed: {e}") from e
+
+
+# Convenience functions for backward compatibility and ease of use
+def get_audnexus_metadata(asin: str) -> dict[str, Any] | None:
+    """
+    Convenience function to get metadata synchronously.
+
+    Args:
+        asin: Amazon Standard Identification Number
+
+    Returns:
+        Normalized metadata dictionary or None if failed
+    """
+    source = AudnexusSource()
+    try:
+        # Use extract method with ASIN directly
+        return source.extract(asin)
+    except Exception:
+        return None
+    finally:
+        source.close()
+
+
+async def get_audnexus_metadata_async(asin: str) -> dict[str, Any] | None:
+    """
+    Convenience function to get metadata asynchronously.
+
+    Args:
+        asin: Amazon Standard Identification Number
+
+    Returns:
+        Normalized metadata dictionary or None if failed
+    """
+    source = AudnexusSource()
+    try:
+        return await source.extract_async(asin)
+    except Exception:
+        return None
+    finally:
+        source.close()
+
+
+def extract_asin_from_path(path: str | Path) -> str | None:
+    """
+    Convenience function to extract ASIN from path.
+
+    Args:
+        path: File path that may contain ASIN pattern {ASIN.B0C8ZW5N6Y}
+
+    Returns:
+        ASIN string if found, None otherwise
+    """
+    # Use regex directly since it's a simple pattern
+    asin_pattern = r"\{ASIN\.([A-Z0-9]{10,12})\}"
+    match = re.search(asin_pattern, str(path))
+    return match.group(1) if match else None
+
+
+# Export consolidated API
+__all__ = [
+    # Main class
+    "AudnexusSource",
+    # Type definitions
+    "AuthorData",
+    "NarratorData",
+    "GenreData",
+    "SeriesData",
+    "AudnexusBookResponse",
+    # Convenience functions
+    "get_audnexus_metadata",
+    "get_audnexus_metadata_async",
+    "extract_asin_from_path",
+]

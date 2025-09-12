@@ -14,6 +14,8 @@ Migration guide:
 
 import warnings
 from typing import Any
+import logging
+import importlib.util
 
 # Re-export from the canonical location
 from mk_torrent.core.metadata.sources.audnexus import (
@@ -81,3 +83,13 @@ __all__ = [
     "SeriesData",
     "AudnexusBookResponse",
 ]
+
+# Check for optional dependencies
+HTTPX_AVAILABLE = importlib.util.find_spec("httpx") is not None
+NH3_AVAILABLE = importlib.util.find_spec("nh3") is not None
+
+logger = logging.getLogger(__name__)
+
+# Note: The original AudnexusAPI implementation has been replaced with the
+# core.metadata.sources.audnexus.AudnexusSource implementation.
+# All functionality is now available through the inherited class above.

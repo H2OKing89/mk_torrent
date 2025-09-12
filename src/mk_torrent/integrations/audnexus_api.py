@@ -1,14 +1,52 @@
 """
-Audnexus API integration module
-Handles communication with https://api.audnex.us for audiobook metadata
+DEPRECATED: Audnexus API moved to metadata suite
+
+This module is deprecated as of 2025-01-09 and will be removed on 2025-02-09.
+All Audnexus functionality has been consolidated into the core metadata system.
+
+Use mk_torrent.core.metadata.sources.audnexus instead.
 """
 
+import warnings
 from typing import Any
-from pathlib import Path
 import logging
 import re
 from datetime import datetime
 from dataclasses import dataclass
+
+# Re-export from the canonical location
+from mk_torrent.core.metadata.sources.audnexus import (
+    AudnexusSource as AudnexusAPIMetadata,
+    get_audnexus_metadata,
+    get_audnexus_metadata_async,
+    extract_asin_from_path,
+    # Type definitions
+    AuthorData,
+    NarratorData,
+    GenreData,
+    SeriesData,
+    AudnexusBookResponse,
+)
+
+warnings.warn(
+    "mk_torrent.integrations.audnexus_api is deprecated. "
+    "Use mk_torrent.core.metadata.sources.audnexus instead. "
+    "This module will be removed on 2025-02-09.",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
+__all__ = [
+    "AudnexusAPIMetadata",
+    "get_audnexus_metadata",
+    "get_audnexus_metadata_async",
+    "extract_asin_from_path",
+    "AuthorData",
+    "NarratorData",
+    "GenreData",
+    "SeriesData",
+    "AudnexusBookResponse",
+]
 
 logger = logging.getLogger(__name__)
 
@@ -110,12 +148,6 @@ class AudnexusClient:
             except ImportError:
                 logger.error("Neither HTTPX nor requests available for API calls")
                 self.session = None
-
-    def extract_asin_from_path(self, path: str | Path) -> str | None:
-        """Extract ASIN from filename or path pattern {ASIN.B0C8ZW5N6Y}"""
-        asin_pattern = r"\{ASIN\.([A-Z0-9]{10,12})\}"
-        match = re.search(asin_pattern, str(path))
-        return match.group(1) if match else None
 
     async def get_book_metadata_async(self, asin: str) -> dict[str, Any] | None:
         """Fetch book metadata asynchronously (if httpx is available)"""
@@ -371,7 +403,4 @@ def fetch_metadata_by_asin(asin: str) -> dict[str, Any] | None:
     return client.get_book_metadata(asin)
 
 
-def extract_asin_from_path(path: str | Path) -> str | None:
-    """Convenience function to extract ASIN from path"""
-    client = get_audnexus_client()
-    return client.extract_asin_from_path(path)
+# Note: extract_asin_from_path is now imported from core.metadata.sources.audnexus

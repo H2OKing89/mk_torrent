@@ -87,25 +87,30 @@ utils → core → {trackers, integrations} → workflows → cli
 **Final Commit**: e954f1b
 
 ### Achievements
+
 1. **3A.1: Upload Spec Enum Consolidation** — Single source: `core/upload/spec.py`
 2. **3A.2: RED Adapter Unification** — Enhanced `red_adapter.py`, deprecated `red/adapter.py`
 3. **3A.3: Adapter Factory Pattern** — Centralized creation via `TrackerAdapterFactory`
 4. **3A.4: MAM Implementation** — Clarified manual upload requirement
 
 ### Key Results
-- Resolved enum conflicts across 3 modules (AudioFormat, MediaType, ReleaseType)
-- Consolidated duplicate adapter implementations
-- Standardized adapter instantiation patterns
-- Maintained backward compatibility via deprecation shims
-- 4-week deprecation timeline (removal: 2025-02-09)
-- All CLI functionality preserved and validated
+
+* Resolved enum conflicts across 3 modules (AudioFormat, MediaType, ReleaseType)
+
+* Consolidated duplicate adapter implementations
+* Standardized adapter instantiation patterns
+* Maintained backward compatibility via deprecation shims
+* 4-week deprecation timeline (removal: 2025-02-09)
+* All CLI functionality preserved and validated
 
 ### Validation
-- ✅ CLI still works: `python -m mk_torrent --help`
-- ✅ Factory creates adapters: RED, MAM tested
-- ✅ Type checking passes across all modules
-- ✅ Deprecation warnings trigger correctly
-- ✅ Integration tests pass (RED upload workflows)
+
+* ✅ CLI still works: `python -m mk_torrent --help`
+
+* ✅ Factory creates adapters: RED, MAM tested
+* ✅ Type checking passes across all modules
+* ✅ Deprecation warnings trigger correctly
+* ✅ Integration tests pass (RED upload workflows)
 
 **Next**: Phase 3B — Integration Layer Consolidation
 
